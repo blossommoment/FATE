@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FATE</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="cosmos"></div>
+    <header class="app-header">
+      <div class="logo">FATE<span>✦</span></div>
+      <nav class="top-nav" aria-label="主导航">
+        <button class="nav-item active" data-tab="home">首页</button>
+        <button class="nav-item" data-tab="square">同频广场</button>
+        <button class="nav-item" data-tab="coordinates">命运坐标</button>
+        <button class="nav-item" data-tab="messages">消息<i>12</i></button>
+        <button class="nav-item" data-tab="profile">我的</button>
+      </nav>
+      <div class="header-actions">
+        <button class="ghost-icon">⌕</button>
+        <button class="ghost-icon bell">♧<i>8</i></button>
+        <div class="me-avatar"></div>
+      </div>
+    </header>
+
+    <main id="view" class="page"></main>
+
+    <nav class="bottom-nav" aria-label="底部导航">
+      <button class="bottom-item active" data-tab="home"><span>⌂</span>首页</button>
+      <button class="bottom-item" data-tab="square"><span>♄</span>同频</button>
+      <button class="bottom-item" data-tab="coordinates"><span>✧</span>命运坐标</button>
+      <button class="bottom-item" data-tab="messages"><span>☵</span>消息<i>12</i></button>
+      <button class="bottom-item" data-tab="profile"><span>♙</span>我的</button>
+    </nav>
+
+    <script src="/static/app.js?v=mobile-ui-1"></script>
+  </body>
+</html>
