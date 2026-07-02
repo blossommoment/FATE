@@ -155,6 +155,26 @@ export async function ResultContent({
     }[category],
     items: profile.deepAnalysis.filter((item) => item.category === category),
   }));
+  // 深度分析章节目录：四类维度 + 专项观察
+  const deepModules = [
+    { key: "intimacy", no: "壹", category: "亲密与安全" as const },
+    { key: "connect", no: "贰", category: "沟通与连接" as const },
+    { key: "boundary", no: "叁", category: "边界与冲突" as const },
+    { key: "growth", no: "肆", category: "成长与行动" as const },
+    { key: "special", no: "伍", category: null },
+  ].map((item) => {
+    const group = item.category ? deepCategories.find((candidate) => candidate.category === item.category) : null;
+    const topCard = group?.items.slice().sort((x, y) => y.score - x.score)[0];
+    const topSpecial = profile.specialtyAnalysis.slice().sort((x, y) => y.score - x.score)[0];
+    return {
+      ...item,
+      title: item.category ?? "专项观察",
+      subtitle: group?.subtitle ?? "神煞与十神的延伸维度",
+      teaser: item.category ? `${topCard?.label} ${topCard?.score} 分 · ${topCard?.descriptor}` : `${topSpecial.label} ${topSpecial.score} 分 · ${topSpecial.descriptor}`,
+    };
+  });
+  const deepActive = view === "deep" ? deepModules.find((item) => item.key === moduleKey) ?? null : null;
+  const deepActiveIndex = deepActive ? deepModules.findIndex((item) => item.key === deepActive.key) : -1;
   const duoDimensions = partnerProfile ? [
     ["表达", profile.traitAnalysis[0].score, partnerProfile.traitAnalysis[0].score],
     ["稳定", profile.traitAnalysis[1].score, partnerProfile.traitAnalysis[1].score],
@@ -363,7 +383,8 @@ export async function ResultContent({
         </section>
       </header>
 
-      <section className="report result-report">
+      <section className="report result-report" id="deep-report">
+        {!deepActive && <>
         <div className="report-head">
           <div><div className="section-number">01 — 十神关系画像</div><h2>从十神出发，理解你<br />如何进入一段关系。</h2></div>
           <div className="signature"><small>西方星座</small><strong>{zodiacLabels[profile.zodiac]}</strong><span>作为辅助变量参与人格建模</span></div>
@@ -394,13 +415,29 @@ export async function ResultContent({
             })}
           </div>
         </section>
-        <div className="deep-profile">
-          <div className="deep-profile-head">
-            <div><span>关系人格侧写 · 四类十二项</span><h3>从命盘结构，观察具体关系情境</h3></div>
-            <p>以月令、时支、日支、年支及透干十神构建量化参考，并分别观察其在亲密关系、日常协作与压力状态中的表现。结果用于描述倾向，不作确定性判断。</p>
+        <div className="module-directory">
+          <header><div><span>DEEP CHAPTERS</span><h3>深度目录 · 五章</h3></div><small>四类关系维度 + 专项观察 · 逐章展开</small></header>
+          <div className="module-grid">
+            {deepModules.map((item, index) => <Link key={item.key} href={`/?${baseQuery}&view=deep&module=${item.key}#deep-report`}>
+              <i>{item.no}</i>
+              <div><span>0{index + 1} · {item.subtitle}</span><h4>{item.title}</h4><p>{item.teaser}</p></div>
+              <b>→</b>
+            </Link>)}
           </div>
+        </div>
+        </>}
+        {deepActive && <div className="module-frame">
+          <div className="module-topbar">
+            <Link href={`/?${baseQuery}&view=deep#deep-report`}>← 返回深度目录</Link>
+            <span>{profile.archetype} · {profile.combinedPersona.name}</span>
+          </div>
+          <header className="module-header">
+            <i>{deepActive.no}</i>
+            <div><span>第 {deepActiveIndex + 1} 章 / 共 {deepModules.length} 章</span><h2>{deepActive.title}</h2><p>{deepActive.subtitle}</p></div>
+          </header>
+        {deepActive.key !== "special" && <div className="deep-profile">
           <div className="deep-category-stack">
-            {deepCategories.map((group, categoryIndex) => <section className="deep-category" key={group.category}>
+            {deepCategories.filter((group) => group.category === deepActive.category).map((group) => { const categoryIndex = deepCategories.findIndex((candidate) => candidate.category === group.category); return <section className="deep-category" key={group.category}>
               <header><div><span>0{categoryIndex + 1}</span><h3>{group.category}</h3></div><p>{group.subtitle}</p></header>
               <div className="deep-card-grid">
                 {group.items.map((item) => {
@@ -423,14 +460,14 @@ export async function ResultContent({
                       {item.sceneInsights.slice(0, 2).map((scene) => <div key={scene.scene}><b>{scene.scene}</b><span>{scene.title}</span></div>)}
                     </div>
                     <p className="deep-note">{item.note}</p>
-                    <Link className="logic-link" href={`/?${baseQuery}&view=deep&detail=${item.key}#deep-card-${item.key}`}>查看量化依据与三类场景 <span>→</span></Link>
+                    <Link className="logic-link" href={`/?${baseQuery}&view=deep${moduleQuery}&detail=${item.key}#deep-card-${item.key}`}>查看量化依据与三类场景 <span>→</span></Link>
                   </article>;
                 })}
               </div>
-            </section>)}
+            </section>; })}
           </div>
-        </div>
-        <section className="specialty-analysis">
+        </div>}
+        {deepActive.key === "special" && <section className="specialty-analysis">
           <header>
             <div><span>命盘专项观察</span><h3>神煞与十神的延伸维度</h3></div>
             <p>在核心人格维度之外，结合偏印、华盖、十灵日、桃花支及关系结构，观察直觉感知、情感经营、吸引表达与创作倾向。各项仅作为综合权重，不以单一结构作结论。</p>
@@ -451,8 +488,18 @@ export async function ResultContent({
               </article>;
             })}
           </div>
-        </section>
-        <div className="profile-grid">
+        </section>}
+        <nav className="module-pager">
+          {deepActiveIndex > 0
+            ? <Link href={`/?${baseQuery}&view=deep&module=${deepModules[deepActiveIndex - 1].key}#deep-report`}>← {deepModules[deepActiveIndex - 1].no} · {deepModules[deepActiveIndex - 1].title}</Link>
+            : <Link href={`/?${baseQuery}&view=deep#deep-report`}>← 深度目录</Link>}
+          <Link className="pager-home" href={`/?${baseQuery}&view=deep#deep-report`}>目录</Link>
+          {deepActiveIndex < deepModules.length - 1
+            ? <Link href={`/?${baseQuery}&view=deep&module=${deepModules[deepActiveIndex + 1].key}#deep-report`}>{deepModules[deepActiveIndex + 1].no} · {deepModules[deepActiveIndex + 1].title} →</Link>
+            : <Link href={`/?${baseQuery}&view=deep#deep-report`}>返回目录 →</Link>}
+        </nav>
+        </div>}
+        {!deepActive && <div className="profile-grid">
           <section className="social-model-card">
             <header><div><small>社交行为模式</small><h3>你通常如何建立并维持连接</h3></div><p>由人格分布与关系倾向综合推导，描述更常出现的互动方式。</p></header>
             <div className="social-model-grid">
@@ -464,7 +511,7 @@ export async function ResultContent({
             </div>
           </section>
           <blockquote>“{profile.summary}”</blockquote>
-        </div>
+        </div>}
         <div className="relation-coordinate">
           <div className="coordinate-head">
             <div><span>双人五行关系坐标</span><h3>你与 {recommendations[0].name} 如何彼此影响</h3></div>
@@ -571,12 +618,13 @@ export async function ResultContent({
           const dscore = (target: typeof profile, key: string) => target.deepAnalysis.find((item) => item.key === key)?.score ?? 50;
           const bestDim = relationship.scoreBreakdown.slice().sort((x, y) => y.score - x.score)[0];
           const moduleMeta = [
-            { key: "dimensions", no: "壹", title: "六维剧本", subtitle: "分数、剧本与建议，一维一事", teaser: `${bestDim.label} ${bestDim.score} 分领跑六维` },
-            { key: "structure", no: "贰", title: "盘中脉络", subtitle: "两张命盘之间的合冲连线", teaser: relationship.branchDynamics[0]?.title ?? "无强合冲，互动由行为层主导" },
-            { key: "manner", no: "叁", title: "相处样态", subtitle: "谁主动、谁吃醋、氛围如何", teaser: relationship.guide.behaviors[1]?.conclusion ?? relationship.guide.behaviors[0].conclusion },
-            { key: "nature", no: "肆", title: "性情底色", subtitle: "两个人各自的出厂设置", teaser: relationship.guide.dispositions[0]?.trait ?? "结构安稳，各有分寸" },
-            { key: "reef", no: "伍", title: "暗礁航图", subtitle: "易生摩擦的情境与解法", teaser: relationship.guide.hotspots[0].scene },
-            { key: "voyage", no: "陆", title: "长路经营", subtitle: "首步、节奏与长线", teaser: `主动权宜在${relationship.guide.initiator.name}` },
+            { key: "dimensions", no: "壹", title: "六维总览", subtitle: "总起：分数、剧本与建议", teaser: `${bestDim.label} ${bestDim.score} 分领跑六维` },
+            { key: "nature", no: "贰", title: "性情底色", subtitle: "两个人各自的出厂设置", teaser: relationship.guide.dispositions[0]?.trait ?? "结构安稳，各有分寸" },
+            { key: "structure", no: "叁", title: "盘中脉络", subtitle: "两张命盘之间的合冲连线", teaser: relationship.branchDynamics[0]?.title ?? "无强合冲，互动由行为层主导" },
+            { key: "manner", no: "肆", title: "相处样态", subtitle: "谁主动、谁吃醋、氛围如何", teaser: relationship.guide.behaviors[1]?.conclusion ?? relationship.guide.behaviors[0].conclusion },
+            { key: "reef", no: "伍", title: "摩擦与化解", subtitle: "易起分歧的情境与解法", teaser: relationship.guide.hotspots[0].scene },
+            { key: "voyage", no: "陆", title: "长线经营", subtitle: "首步、节奏与相处路径", teaser: `主动权宜在${relationship.guide.initiator.name}` },
+            { key: "summary", no: "柒", title: "关系总结", subtitle: "判词、要点与 AI 点评", teaser: `判词：${relationship.guide.verdict.title}` },
           ];
           const activeIndex = moduleMeta.findIndex((item) => item.key === moduleKey);
           const active = activeIndex >= 0 ? moduleMeta[activeIndex] : null;
@@ -590,8 +638,35 @@ export async function ResultContent({
             ["冲突表达", dscore(profile, "conflict_expression"), dscore(partnerProfile, "conflict_expression")],
             ["情绪稳定", profile.personality.stability, partnerProfile.personality.stability],
           ];
+          const seedOf = (text: string) => { let hash = 0; for (let index = 0; index < text.length; index++) hash = (hash * 31 + text.charCodeAt(index)) | 0; return Math.abs(hash); };
+          const monthTag = `${new Date().getFullYear()}年${new Date().getMonth() + 1}月`;
+          const ideaPool: { title: string; note: string }[] = [
+            { title: "老地方，新菜单", note: "回到你们最熟的馆子，只点没吃过的菜——在稳定里放一点新意，两种结构都舒服。" },
+            { title: "交换歌单散步", note: "各备十首歌，边走边轮流放。低成本的共享体验，比问一百句「在干嘛」更能同频。" },
+            { title: "二手书店寻宝", note: "给对方挑一本「你觉得TA会喜欢的书」。挑中与否都是话题，这是一次公开的共情测验。" },
+            { title: "随机终点站", note: "坐一条没坐过的公交或地铁到终点再回来。把探索欲放进一个有边界的容器里。" },
+            { title: "厨房协作局", note: "一人主厨一人副手，下次互换。主导权协商的低风险演练场，锅铲比言语诚实。" },
+            { title: "沉默观影会", note: "看完先不讨论，各写三行观后感再交换。表达译码的专项训练，慢表达者的主场。" },
+            { title: "三张「我眼里的你」", note: "各给对方拍三张照片。被看见，是所有依恋结构共同的底层需求。" },
+            { title: "五十元早市挑战", note: "赶一次早市，预算五十，各买三样。现实协作里藏着最真实的分工默契。" },
+            { title: "不带手机的一小时", note: "天台、湖边，或任何安静的地方，只是坐着。检验你们的沉默是舒适还是尴尬。" },
+            { title: "三个月后拆的信", note: "各写一封给三个月后对方的短信封存。承诺与期待，都需要一个具体的容器。" },
+            { title: "互授小技能", note: "各教对方一件自己擅长的小事。比劫结构最吃这一套：平等交换，而非单方给予。" },
+            { title: "旧照片故事会", note: "各带五张老照片讲背后的事。信任建立的加速器，慢热结构也乐意开口。" },
+          ];
+          const topicPool = [
+            "你小时候最得意的一件事是什么",
+            "如果明天不用上班，你的一天怎么过",
+            "你觉得我们最像的一点和最不像的一点",
+            "最近一次觉得被理解，是什么时候",
+            "理想中的假期，是躺着的还是跑着的",
+            "有什么一直想试、但没人陪的事",
+          ];
+          const inspireSeed = seedOf(`${profile.id}|${partnerProfile.id}|${monthTag}`);
+          const inspirations = Array.from({ length: 3 }, (_, index) => ideaPool[(inspireSeed + index * 7) % ideaPool.length]);
+          const inspireTopics = Array.from({ length: 2 }, (_, index) => topicPool[(inspireSeed + index * 5) % topicPool.length]);
           return (
-          <div className="relationship-result">
+          <div className="relationship-result" id="match-report">
           {!active && <>
           <div className="match-hero">
             <div className="match-hero-score">
@@ -615,13 +690,20 @@ export async function ResultContent({
           <div className="module-directory">
             <header><div><span>REPORT CHAPTERS</span><h3>报告目录 · 六章</h3></div><small>逐章展开，每一章都可单独转发</small></header>
             <div className="module-grid">
-              {moduleMeta.map((item, index) => <Link key={item.key} href={`${moduleBase}&module=${item.key}#view-match`}>
+              {moduleMeta.map((item, index) => <Link key={item.key} href={`${moduleBase}&module=${item.key}#match-report`}>
                 <i>{item.no}</i>
                 <div><span>0{index + 1} · {item.subtitle}</span><h4>{item.title}</h4><p>{item.teaser}</p></div>
                 <b>→</b>
               </Link>)}
             </div>
           </div>
+          <section className="match-inspire">
+            <header><div><span>MONTHLY PICKS · {monthTag}</span><h3>缘分签 · 本月相处灵感</h3></div><small>依双方结构与月份抽取 · 每月更新三签</small></header>
+            <div className="inspire-grid">
+              {inspirations.map((idea, index) => <article key={idea.title}><i>{["壹", "贰", "叁"][index]}</i><div><h4>{idea.title}</h4><p>{idea.note}</p></div></article>)}
+            </div>
+            <div className="inspire-topics"><b>开场话题</b>{inspireTopics.map((topic) => <span key={topic}>{topic}</span>)}</div>
+          </section>
           <ShareCard
             userName={userNameSafe}
             partnerName={partnerNameSafe}
@@ -635,12 +717,12 @@ export async function ResultContent({
           </>}
           {active && <div className="module-frame">
             <div className="module-topbar">
-              <Link href={`${moduleBase}#view-match`}>← 返回报告目录</Link>
+              <Link href={`${moduleBase}#match-report`}>← 返回报告目录</Link>
               <span>{relationship.guide.verdict.title} · 总分 {relationship.score} · {relationship.relationType}</span>
             </div>
             <header className="module-header">
               <i>{active.no}</i>
-              <div><span>第 {activeIndex + 1} 章 / 共 6 章</span><h2>{active.title}</h2><p>{active.subtitle}</p></div>
+              <div><span>第 {activeIndex + 1} 章 / 共 {moduleMeta.length} 章</span><h2>{active.title}</h2><p>{active.subtitle}</p></div>
             </header>
             {active.key === "dimensions" && <>
             <section className="duo-radar-panel">
@@ -803,18 +885,36 @@ export async function ResultContent({
                 <article><i>贰</i><div><span>磨合</span><p>{relationship.guide.hotspots[0].playbook}</p></div></article>
                 <article><i>叁</i><div><span>长线</span><p>{relationship.guide.longRun}</p></div></article>
               </div>
-              <Link className="guide-ai" href={`${moduleBase}&module=voyage&ask=${encodeURIComponent("综合所有维度点评我们这段关系，并给出三条最重要的相处建议")}#view-match`}>
+            </section>}
+            {active.key === "summary" && <section className="duo-guide">
+              <article className="guide-verdict">
+                <div className="verdict-seal"><small>关系判词</small><strong>{relationship.guide.verdict.title}</strong></div>
+                <div>
+                  <p className="verdict-quip">{relationship.guide.verdict.quip}</p>
+                  <p>{relationship.guide.verdict.tagline}</p>
+                  <small>判据：{relationship.guide.verdict.basis}</small>
+                </div>
+              </article>
+              <p className="guide-philosophy">{relationship.guide.philosophy}</p>
+              <div className="guide-behaviors">
+                <h4>要点回顾<small>最高维度 · 最需留意 · 破局之人</small></h4>
+                <article><span>最高维度</span><div><strong>{bestDim.label} · {bestDim.score} 分</strong><p>{bestDim.summary}</p></div></article>
+                <article><span>最需留意</span><div><strong>{relationship.guide.hotspots[0].scene}</strong><p>{relationship.guide.hotspots[0].playbook}</p></div></article>
+                <article><span>破局之人</span><div><strong>主动权宜在{relationship.guide.initiator.name}</strong><p>{relationship.guide.initiator.firstMove}</p></div></article>
+              </div>
+              <p className="guide-longrun">{relationship.guide.longRun}</p>
+              <Link className="guide-ai" href={`${moduleBase}&module=summary&ask=${encodeURIComponent("综合所有维度点评我们这段关系，并给出三条最重要的相处建议")}#match-report`}>
                 让 AI 结合全部信号，写一份你们的关系点评 <span>→</span>
               </Link>
             </section>}
             <nav className="module-pager">
               {activeIndex > 0
-                ? <Link href={`${moduleBase}&module=${moduleMeta[activeIndex - 1].key}#view-match`}>← {moduleMeta[activeIndex - 1].no} · {moduleMeta[activeIndex - 1].title}</Link>
-                : <Link href={`${moduleBase}#view-match`}>← 报告目录</Link>}
-              <Link className="pager-home" href={`${moduleBase}#view-match`}>目录</Link>
+                ? <Link href={`${moduleBase}&module=${moduleMeta[activeIndex - 1].key}#match-report`}>← {moduleMeta[activeIndex - 1].no} · {moduleMeta[activeIndex - 1].title}</Link>
+                : <Link href={`${moduleBase}#match-report`}>← 报告目录</Link>}
+              <Link className="pager-home" href={`${moduleBase}#match-report`}>目录</Link>
               {activeIndex < moduleMeta.length - 1
-                ? <Link href={`${moduleBase}&module=${moduleMeta[activeIndex + 1].key}#view-match`}>{moduleMeta[activeIndex + 1].no} · {moduleMeta[activeIndex + 1].title} →</Link>
-                : <Link href={`${moduleBase}#view-match`}>返回目录 →</Link>}
+                ? <Link href={`${moduleBase}&module=${moduleMeta[activeIndex + 1].key}#match-report`}>{moduleMeta[activeIndex + 1].no} · {moduleMeta[activeIndex + 1].title} →</Link>
+                : <Link href={`${moduleBase}#match-report`}>返回目录 →</Link>}
             </nav>
           </div>}
           </div>

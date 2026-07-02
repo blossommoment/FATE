@@ -113,8 +113,6 @@ export default function Landing({ embeddedResult = false }: { embeddedResult?: b
         </form>
       </section>
 
-      <HistoryPanel />
-
       {profile && (
         <section className="report" id="report">
           <div className="report-head">
@@ -178,6 +176,8 @@ export default function Landing({ embeddedResult = false }: { embeddedResult?: b
           </div>
         </section>
       )}
+
+      <HistoryPanel />
 
       {!embeddedResult && <footer>
         <div className="brand">FATE<span>°</span></div>
