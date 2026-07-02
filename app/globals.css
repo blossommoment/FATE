@@ -127,8 +127,8 @@ main:not(.result-page) .entry form button { padding:17px 20px; border-radius:18p
 .day-theme-xin { --day-accent:#899da2; --day-deep:#5f727d; --day-soft:#f0f4f4; --day-glow:#c0ced1; }
 .day-theme-ren { --day-accent:#4678a4; --day-deep:#285378; --day-soft:#e4edf6; --day-glow:#8fb5d4; }
 .day-theme-gui { --day-accent:#6d83ad; --day-deep:#4d5e8d; --day-soft:#ebedf7; --day-glow:#aebbe0; }
-.result-page .identity-card { position:relative; min-height:300px; padding:30px; overflow:hidden; border-radius:27px; background:linear-gradient(130deg,var(--day-soft),#ffffffb8 58%,color-mix(in srgb,var(--day-glow) 18%,white)); }
-.result-page .identity-card:after { content:""; position:absolute; width:260px; height:260px; right:-90px; top:-110px; border-radius:50%; border:1px solid color-mix(in srgb,var(--day-accent) 25%,transparent); box-shadow:0 0 0 38px color-mix(in srgb,var(--day-accent) 5%,transparent),0 0 0 76px color-mix(in srgb,var(--day-accent) 3%,transparent); pointer-events:none; }
+
+
 .result-page .identity-orb { width:128px; height:128px; background:linear-gradient(145deg,var(--day-accent),var(--day-deep)); box-shadow:0 24px 55px color-mix(in srgb,var(--day-accent) 35%,transparent); }
 .result-page .identity-orb span { font-size:55px; }
 .result-page .identity-card h1 { font-size:clamp(48px,6vw,82px); margin:15px 0 18px; }
