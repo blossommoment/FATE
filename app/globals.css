@@ -1009,3 +1009,98 @@ main:not(.result-page) .entry form input { font-size:23px; }
   .match-hero-verdict h3 { font-size:32px; }
   .match-keypoints { grid-template-columns:1fr; }
 }
+
+/* ───────── 报告模块化：目录 / 章节框架 / 章节可视化 ───────── */
+.module-directory { grid-column:1/-1; padding:25px; border:1px solid #fff; border-radius:25px; background:linear-gradient(145deg,#f9fcf9,#f8f0f3); }
+.module-directory>header { display:flex; align-items:end; justify-content:space-between; margin-bottom:16px; }
+.module-directory>header span { color:#aa6173; font-size:9px; letter-spacing:.16em; }
+.module-directory>header h3 { margin:7px 0 0; font-size:22px; }
+.module-directory>header small { color:#8a9690; font-size:8px; }
+.module-grid { display:grid; grid-template-columns:1fr 1fr; gap:11px; }
+.module-grid>a { display:flex; align-items:center; gap:16px; padding:20px 22px; border-radius:18px; background:white; box-shadow:0 7px 22px #52675e0c; transition:.22s; }
+.module-grid>a:hover { transform:translateY(-3px); box-shadow:0 14px 34px #52675e1c; }
+.module-grid>a>i { flex-shrink:0; width:48px; height:48px; border-radius:14px; display:grid; place-items:center; font:400 22px Georgia,"Songti SC",serif; font-style:normal; color:#fff; background:linear-gradient(135deg,#286c5d,#5b5686); }
+.module-grid>a>div { flex:1; min-width:0; }
+.module-grid span { display:block; font:8px DM Mono,monospace; letter-spacing:.1em; color:#98a29d; margin-bottom:4px; }
+.module-grid h4 { margin:0 0 4px; font-size:17px; color:#39433e; }
+.module-grid p { margin:0; font-size:10px; color:#7c8983; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.module-grid>a>b { color:#aa6173; font-size:16px; }
+.module-frame { grid-column:1/-1; display:grid; gap:12px; }
+.module-topbar { display:flex; justify-content:space-between; align-items:center; padding:14px 20px; border:1px solid #fff; border-radius:16px; background:#ffffffb8; font-size:11px; }
+.module-topbar a { color:#436f63; font-weight:600; }
+.module-topbar span { color:#8a9690; font:10px DM Mono,monospace; }
+.module-header { display:flex; gap:22px; align-items:center; padding:28px 30px; border-radius:25px; color:white; background:linear-gradient(145deg,#286c5d,#5b5686 70%,#b96877); }
+.module-header>i { flex-shrink:0; width:74px; height:74px; border-radius:20px; display:grid; place-items:center; font:400 36px Georgia,"Songti SC",serif; font-style:normal; background:#ffffff1f; border:1px solid #ffffff30; }
+.module-header span { font:9px DM Mono,monospace; letter-spacing:.16em; color:#d8e4e0; }
+.module-header h2 { margin:8px 0 6px; font:400 34px/1 Georgia,"Songti SC",serif; letter-spacing:.08em; }
+.module-header p { margin:0; font-size:11px; color:#cbd9d6; }
+.module-pager { display:grid; grid-template-columns:1fr auto 1fr; gap:12px; align-items:center; padding:16px 20px; border:1px solid #fff; border-radius:16px; background:#ffffffb8; font-size:12px; }
+.module-pager a { color:#436f63; font-weight:600; }
+.module-pager a:last-child { text-align:right; }
+.module-pager .pager-home { padding:8px 18px; border-radius:14px; color:#fff; background:linear-gradient(120deg,#337e6b,#596fa9); font-size:10px; letter-spacing:.1em; }
+/* 双盘连线图 */
+.pillar-links { margin-top:16px; }
+.pillar-links svg { width:100%; height:auto; }
+.pl-box { fill:#ffffff; stroke:#dfe7e1; }
+.pl-box.pl-mine { stroke:#4b9a82; }
+.pl-box.pl-theirs { stroke:#d47c88; }
+.pl-glyph { font:400 23px Georgia,"Songti SC",serif; fill:#2f3833; text-anchor:middle; }
+.pl-label { font:9px DM Mono,monospace; fill:#98a29d; text-anchor:middle; letter-spacing:.08em; }
+.pl-name { font:600 15px Georgia,"Songti SC",serif; fill:#586962; text-anchor:middle; }
+.pl-line { fill:none; stroke-width:2.2; opacity:.75; }
+.pl-line.pl-dashed { stroke-dasharray:6 5; }
+.pl-badge { opacity:.92; }
+.pl-badge-text { font:600 11px "Songti SC",serif; fill:#fff; text-anchor:middle; }
+.pl-empty { font:12px "Songti SC",serif; fill:#8a9690; text-anchor:middle; }
+.pl-legend { display:flex; align-items:center; gap:16px; margin-top:10px; font-size:10px; color:#687771; }
+.pl-legend span { display:flex; align-items:center; gap:6px; }
+.pl-legend i { width:14px; height:3px; border-radius:2px; }
+.pl-legend small { margin-left:auto; color:#98a29d; font-size:9px; }
+/* 行为指标对照条 */
+.contrast-chart { margin-top:16px; }
+.contrast-head { display:grid; grid-template-columns:1fr 86px 1fr; gap:10px; margin-bottom:12px; font-size:12px; color:#39433e; }
+.contrast-head b:first-child { text-align:right; color:#337e6b; }
+.contrast-head b:last-child { color:#b46275; }
+.contrast-head span { text-align:center; font:9px DM Mono,monospace; color:#98a29d; align-self:center; }
+.contrast-row { display:grid; grid-template-columns:1fr 86px 1fr; gap:10px; align-items:center; margin-bottom:9px; }
+.contrast-row>span { text-align:center; font-size:11px; color:#586962; }
+.contrast-cell { position:relative; height:16px; border-radius:8px; background:#eef1ec; overflow:hidden; }
+.contrast-cell i { position:absolute; top:0; height:100%; border-radius:8px; }
+.contrast-cell.left i { right:0; background:linear-gradient(270deg,#4b9a82,#7fc3ad); }
+.contrast-cell.right i { left:0; background:linear-gradient(90deg,#d47c88,#e8a7b0); }
+.contrast-cell b { position:absolute; top:1px; font:300 11px DM Mono,monospace; color:#39433e; }
+.contrast-cell.left b { left:8px; }
+.contrast-cell.right b { right:8px; }
+/* 性情底色档案卡 */
+.nature-persons { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px; }
+.nature-card { padding:20px 22px; border-radius:18px; background:white; box-shadow:0 7px 22px #52675e0c; }
+.nature-card>header { display:flex; align-items:center; gap:13px; margin-bottom:14px; }
+.nature-card>header i { flex-shrink:0; width:44px; height:44px; border-radius:50%; display:grid; place-items:center; font:22px Georgia,"Songti SC",serif; font-style:normal; color:#fff; }
+.nature-card.mine>header i { background:linear-gradient(135deg,#337e6b,#62a68f); }
+.nature-card.theirs>header i { background:linear-gradient(135deg,#b46275,#d998a4); }
+.nature-card>header strong { display:block; font-size:16px; color:#39433e; }
+.nature-card>header span { font-size:9px; color:#8a9690; }
+.nature-card>header b { margin-left:auto; padding:6px 12px; border-radius:12px; font-size:9px; color:#436f63; background:#e9f2ed; }
+.nature-bars>div { display:grid; grid-template-columns:58px 1fr 28px; gap:10px; align-items:center; margin-bottom:8px; }
+.nature-bars span { font-size:10px; color:#687771; }
+.nature-bars i { height:5px; border-radius:4px; background:#eef1ec; overflow:hidden; display:block; }
+.nature-bars b { display:block; height:100%; border-radius:4px; background:linear-gradient(90deg,#4b9a82,#8179b4); }
+.nature-bars small { font:10px DM Mono,monospace; color:#98a29d; text-align:right; }
+.nature-tags { display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
+.nature-tags span { padding:5px 11px; border:1px solid #e4eae5; border-radius:14px; font-size:9px; color:#687771; }
+.nature-dispositions { margin-top:4px; }
+/* 长路经营路径 */
+.voyage-path { display:grid; gap:10px; margin:16px 0; }
+.voyage-path article { display:flex; gap:16px; align-items:flex-start; padding:18px 20px; border-radius:16px; background:white; box-shadow:0 7px 22px #52675e0c; position:relative; }
+.voyage-path article:not(:last-child):after { content:""; position:absolute; left:37px; bottom:-11px; width:2px; height:12px; background:#cfdad2; }
+.voyage-path i { flex-shrink:0; width:36px; height:36px; border-radius:50%; display:grid; place-items:center; font:16px Georgia,"Songti SC",serif; font-style:normal; color:#fff; background:linear-gradient(135deg,#337e6b,#596fa9); }
+.voyage-path span { display:block; font:9px DM Mono,monospace; letter-spacing:.12em; color:#aa6173; margin-bottom:5px; }
+.voyage-path p { margin:0; font-size:11px; line-height:1.8; color:#586962; }
+@media (max-width:900px) {
+  .module-grid,.nature-persons { grid-template-columns:1fr; }
+  .module-header { padding:20px; gap:14px; }
+  .module-header>i { width:56px; height:56px; font-size:26px; }
+  .module-header h2 { font-size:26px; }
+  .contrast-head,.contrast-row { grid-template-columns:1fr 64px 1fr; gap:6px; }
+  .module-pager { font-size:10px; padding:12px; }
+}
