@@ -823,70 +823,6 @@ main:not(.result-page) .entry form input { font-size:23px; }
   .result-page .pillar-meta>span { min-height:0; padding:5px 0; font-size:6px; }
 }
 
-/* ───────── 五行火焰能量图 ───────── */
-.element-flames-panel { display:grid; grid-template-columns:.72fr 1.28fr; align-items:center; gap:18px; min-height:330px; overflow:hidden; background:linear-gradient(150deg,#141519,#1e1a15 55%,#131417)!important; color:#f2efe8; }
-.element-flames-copy small { display:block; font:10px DM Mono,monospace; color:#8f8b81; letter-spacing:.14em; margin-bottom:13px; }
-.element-flames-copy h3 { margin:11px 0 8px; color:#e9ddc2; font-size:20px; }
-.element-flames-copy p { margin:0; color:#8f9088; font-size:9px; line-height:1.7; }
-.element-flames-panel .element-weight-note span { border-color:#3a3833; color:#a29b8b; background:#ffffff0d; }
-.element-flames { display:flex; align-items:flex-end; justify-content:center; gap:2px; padding:14px 0 4px; }
-.flame-cell { display:flex; flex-direction:column; align-items:center; gap:8px; --fi:1; }
-.flame-stage { position:relative; width:84px; height:150px; }
-.flame { position:absolute; left:50%; bottom:16px; width:70px; height:104px; transform:translateX(-50%) scale(var(--fi)); transform-origin:bottom center; filter:drop-shadow(0 0 16px color-mix(in srgb,var(--c2) 60%,transparent)); }
-.flame i { position:absolute; left:50%; border-radius:4% 56% 50% 54%; transform:translateX(-50%) rotate(-45deg); }
-.flame .f-outer { width:62px; height:62px; bottom:6px; background:radial-gradient(circle at 62% 68%,var(--c2),var(--c3) 74%); filter:blur(5px); opacity:.82; animation:flameSway 2.1s ease-in-out infinite; }
-.flame .f-mid { width:42px; height:42px; bottom:11px; background:radial-gradient(circle at 56% 68%,var(--c1),var(--c2) 80%); filter:blur(1.5px); opacity:.95; animation:flameSway 1.45s ease-in-out infinite .18s; }
-.flame .f-core { width:22px; height:22px; bottom:14px; background:var(--c1); filter:blur(.5px); animation:flameSway 1.02s ease-in-out infinite .35s; }
-@keyframes flameSway {
-  0%,100% { transform:translateX(-50%) rotate(-45deg) scale(1,1); }
-  26% { transform:translateX(-54%) rotate(-47deg) scale(1.05,.96); }
-  52% { transform:translateX(-47%) rotate(-43deg) scale(.96,1.06); }
-  78% { transform:translateX(-52%) rotate(-46deg) scale(1.02,1.01); }
-}
-.flame-glyph { position:absolute; left:50%; bottom:34px; transform:translateX(-50%); z-index:2; font:600 23px Georgia,"Songti SC",serif; color:#fff; text-shadow:0 0 12px var(--c3),0 1px 3px #000a; }
-.flame-base { position:absolute; left:50%; bottom:9px; transform:translateX(-50%); width:56px; height:7px; border-radius:50%; background:radial-gradient(ellipse at center,var(--c2),transparent 72%); box-shadow:0 0 22px 4px color-mix(in srgb,var(--c2) 45%,transparent); }
-.flame-badge { position:absolute; top:0; left:50%; transform:translateX(-50%); z-index:3; font:9px DM Mono,monospace; letter-spacing:.1em; color:#1c1b18; background:linear-gradient(120deg,#f6d98a,#eab54d); border-radius:20px; padding:3px 9px; box-shadow:0 4px 14px #eab54d44; }
-.flame-cell.faint .flame { opacity:.32; filter:saturate(.4) drop-shadow(0 0 5px var(--c3)); }
-.flame-cell.faint .flame-glyph { opacity:.5; text-shadow:0 1px 3px #000a; }
-.flame-cell.faint .flame-base { opacity:.35; box-shadow:none; }
-.flame-meta { text-align:center; }
-.flame-meta strong { font:26px DM Mono,monospace; font-weight:300; display:block; }
-.flame-meta strong small { font-size:11px; color:#8f8b81; margin-left:1px; }
-.flame-meta span { display:block; margin-top:3px; font-size:9px; color:#8f8b81; letter-spacing:.05em; }
-.sheng-arrow { align-self:flex-end; margin-bottom:78px; display:flex; flex-direction:column; align-items:center; gap:1px; color:#6d6a62; }
-.sheng-arrow small { font:8px DM Mono,monospace; letter-spacing:.08em; }
-.sheng-arrow:after { content:"→"; font-size:13px; color:#84806f; }
-@media (max-width:900px) {
-  .element-flames-panel { grid-template-columns:1fr; min-height:0; }
-  .element-flames { padding-top:6px; }
-  .flame-stage { width:56px; height:118px; }
-  .flame-stage>.flame,.flame-stage>.flame-glyph,.flame-stage>.flame-base { transform-origin:bottom center; }
-  .flame { transform:translateX(-50%) scale(calc(var(--fi)*.72)); }
-  .flame-glyph { bottom:26px; font-size:18px; }
-  .flame-base { width:42px; }
-  .flame-meta strong { font-size:19px; }
-  .flame-meta span { font-size:7px; }
-  .sheng-arrow { margin-bottom:62px; }
-  .sheng-arrow small { display:none; }
-}
-
-/* ───────── 罗盘背景 ───────── */
-.luopan-bg { position:absolute; top:50%; right:-4%; width:58%; max-width:640px; aspect-ratio:1; transform:translateY(-50%); pointer-events:none; z-index:-1; color:#eafff5; opacity:.13; }
-.luopan-bg circle { fill:none; stroke:currentColor; stroke-width:1; }
-.luopan-bg line { stroke:currentColor; stroke-width:1; }
-.luopan-bg text { fill:currentColor; font:17px Georgia,"Songti SC",serif; text-anchor:middle; dominant-baseline:middle; }
-.luopan-bg .luopan-trigram { font-size:13px; }
-.luopan-spin,.luopan-spin-reverse,.luopan-spin-slow { transform-origin:300px 300px; }
-.luopan-spin { animation:luopanSpin 180s linear infinite; }
-.luopan-spin-reverse { animation:luopanSpin 240s linear infinite reverse; }
-.luopan-spin-slow { animation:luopanSpin 110s linear infinite; }
-@keyframes luopanSpin { to { transform:rotate(360deg); } }
-.duo-radar-panel .luopan-bg { color:#f3e6ff; opacity:.1; }
-@media (max-width:900px) { .luopan-bg { width:120%; right:-24%; top:38%; } }
-@media (prefers-reduced-motion:reduce) {
-  .luopan-spin,.luopan-spin-reverse,.luopan-spin-slow,.flame i { animation:none; }
-}
-
 /* ───────── 邀请合盘 ───────── */
 .invite-share { margin-top:30px; border:1px solid #e3d9c8; border-radius:22px; padding:24px 28px; display:flex; align-items:center; justify-content:space-between; gap:24px; background:linear-gradient(120deg,#fdf8ef,#f4ede1); box-shadow:0 14px 40px #6d5c3a12; }
 .invite-share>div>span { font:9px DM Mono,monospace; letter-spacing:.16em; color:#b08a4f; }
@@ -908,5 +844,4 @@ main:not(.result-page) .entry form input { font-size:23px; }
 .invite-hero small { font:10px DM Mono,monospace; letter-spacing:.13em; color:#6f6c64; }
 .invite-entry { border-top:1px solid #33322f; }
 .invite-entry .calendar-switch { grid-column:1/-1; }
-.landing-flames { grid-template-columns:1fr; min-height:0; gap:4px; }
 .invite-entry h2 { line-height:1.12; }

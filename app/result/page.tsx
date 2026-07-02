@@ -3,8 +3,6 @@ import type { CSSProperties } from "react";
 import { analyzeBirth, analyzeRelationship, matchProfiles, validateBirth } from "@/lib/fate";
 import type { BirthInput } from "@/lib/types";
 import ChatAssistant from "@/components/ChatAssistant";
-import ElementFlames from "@/components/ElementFlames";
-import Luopan from "@/components/Luopan";
 import InviteShare from "@/components/InviteShare";
 import { askDeepSeek } from "@/lib/deepseek";
 
@@ -152,9 +150,28 @@ export async function ResultContent({
   const duoGrid = (radius: number) => duoDimensions.map((_, index) => polygonPoint(index, 6, radius)).join(" ");
   const duoMine = duoDimensions.map((item, index) => polygonPoint(index, 6, 112 * item[1] / 100)).join(" ");
   const duoTheirs = duoDimensions.map((item, index) => polygonPoint(index, 6, 112 * item[2] / 100)).join(" ");
-  const elementRadarPanel = <section className="element-card element-flames-panel overview-element-radar">
-    <div className="element-flames-copy"><small>五行能量图谱</small><h3>五行如焰，各有明暗</h3><p>按木生火、火生土的相生次序排列。火焰的高度与光晕代表加权占比：月支藏干占核心权重，其次读取时支、日支、年支与三处透干，不把八个字等量计数。</p><div className="element-weight-note"><span>月支 35</span><span>时支 20</span><span>日支 15</span><span>年支 15</span><span>透干 15</span></div></div>
-    <ElementFlames strength={profile.bazi.elementStrength} counts={profile.bazi.elements} />
+  const elementColors = { wood: "#58a878", fire: "#e66e5e", earth: "#d6a64f", metal: "#86a3ad", water: "#5b83bd" };
+  const elementRadar = (Object.entries(profile.bazi.elementStrength) as [keyof typeof elementLabels, number][]).map(([key, value]) => ({
+    key, label: elementLabels[key], value, color: elementColors[key],
+  }));
+  const elementGrid = (radius: number) => elementRadar.map((_, index) => polygonPoint(index, 5, radius)).join(" ");
+  const elementRadius = (value: number) => 24 + 88 * Math.min(value / 45, 1);
+  const elementValues = elementRadar.map((item, index) => polygonPoint(index, 5, elementRadius(item.value))).join(" ");
+  const elementRadarPanel = <section className="element-card element-radar-card overview-element-radar">
+    <div className="element-radar-copy"><small>五行能量图谱</small><h3>月令优先的结构权重</h3><p>月支藏干占核心权重，其次读取时支、日支、年支与三处透干。图形展示加权占比，不再把八个字等量计数。</p><div className="element-weight-note"><span>月支 35</span><span>时支 20</span><span>日支 15</span><span>年支 15</span><span>透干 15</span></div></div>
+    <div className="element-radar">
+      <svg viewBox="0 0 320 320" role="img" aria-label="五行能量雷达图，不显示具体数字">
+        <defs><linearGradient id="elementRadarFill" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#58a878" /><stop offset=".28" stopColor="#e66e5e" /><stop offset=".52" stopColor="#d6a64f" /><stop offset=".76" stopColor="#86a3ad" /><stop offset="1" stopColor="#5b83bd" /></linearGradient></defs>
+        {[112, 84, 56, 28].map((radius) => <polygon key={radius} points={elementGrid(radius)} className="element-grid" />)}
+        {elementRadar.map((item, index) => { const [x, y] = polygonPoint(index, 5, 112).split(","); return <line key={item.key} x1="160" y1="160" x2={x} y2={y} style={{ stroke: item.color }} />; })}
+        <polygon points={elementValues} className="element-value" />
+        {elementRadar.map((item, index) => { const [x, y] = polygonPoint(index, 5, elementRadius(item.value)).split(","); return <circle key={item.key} cx={x} cy={y} r="5" style={{ fill: item.color }} />; })}
+      </svg>
+      {elementRadar.map((item, index) => {
+        const angle = -Math.PI / 2 + index * Math.PI * 2 / 5;
+        return <span key={item.key} style={{ left: `${50 + Math.cos(angle) * 41}%`, top: `${50 + Math.sin(angle) * 41}%`, color: item.color }}><i style={{ background: item.color }} />{item.label}</span>;
+      })}
+    </div>
   </section>;
   const socialModelItems = [
     {
@@ -329,7 +346,6 @@ export async function ResultContent({
           <div><span>关系表现</span><p>{profile.dominantPersona.relationship}；副轴表现为{profile.secondaryPersona.relationship}。</p></div>
         </section>
         <section className="deep-radar-overview">
-          <Luopan />
           <div><span>十二维人格图谱</span><h3>一张图，看见你的关系轮廓</h3><p>分数越靠近外圈，代表该倾向在关系中越容易被观察到。</p></div>
           <div className="deep-radar-chart">
             <svg viewBox="0 0 320 320" role="img" aria-label="十二维人格多边形图">
@@ -549,7 +565,6 @@ export async function ResultContent({
             <p>{relationship.scoreSummary}</p>
           </div>
           <section className="duo-radar-panel">
-            <Luopan />
             <header><div><span>双人六维关系图</span><h3>你们在哪些地方相似，哪里互补</h3></div><div className="duo-legend"><i />你 <b />对方</div></header>
             <div className="duo-radar-chart">
               <svg viewBox="0 0 320 320" role="img" aria-label="双方六维重叠关系图">
