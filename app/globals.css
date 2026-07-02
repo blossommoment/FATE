@@ -1189,22 +1189,14 @@ main:not(.result-page) .entry form input { font-size:23px; }
 .mobile-bottom-nav .nav-plot i { width:38px; height:38px; border-radius:50%; display:grid; place-items:center; font:16px Georgia,"Songti SC",serif; font-style:normal; color:#fff; background:linear-gradient(135deg,#337e6b,#596fa9); box-shadow:0 7px 18px #33635f4a; border:2px solid #fffdf9; }
 .mobile-bottom-nav .nav-plot span { margin-top:2px; font-size:9px; font-weight:600; color:#436f63; }
 
-/* ───────── 排盘小面板 ───────── */
-.plot-panel { position:fixed; left:50%; bottom:88px; transform:translateX(-50%); z-index:46; width:min(600px,calc(100vw - 24px)); max-height:72vh; overflow-y:auto; padding:20px 22px; border:1px solid #ffffffd9; border-radius:24px; background:#fffdfaf2; box-shadow:0 24px 70px #3a504640; backdrop-filter:blur(18px); }
-.plot-panel>header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
-.plot-panel>header span { font:9px DM Mono,monospace; letter-spacing:.16em; color:#aa6173; }
-.plot-panel>header h3 { margin:6px 0 0; font-size:18px; }
-.plot-panel>header button { border:0; background:#f0ede6; width:32px; height:32px; border-radius:50%; cursor:pointer; font-size:16px; color:#6d6b66; }
-.plot-panel form { display:block; }
-.plot-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:9px; }
-.plot-grid label { margin:0; padding:10px 12px; border:1px solid #e8e4da; border-radius:14px; background:white; }
-.plot-grid label span { margin-bottom:5px; font-size:8px; color:#98948a; }
-.plot-grid input,.plot-grid select { width:100%; border:0; outline:0; background:transparent; color:#2f2e2a; font-size:18px; }
-.plot-grid select { font-size:14px; padding:3px 0; }
-.plot-grid .plot-name { grid-column:1/-1; }
-.plot-leap .plot-check { display:flex; align-items:center; gap:7px; font-size:11px; color:#6d6b66; }
-.plot-leap input { width:auto; }
-.plot-submit { width:100%; margin-top:11px; padding:15px; border:0; border-radius:15px; cursor:pointer; color:#fff; background:linear-gradient(120deg,#337e6b,#596fa9); font:12px DM Mono,monospace; letter-spacing:.08em; }
+/* ───────── 排盘小面板（沿用落地页排盘视觉） ───────── */
+.plot-panel { position:fixed; left:50%; bottom:88px; transform:translateX(-50%); z-index:46; width:min(680px,calc(100vw - 24px)); max-height:76vh; overflow-y:auto; padding:26px 32px 30px; border-radius:26px; background:var(--ink); color:white; box-shadow:0 30px 90px #00000066; }
+.plot-panel>header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:22px; }
+.plot-panel>header span { font:9px DM Mono,monospace; letter-spacing:.16em; color:#8c8c8c; }
+.plot-panel>header h3 { margin:8px 0 0; font-size:20px; font-weight:400; color:white; }
+.plot-panel>header button { flex-shrink:0; border:0; background:#ffffff14; width:32px; height:32px; border-radius:50%; cursor:pointer; font-size:15px; color:#ddd; }
+.plot-panel input[type="number"],.plot-panel input[type="text"] { font-size:30px; }
+.plot-panel label { margin-bottom:24px; padding-bottom:12px; }
+.plot-panel form button[type="submit"] { padding:17px 20px; }
 .plot-link { border:0; cursor:pointer; padding:10px 18px; border-radius:20px; color:white; background:#315e57; font:11px DM Mono,monospace; letter-spacing:.12em; }
-@media (min-width:761px) { .plot-panel { bottom:24px; } }
-@media (max-width:760px) { .plot-grid { grid-template-columns:repeat(3,1fr); } .plot-panel { bottom:86px; } }
+@media (max-width:760px) { .plot-panel { bottom:86px; padding:20px 18px 22px; } .plot-panel input[type="number"],.plot-panel input[type="text"] { font-size:24px; } }

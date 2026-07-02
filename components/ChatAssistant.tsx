@@ -20,7 +20,7 @@ export default function ChatAssistant({
 }) {
   return (
     <details className="assistant-native" open={Boolean(answer)}>
-      <summary className="assistant-fab" aria-label="打开或收起关系助手"><i>缘</i><span className="assistant-label">问问关系助手</span><b>×</b></summary>
+      <summary className="assistant-fab" aria-label="打开或收起关系助手"><i>问</i><span className="assistant-label">问问关系助手</span><b>×</b></summary>
       <aside className="assistant-panel">
         <header><div><small>FATE 关系助手</small><strong>{contextTitle}</strong></div></header>
         <div className="assistant-context"><span>正在结合当前卡片依据回答</span><p>{contextSummary}</p></div>
