@@ -824,12 +824,12 @@ main:not(.result-page) .entry form input { font-size:23px; }
 }
 
 /* ───────── 邀请合盘 ───────── */
-.invite-share { margin-top:30px; border:1px solid #e3d9c8; border-radius:22px; padding:24px 28px; display:flex; align-items:center; justify-content:space-between; gap:24px; background:linear-gradient(120deg,#fdf8ef,#f4ede1); box-shadow:0 14px 40px #6d5c3a12; }
-.invite-share>div>span { font:9px DM Mono,monospace; letter-spacing:.16em; color:#b08a4f; }
+.invite-share { margin-top:30px; border:1px solid #fff; border-radius:24px; padding:24px 28px; display:flex; align-items:center; justify-content:space-between; gap:24px; background:linear-gradient(145deg,#f9fcf9,#f8f0f3); box-shadow:0 14px 40px #58726314; }
+.invite-share>div>span { font:9px DM Mono,monospace; letter-spacing:.16em; color:#aa6173; }
 .invite-share h3 { margin:8px 0 6px; font-size:19px; letter-spacing:-.02em; }
-.invite-share p { margin:0; max-width:460px; color:#8a8171; font-size:11px; line-height:1.7; }
-.invite-share button { flex-shrink:0; border:0; cursor:pointer; border-radius:16px; padding:16px 26px; font:11px DM Mono,monospace; letter-spacing:.1em; color:#fff; background:linear-gradient(120deg,#8a5a2b,#b8863f); box-shadow:0 10px 26px #8a5a2b33; transition:.25s; }
-.invite-share button:hover { transform:translateY(-2px); box-shadow:0 14px 32px #8a5a2b4a; }
+.invite-share p { margin:0; max-width:460px; color:#7c8983; font-size:11px; line-height:1.7; }
+.invite-share button { flex-shrink:0; border:0; cursor:pointer; border-radius:16px; padding:16px 26px; font:11px DM Mono,monospace; letter-spacing:.1em; color:#fff; background:linear-gradient(120deg,#337e6b,#596fa9); box-shadow:0 10px 26px #33635f33; transition:.25s; }
+.invite-share button:hover { transform:translateY(-2px); box-shadow:0 14px 32px #33635f4a; }
 .invite-share button.copied { background:linear-gradient(120deg,#2f6e57,#4d9877); box-shadow:0 10px 26px #2f6e5733; }
 @media (max-width:760px) { .invite-share { flex-direction:column; align-items:stretch; text-align:left; padding:18px; } .invite-share button { width:100%; } }
 
@@ -860,16 +860,16 @@ main:not(.result-page) .entry form input { font-size:23px; }
 .annual-relations-empty { margin-top:14px; padding:14px 16px; border:1px dashed #d8d2c4; border-radius:14px; font-size:11px; line-height:1.7; color:#8a857a; }
 
 /* ───────── 分享卡片 ───────── */
-.share-card { margin-top:14px; border:1px solid #e3d9c8; border-radius:22px; padding:24px 28px; background:linear-gradient(120deg,#faf6ee,#f2ece0); }
-.share-card>div>span { font:9px DM Mono,monospace; letter-spacing:.16em; color:#b08a4f; }
+.share-card { grid-column:1/-1; margin-top:2px; border:1px solid #fff; border-radius:25px; padding:25px; background:linear-gradient(145deg,#f9fcf9,#f8f0f3); }
+.share-card>div>span { font:9px DM Mono,monospace; letter-spacing:.16em; color:#aa6173; }
 .share-card h3 { margin:8px 0 6px; font-size:19px; letter-spacing:-.02em; }
-.share-card p { margin:0 0 16px; max-width:460px; color:#8a8171; font-size:11px; line-height:1.7; }
+.share-card p { margin:0 0 16px; max-width:460px; color:#7c8983; font-size:11px; line-height:1.7; }
 .share-card button { border:0; cursor:pointer; border-radius:16px; padding:15px 26px; font:11px DM Mono,monospace; letter-spacing:.1em; color:#fff; background:#111; transition:.25s; }
 .share-card button:hover { transform:translateY(-2px); box-shadow:0 12px 28px #11111133; }
 .share-card figure { margin:22px 0 0; text-align:center; }
-.share-card img { width:min(100%,330px); border-radius:14px; box-shadow:0 18px 50px #6d5c3a2e; border:1px solid #e0d8c8; }
-.share-card figcaption { margin-top:12px; font-size:11px; color:#8a8171; }
-.share-card figcaption a { margin-left:8px; text-decoration:underline; color:#6d5c3a; }
+.share-card img { width:min(100%,330px); border-radius:14px; box-shadow:0 18px 50px #52675e22; border:1px solid #e8ece7; }
+.share-card figcaption { margin-top:12px; font-size:11px; color:#8a9690; }
+.share-card figcaption a { margin-left:8px; text-decoration:underline; color:#436f63; }
 
 /* ───────── 本机历史记录 ───────── */
 .history-panel { padding:70px 7vw 90px; border-top:1px solid var(--line); }
@@ -891,45 +891,56 @@ main:not(.result-page) .entry form input { font-size:23px; }
   .history-list small { grid-column:1/-1; margin-top:-8px; }
 }
 
-/* ───────── 相处指南 ───────── */
-.duo-guide { margin-top:26px; padding:34px 36px; border:1px solid #e8e0d0; border-radius:26px; background:linear-gradient(160deg,#fdfaf4,#f6f0e4); }
-.duo-guide>header { display:flex; justify-content:space-between; align-items:end; margin-bottom:18px; }
-.duo-guide>header span { color:#b08a4f; font-size:10px; letter-spacing:.14em; }
-.duo-guide>header h3 { margin:10px 0 0; font-size:26px; letter-spacing:-.03em; }
-.duo-guide>header small { color:#a39a87; font-size:10px; }
-.guide-philosophy { margin:0 0 22px; padding:18px 20px; border-left:3px solid #b08a4f; background:#fff9ec; border-radius:0 14px 14px 0; font-size:13px; line-height:1.85; color:#5d5648; }
-.guide-initiator { display:flex; gap:18px; padding:22px; border:1px solid #eadfca; border-radius:18px; background:#fff; }
-.guide-initiator i { flex-shrink:0; width:52px; height:52px; border-radius:50%; display:grid; place-items:center; font:26px Georgia,"Songti SC",serif; color:#fff; background:linear-gradient(135deg,#8a5a2b,#c09045); }
-.guide-initiator h4 { margin:2px 0 8px; font-size:17px; }
-.guide-initiator p { margin:0; font-size:11.5px; line-height:1.8; color:#7a7060; }
-.guide-initiator aside { margin-top:12px; padding:12px 14px; border-radius:12px; background:#f7f1e3; font-size:11.5px; line-height:1.75; color:#5d5648; }
-.guide-initiator aside b,.guide-hotspots aside b { display:inline-block; margin-right:8px; font:10px DM Mono,monospace; letter-spacing:.1em; color:#b08a4f; }
-.guide-translations,.guide-hotspots { margin-top:22px; }
-.guide-translations h4,.guide-hotspots h4 { margin:0 0 14px; font-size:15px; }
-.guide-translations h4 small,.guide-hotspots h4 small { margin-left:10px; font-size:10px; font-weight:400; color:#a39a87; }
-.guide-translation-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-.guide-translation-grid article { padding:18px 20px; border:1px solid #eadfca; border-radius:16px; background:#fff; }
-.guide-translation-grid header { display:flex; align-items:baseline; gap:10px; margin-bottom:10px; }
-.guide-translation-grid header b { font:16px Georgia,"Songti SC",serif; font-weight:600; }
-.guide-translation-grid header span { font-size:11px; color:#a3762f; }
-.guide-translation-grid p { margin:0 0 8px; font-size:11px; line-height:1.8; color:#7a7060; }
-.guide-translation-grid p strong { display:inline-block; margin-right:6px; font:9px DM Mono,monospace; letter-spacing:.12em; color:#b08a4f; }
-.guide-translation-grid .guide-response { color:#4c5a4a; }
+/* ───────── 相处指南（关系剧本同款配色） ───────── */
+.duo-guide { grid-column:1/-1; padding:25px; border:1px solid #fff; border-radius:25px; background:linear-gradient(145deg,#f9fcf9,#f8f0f3); }
+.duo-guide>header { display:flex; align-items:end; justify-content:space-between; }
+.duo-guide>header span { color:#aa6173; font-size:9px; letter-spacing:.12em; }
+.duo-guide>header h3 { margin:7px 0 0; font-size:22px; }
+.duo-guide>header small { color:#8a9690; font-size:8px; }
+.guide-philosophy { margin:16px 0; padding:16px 18px; border-left:3px solid #4b9a82; border-radius:0 14px 14px 0; background:white; box-shadow:0 7px 22px #52675e0c; font-size:12px; line-height:1.85; color:#586962; }
+.guide-initiator { display:flex; gap:16px; padding:20px; border-radius:16px; background:white; box-shadow:0 7px 22px #52675e0c; }
+.guide-initiator i { flex-shrink:0; width:48px; height:48px; border-radius:50%; display:grid; place-items:center; font:24px Georgia,"Songti SC",serif; color:#fff; background:linear-gradient(135deg,#337e6b,#596fa9); }
+.guide-initiator h4 { margin:2px 0 8px; font-size:16px; color:#39433e; }
+.guide-initiator p { margin:0; font-size:11px; line-height:1.8; color:#687771; }
+.guide-initiator aside { margin-top:12px; padding:12px 14px; border-radius:12px; background:#eef4f0; font-size:11px; line-height:1.75; color:#44523f; }
+.guide-initiator aside b,.guide-hotspots aside b { display:inline-block; margin-right:8px; font:9px DM Mono,monospace; letter-spacing:.1em; color:#4f7d68; }
+.guide-translations,.guide-hotspots { margin-top:20px; }
+.guide-translations h4,.guide-hotspots h4 { margin:0 0 12px; font-size:14px; color:#3f4a45; }
+.guide-translations h4 small,.guide-hotspots h4 small { margin-left:10px; font-size:9px; font-weight:400; color:#98a29d; }
+.guide-translation-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.guide-translation-grid article { padding:16px 18px; border-radius:16px; background:white; box-shadow:0 7px 22px #52675e0c; }
+.guide-translation-grid header { display:flex; align-items:baseline; gap:9px; margin-bottom:9px; }
+.guide-translation-grid header b { font:15px Georgia,"Songti SC",serif; font-weight:600; color:#39433e; }
+.guide-translation-grid header span { font-size:10px; color:#aa6173; }
+.guide-translation-grid p { margin:0 0 7px; font-size:10.5px; line-height:1.8; color:#687771; }
+.guide-translation-grid p strong { display:inline-block; margin-right:6px; font:8px DM Mono,monospace; letter-spacing:.12em; color:#b46275; }
+.guide-translation-grid .guide-response { color:#44523f; }
 .guide-translation-grid .guide-response strong { color:#4f7d68; }
-.guide-hotspots article { display:flex; gap:16px; padding:18px 20px; margin-bottom:10px; border:1px solid #eadfca; border-radius:16px; background:#fff; }
-.guide-hotspots article span { flex-shrink:0; font:300 26px DM Mono,monospace; color:#cbb98f; }
-.guide-hotspots h5 { margin:2px 0 8px; font-size:14px; }
-.guide-hotspots p { margin:0; font-size:11px; line-height:1.8; color:#7a7060; }
-.guide-hotspots aside { margin-top:10px; padding:11px 13px; border-radius:11px; background:#eef3ec; font-size:11px; line-height:1.75; color:#44523f; }
-.guide-hotspots aside b { color:#4f7d68; }
-.guide-longrun { margin:20px 0 0; padding:16px 20px; border-radius:14px; background:#141412; color:#e8e2d4; font-size:12px; line-height:1.85; }
-.guide-ai { display:flex; justify-content:space-between; align-items:center; margin-top:14px; padding:18px 22px; border-radius:16px; color:#fff; background:linear-gradient(120deg,#337e6b,#596fa9); font-size:13px; transition:.25s; }
+.guide-hotspots article { display:flex; gap:14px; padding:16px 18px; margin-bottom:9px; border-radius:16px; background:white; box-shadow:0 7px 22px #52675e0c; }
+.guide-hotspots article span { flex-shrink:0; font:300 24px DM Mono,monospace; color:#c8a9b1; }
+.guide-hotspots h5 { margin:2px 0 7px; font-size:13px; color:#39433e; }
+.guide-hotspots p { margin:0; font-size:10.5px; line-height:1.8; color:#687771; }
+.guide-hotspots aside { margin-top:9px; padding:10px 12px; border-radius:11px; background:#eef4f0; font-size:10.5px; line-height:1.75; color:#44523f; }
+.guide-longrun { margin:18px 0 0; padding:15px 18px; border-left:3px solid #8179b4; border-radius:0 14px 14px 0; background:white; box-shadow:0 7px 22px #52675e0c; font-size:11px; line-height:1.85; color:#586962; }
+.guide-ai { display:flex; justify-content:space-between; align-items:center; margin-top:12px; padding:17px 22px; border-radius:18px; color:#fff; background:linear-gradient(120deg,#337e6b,#596fa9); font-size:12px; transition:.25s; }
 .guide-ai:hover { transform:translateY(-2px); box-shadow:0 14px 34px #33635f3d; }
-.guide-ai span { font-size:17px; }
+.guide-ai span { font-size:16px; }
+
+/* ───────── 六维合并卡（和谐分 × 剧本） ───────── */
+.dimension-grid { margin-top:18px; display:grid; grid-template-columns:1fr 1fr; gap:11px; }
+.dimension-grid article { padding:20px 22px; border-radius:18px; background:white; box-shadow:0 7px 22px #52675e0c; }
+.dimension-head { display:flex; justify-content:space-between; align-items:start; gap:10px; }
+.dimension-head small { display:block; font:8px DM Mono,monospace; letter-spacing:.08em; color:#98a29d; }
+.dimension-head h4 { margin:6px 0 0; font-size:16px; color:#39433e; }
+.dimension-head strong { color:#b46275; font-size:24px; }
+.dimension-bar { height:4px; display:block; margin:12px 0; overflow:hidden; border-radius:4px; background:#e6ece8; }
+.dimension-bar b { height:100%; display:block; border-radius:4px; background:linear-gradient(90deg,#4b9a82,#8179b4,#d47c88); }
+.dimension-grid article>p { margin:0 0 10px; font-size:11px; line-height:1.75; color:#586962; }
 @media (max-width:760px) {
-  .duo-guide { padding:20px 14px; border-radius:20px; }
+  .duo-guide { padding:17px 9px; border-radius:20px; }
   .duo-guide>header { display:block; }
-  .duo-guide>header small { display:block; margin-top:8px; }
-  .guide-translation-grid { grid-template-columns:1fr; }
+  .duo-guide>header small { display:block; margin-top:6px; }
+  .guide-translation-grid,.dimension-grid { grid-template-columns:1fr; }
   .guide-initiator { flex-direction:column; }
+  .dimension-grid article { padding:16px 14px; }
 }

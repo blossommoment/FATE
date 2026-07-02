@@ -591,16 +591,6 @@ export async function ResultContent({
             <h3>{relationship.headline}</h3>
             <p>{relationship.scoreSummary}</p>
           </div>
-          <ShareCard
-            userName={birth.name ?? "我"}
-            partnerName={partnerBirth?.name ?? "TA"}
-            userPillar={profile.bazi.dayPillar}
-            partnerPillar={partnerProfile.bazi.dayPillar}
-            score={relationship.score}
-            headline={relationship.headline}
-            relationType={relationship.relationType}
-            highlights={relationship.scoreBreakdown.slice().sort((a, b) => b.score - a.score).slice(0, 3).map((item) => ({ label: item.label, score: item.score }))}
-          />
           <section className="duo-radar-panel">
             <header><div><span>双人六维关系图</span><h3>你们在哪些地方相似，哪里互补</h3></div><div className="duo-legend"><i />你 <b />对方</div></header>
             <div className="duo-radar-chart">
@@ -626,16 +616,28 @@ export async function ResultContent({
             </div>
           </section>
           <section className="match-score-method">
-            <header><div><span>和谐分构成</span><h3>不是“像不像”，而是相处成本落在哪里</h3></div><small>六项场景加权 · 合冲克进入对应分项</small></header>
+            <header><div><span>和谐分 × 关系剧本</span><h3>六个维度：分数、剧本与建议，一次看完</h3></div><small>六项场景加权 · 合冲克进入对应分项</small></header>
             <p className="score-method-intro">{relationship.scoreSummary}</p>
-            <div className="score-breakdown-grid">
-              {relationship.scoreBreakdown.map((item) => <article key={item.key}>
-                <div><span>{item.label}<small>权重 {item.weight}%</small></span><strong>{item.score}</strong></div>
-                <i><b style={{ width: `${item.score}%` }} /></i>
-                <p>{item.summary}</p>
-                <div className="score-basis">{item.basis.map((basis) => <span key={basis}>{basis}</span>)}</div>
-                <small>计入总分 {item.contribution.toFixed(1)}</small>
-              </article>)}
+            <div className="dimension-grid">
+              {([
+                ["expression", "communication"], ["attraction", "pace"], ["emotional", "attachment"],
+                ["power", "conflict"], ["daily", "initiative"], ["repair", "repair"],
+              ] as const).map(([scoreKey, cardKey], index) => {
+                const scoreItem = relationship.scoreBreakdown.find((item) => item.key === scoreKey);
+                const cardItem = relationship.cards.find((item) => item.key === cardKey);
+                if (!scoreItem || !cardItem) return null;
+                return <article id={`match-card-${cardItem.key}`} key={cardItem.key}>
+                  <div className="dimension-head">
+                    <div><small>0{index + 1} · {scoreItem.label} · 权重 {scoreItem.weight}%</small><h4>{cardItem.label}</h4></div>
+                    <strong>{scoreItem.score}</strong>
+                  </div>
+                  <i className="dimension-bar"><b style={{ width: `${scoreItem.score}%` }} /></i>
+                  <p>{cardItem.summary}</p>
+                  <div className="interaction-advice"><b>相处建议</b>{cardItem.advice}</div>
+                  <div className="score-basis">{scoreItem.basis.map((basis) => <span key={basis}>{basis}</span>)}</div>
+                  <Link className="logic-link" href={`/?${baseQuery}&view=match${partnerQuery}&detail=${cardItem.key}#match-card-${cardItem.key}`}>查看双方推理 <span>→</span></Link>
+                </article>;
+              })}
             </div>
           </section>
           <section className="duo-branch-script">
@@ -694,15 +696,16 @@ export async function ResultContent({
               让 AI 结合以上全部信号，写一份你们的关系点评 <span>→</span>
             </Link>
           </section>
-          <div className="interaction-grid">
-            {relationship.cards.map((card, index) => <article id={`match-card-${card.key}`} key={card.key}>
-              <header><span>0{index + 1}</span><h4>{card.label}</h4></header>
-              <p>{card.summary}</p>
-              <div className="interaction-why"><b>为什么会这样</b>{card.why}</div>
-              <div className="interaction-advice"><b>相处建议</b>{card.advice}</div>
-              <Link className="logic-link" href={`/?${baseQuery}&view=match${partnerQuery}&detail=${card.key}#match-card-${card.key}`}>查看双方推理 <span>→</span></Link>
-            </article>)}
-          </div>
+          <ShareCard
+            userName={birth.name ?? "我"}
+            partnerName={partnerBirth?.name ?? "TA"}
+            userPillar={profile.bazi.dayPillar}
+            partnerPillar={partnerProfile.bazi.dayPillar}
+            score={relationship.score}
+            headline={relationship.headline}
+            relationType={relationship.relationType}
+            highlights={relationship.scoreBreakdown.slice().sort((a, b) => b.score - a.score).slice(0, 3).map((item) => ({ label: item.label, score: item.score }))}
+          />
         </div>}
       </section>
 
