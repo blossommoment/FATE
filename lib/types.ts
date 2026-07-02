@@ -226,9 +226,11 @@ export type RelationshipAnalysis = {
     advice: string;
   }[];
   guide: {
+    verdict: { title: string; tagline: string; basis: string };
     philosophy: string;
     initiator: { name: string; why: string; firstMove: string };
-    translations: { person: string; signal: string; meaning: string; response: string }[];
+    behaviors: { label: string; conclusion: string; basis: string }[];
+    dispositions: { person: string; trait: string; reading: string; approach: string }[];
     hotspots: { scene: string; risk: string; playbook: string }[];
     longRun: string;
   };

@@ -658,36 +658,50 @@ export async function ResultContent({
           </section>
           <section className="duo-guide">
             <header>
-              <div><span>相处指南</span><h3>怎么把这段关系过好</h3></div>
-              <small>由双方命盘结构直接推导 · 想追问细节可用底部 AI 助手</small>
+              <div><span>相处指南</span><h3>这段关系的经营之道</h3></div>
+              <small>所有结论均由双方命盘结构推导 · 细节可用底部 AI 助手追问</small>
             </header>
+            <article className="guide-verdict">
+              <div className="verdict-seal"><small>关系判词</small><strong>{relationship.guide.verdict.title}</strong></div>
+              <div>
+                <p>{relationship.guide.verdict.tagline}</p>
+                <small>判据：{relationship.guide.verdict.basis}</small>
+              </div>
+            </article>
             <p className="guide-philosophy">{relationship.guide.philosophy}</p>
+            <div className="guide-behaviors">
+              <h4>关系样态判读<small>五项行为断语 · 均附命盘依据</small></h4>
+              {relationship.guide.behaviors.map((item) => <article key={item.label}>
+                <span>{item.label}</span>
+                <div><strong>{item.conclusion}</strong><p>{item.basis}</p></div>
+              </article>)}
+            </div>
             <article className="guide-initiator">
               <i>先</i>
               <div>
-                <h4>这段关系需要 {relationship.guide.initiator.name} 先动</h4>
+                <h4>主动之权，宜在{relationship.guide.initiator.name}</h4>
                 <p>{relationship.guide.initiator.why}</p>
-                <aside><b>第一步</b>{relationship.guide.initiator.firstMove}</aside>
+                <aside><b>首步</b>{relationship.guide.initiator.firstMove}</aside>
               </div>
             </article>
             <div className="guide-translations">
-              <h4>对方行为翻译表<small>看懂信号，再决定怎么接</small></h4>
+              <h4>双方性情释读<small>结构定性 · 行为倾向 · 相处要领</small></h4>
               <div className="guide-translation-grid">
-                {relationship.guide.translations.map((item, index) => <article key={`${item.person}-${index}`}>
-                  <header><b>{item.person}</b><span>{item.signal}</span></header>
-                  <p><strong>其实是</strong>{item.meaning}</p>
-                  <p className="guide-response"><strong>你可以</strong>{item.response}</p>
+                {relationship.guide.dispositions.map((item, index) => <article key={`${item.person}-${index}`}>
+                  <header><b>{item.person}</b><span>{item.trait}</span></header>
+                  <p><strong>结构释义</strong>{item.reading}</p>
+                  <p className="guide-response"><strong>相处要领</strong>{item.approach}</p>
                 </article>)}
               </div>
             </div>
             <div className="guide-hotspots">
-              <h4>三个最可能起摩擦的场景<small>按你们的差值从大到小排列</small></h4>
+              <h4>易生摩擦的三种情境<small>按双方结构差值降序排列</small></h4>
               {relationship.guide.hotspots.map((item, index) => <article key={item.scene}>
                 <span>0{index + 1}</span>
                 <div>
                   <h5>{item.scene}</h5>
                   <p>{item.risk}</p>
-                  <aside><b>拆法</b>{item.playbook}</aside>
+                  <aside><b>解法</b>{item.playbook}</aside>
                 </div>
               </article>)}
             </div>

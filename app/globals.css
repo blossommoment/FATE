@@ -944,3 +944,24 @@ main:not(.result-page) .entry form input { font-size:23px; }
   .guide-initiator { flex-direction:column; }
   .dimension-grid article { padding:16px 14px; }
 }
+
+/* ───────── 关系判词与样态判读 ───────── */
+.guide-verdict { display:flex; gap:20px; align-items:center; margin-top:16px; padding:20px 22px; border-radius:16px; background:white; box-shadow:0 7px 22px #52675e0c; }
+.verdict-seal { flex-shrink:0; min-width:112px; text-align:center; padding:16px 18px; border-radius:14px; color:#fff; background:linear-gradient(145deg,#286c5d,#5b5686 70%,#b96877); }
+.verdict-seal small { display:block; font:8px DM Mono,monospace; letter-spacing:.16em; color:#d8e4e0; margin-bottom:7px; }
+.verdict-seal strong { font:400 24px Georgia,"Songti SC",serif; letter-spacing:.14em; }
+.guide-verdict>div p { margin:0 0 8px; font-size:12px; line-height:1.85; color:#586962; }
+.guide-verdict>div small { font:9px DM Mono,monospace; color:#98a29d; letter-spacing:.04em; }
+.guide-behaviors { margin-top:20px; }
+.guide-behaviors h4 { margin:0 0 12px; font-size:14px; color:#3f4a45; }
+.guide-behaviors h4 small { margin-left:10px; font-size:9px; font-weight:400; color:#98a29d; }
+.guide-behaviors article { display:flex; gap:16px; align-items:flex-start; padding:14px 18px; margin-bottom:8px; border-radius:14px; background:white; box-shadow:0 7px 22px #52675e0c; }
+.guide-behaviors article>span { flex-shrink:0; width:76px; padding:7px 0; text-align:center; border-radius:10px; font-size:10px; color:#436f63; background:#e9f2ed; }
+.guide-behaviors strong { display:block; font-size:13px; color:#39433e; margin-bottom:5px; }
+.guide-behaviors p { margin:0; font-size:10.5px; line-height:1.8; color:#687771; }
+@media (max-width:760px) {
+  .guide-verdict { flex-direction:column; align-items:stretch; text-align:left; }
+  .verdict-seal { align-self:flex-start; }
+  .guide-behaviors article { flex-direction:column; gap:8px; }
+  .guide-behaviors article>span { width:auto; padding:5px 12px; align-self:flex-start; }
+}
