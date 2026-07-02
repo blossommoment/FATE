@@ -879,7 +879,9 @@ function compatibilityBreakdown(
 }
 
 export function matchProfiles(a: UserProfile, b: UserProfile): MatchResult {
-  const breakdown = compatibilityBreakdown(a, b);
+  // 与 analyzeRelationship 走同一条算分通道：合冲修正一并计入，
+  // 确保同一对人在任何入口看到同一个分数。
+  const breakdown = compatibilityBreakdown(a, b, "恋爱", analyzeCrossBranchDynamics(a, b));
   const score = clamp(breakdown.reduce((sum, item) => sum + item.contribution, 0));
   const reasons = breakdown
     .slice()

@@ -52,12 +52,13 @@ export async function ResultContent({
   );
 
   const profile = analyzeBirth(birth);
-  const recommendations = candidates
+  // 推荐候选盘只在广场视图计算：8 张完整排盘是页面最贵的计算，其他视图不需要
+  const recommendations = view === "square" ? candidates
     .map((candidate) => {
       const candidateProfile = analyzeBirth(candidate.birth);
       return { ...candidate, candidateProfile, result: matchProfiles(profile, candidateProfile) };
     })
-    .sort((a, b) => b.result.score - a.result.score);
+    .sort((a, b) => b.result.score - a.result.score) : [];
   const partnerProfile = partnerBirth && !validateBirth(partnerBirth) ? analyzeBirth(partnerBirth) : null;
   const relationship = partnerProfile ? analyzeRelationship(profile, partnerProfile, relationType) : null;
   const baseQuery = `year=${birth.year}&month=${birth.month}&day=${birth.day}&hour=${birth.hour}&minute=${birth.minute ?? 0}&gender=${birth.gender ?? "female"}&name=${encodeURIComponent(birth.name ?? "我")}&calendarType=${birth.calendarType ?? "solar"}&isLeapMonth=${birth.isLeapMonth ? "true" : "false"}`;
@@ -526,31 +527,6 @@ export async function ResultContent({
             {profile.deepAnalysis.slice().sort((x, y) => y.score - x.score).slice(0, 6).map((item) => <span key={item.key}><b>{item.keywords[0]}</b><small>{item.label} {item.score}</small></span>)}
           </div>
         </div>}
-        <div className="relation-coordinate">
-          <div className="coordinate-head">
-            <div><span>双人五行关系坐标</span><h3>你与 {recommendations[0].name} 如何彼此影响</h3></div>
-            <div className="people-key"><i className="me" />你 <i className="them" />{recommendations[0].name}</div>
-          </div>
-          <div className="coordinate-body">
-            <div className="connection-orbit">
-              <div className="person-node person-me"><strong>{profile.bazi.dayPillar[0]}</strong><span>你</span></div>
-              <div className="relation-pulse"><b>{recommendations[0].result.score}</b><small>关系匹配</small></div>
-              <div className="person-node person-them"><strong>{recommendations[0].candidateProfile.bazi.dayPillar[0]}</strong><span>{recommendations[0].name}</span></div>
-            </div>
-            <div className="element-relations">
-              {(Object.keys(elementLabels) as (keyof typeof elementLabels)[]).map((key) => {
-                const mine = profile.bazi.elements[key];
-                const theirs = recommendations[0].candidateProfile.bazi.elements[key];
-                const note = mine <= 1 && theirs >= 2 ? "对方补足你" : theirs <= 1 && mine >= 2 ? "你补足对方" : Math.abs(mine - theirs) <= 1 ? "能量同频" : "节奏差异";
-                return <div className={`relation-row rel-${key}`} key={key}>
-                  <span className="element-name">{elementLabels[key]}</span>
-                  <div className="dual-bars"><i style={{ width: `${mine * 25}%` }} /><b style={{ width: `${theirs * 25}%` }} /></div>
-                  <strong>{mine} : {theirs}</strong><small>{note}</small>
-                </div>;
-              })}
-            </div>
-          </div>
-        </div>
       </section>
 
       <section className="social-square">
@@ -948,7 +924,7 @@ export async function ResultContent({
         })()}
       </section>
 
-      <section className="recommendation-results">
+      {view === "square" && recommendations.length > 0 && <section className="recommendation-results">
         <div className="section-number">02 — 为你推荐 · 可能认识的人</div>
         <h2>与你更有可能<br /><em>形成互补的人。</em></h2>
         <div className="recommendation-grid">
@@ -967,7 +943,7 @@ export async function ResultContent({
           ))}
         </div>
         <div className="feed-loader"><i /><span>继续发现更多同频的人</span><i /></div>
-      </section>
+      </section>}
 
       <footer><div className="brand">FATE<span>°</span></div><p>Fate is a social matching system based on birth data and personality modeling.</p><small>不是算命，而是一种理解关系的新语言。</small></footer>
       {(selectedDeep || selectedInteraction) && <div className="logic-overlay">
