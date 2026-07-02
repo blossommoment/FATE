@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import HistoryPanel from "@/components/HistoryPanel";
 import type { BirthInput, MatchResult, UserProfile } from "@/lib/types";
 
@@ -35,6 +35,20 @@ export default function Landing({ embeddedResult = false }: { embeddedResult?: b
   const [match, setMatch] = useState<(MatchResult & { name: string }) | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showForm, setShowForm] = useState(false);
+
+  // 带 #method 锚点进入（如结果页底部的排盘按钮）时直接展开排盘
+  useEffect(() => {
+    if (window.location.hash === "#method") {
+      setShowForm(true);
+      setTimeout(() => document.querySelector("#method")?.scrollIntoView({ behavior: "smooth" }), 80);
+    }
+  }, []);
+
+  const openForm = () => {
+    setShowForm(true);
+    setTimeout(() => document.querySelector("#method")?.scrollIntoView({ behavior: "smooth" }), 80);
+  };
 
   async function analyze() {
     setLoading(true); setError(""); setMatch(null);
@@ -82,20 +96,19 @@ export default function Landing({ embeddedResult = false }: { embeddedResult?: b
         <div className="eyebrow">关系人格建模系统 / SOCIAL MATCHING</div>
         <h1>遇见与你<br /><em>相互成全的人。</em></h1>
         <p className="hero-copy">出生数据不是答案。它是一组坐标，用来理解你如何靠近、表达，以及与谁产生真正的张力。</p>
-        <a className="hero-cta" href="#method">
+        <button type="button" className="hero-cta hero-cta-center" onClick={openForm}>
           <i>缘</i>
           <span>开始排盘<small>八字四柱 · 三十秒生成关系画像</small></span>
           <b>↗</b>
-        </a>
+        </button>
         <div className="five-orbit" aria-hidden="true">
           <span className="wood">木</span><span className="fire">火</span><span className="earth">土</span><span className="metal">金</span><span className="water">水</span>
           <b>你</b>
         </div>
       </section>
 
-      <section className="entry" id="method">
+      {showForm && <section className="entry" id="method">
         <div>
-          <div className="section-number">01 — 出生信息</div>
           <h2>从一个时间点<br />开始认识你。</h2>
           <p>我们将出生信息转译为结构化人格信号。没有预言，只有可解释的关系模型。</p>
         </div>
@@ -116,7 +129,7 @@ export default function Landing({ embeddedResult = false }: { embeddedResult?: b
           <button type="submit">生成我的八字与人格画像<span>↗</span></button>
           {error && <p className="error">{error}</p>}
         </form>
-      </section>
+      </section>}
 
       {profile && (
         <section className="report" id="report">

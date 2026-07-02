@@ -1182,3 +1182,9 @@ main:not(.result-page) .entry form input { font-size:23px; }
 /* 双副轴展示 */
 .persona-god.secondary.dual strong { font-size:30px; line-height:1.2; margin:20px 0 10px; }
 @media (max-width:760px) { .hero-cta { margin-top:26px; } }
+
+/* 首页 CTA 居中 + 底部导航中央排盘按钮 */
+.hero-cta-center { display:flex; width:fit-content; margin:52px auto 0; border:0; cursor:pointer; font:inherit; color:white; }
+.mobile-bottom-nav .nav-plot { transform:translateY(-15px); }
+.mobile-bottom-nav .nav-plot i { width:52px; height:52px; border-radius:50%; display:grid; place-items:center; font:22px Georgia,"Songti SC",serif; font-style:normal; color:#fff; background:linear-gradient(135deg,#337e6b,#596fa9); box-shadow:0 10px 24px #33635f55; border:3px solid #fffdf9; }
+.mobile-bottom-nav .nav-plot span { margin-top:2px; font-size:9px; font-weight:600; color:#436f63; }

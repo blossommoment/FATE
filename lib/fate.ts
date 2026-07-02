@@ -721,9 +721,16 @@ export function analyzeBirth(birth: BirthInput): UserProfile {
   const secondary = tenGodPersonas[secondaryGodName];
   const dominantPersona = { god: dominantGodName, ...persona, weight: adjustedGodCounts[dominantGodName] };
   const secondaryPersona = { god: secondaryGodName, ...secondary, weight: adjustedGodCounts[secondaryGodName] };
-  // 双副轴：第三位十神权重 ≥15 且与副轴差距 ≤4 时，副轴呈双轴并立
+  // 双副轴：第三位十神权重 ≥15、与副轴差距 ≤4，且与副轴不同组（正官七杀/正偏财/
+  // 正偏印/比劫/食伤同组视为同质，不并立，仍取分高者）
+  const godGroupOf = (god: string) => god === "正官" || god === "七杀" ? "官杀"
+    : god === "正印" || god === "偏印" ? "印星"
+      : god === "正财" || god === "偏财" ? "财星"
+        : god === "比肩" || god === "劫财" ? "比劫" : "食伤";
   const tertiaryGodName = godNames.slice().sort((a, b) => adjustedGodCounts[b] - adjustedGodCounts[a])[2];
-  const tertiaryPersona = adjustedGodCounts[tertiaryGodName] >= 15 && adjustedGodCounts[secondaryGodName] - adjustedGodCounts[tertiaryGodName] <= 4
+  const tertiaryPersona = adjustedGodCounts[tertiaryGodName] >= 15
+    && adjustedGodCounts[secondaryGodName] - adjustedGodCounts[tertiaryGodName] <= 4
+    && godGroupOf(tertiaryGodName) !== godGroupOf(secondaryGodName)
     ? { god: tertiaryGodName, ...tenGodPersonas[tertiaryGodName], weight: adjustedGodCounts[tertiaryGodName] }
     : null;
   const personaNouns: Record<string, string> = {
@@ -1381,17 +1388,19 @@ export function analyzeRelationship(a: UserProfile, b: UserProfile, relationType
         ? `双方接近，${initiatorName}略占先手`
         : `${initiatorName}更主动`,
       basis: Math.abs(initiativeA - initiativeB) <= 8
-        ? `两人的关系主动性很接近（${initiativeA}:${initiativeB}），提议见面这类事基本轮流来；但把浪漫主动（${romanceA}:${romanceB}）一起算进去，第一步由${initiatorName}发起会更自然——这与「先动的人」的结论一致。`
-        : `发起邀约、打破冷场、记住纪念日，这些事更多落在${initiatorName}身上：TA习惯把关系当成需要经营的事务（关系主动性 ${initiativeA}:${initiativeB}，浪漫主动 ${romanceA}:${romanceB}，财星权重 ${aGod.wealth.count}:${bGod.wealth.count}）；${responderName}更习惯在被邀请中确认心意——一个划桨、一个掌舵，本来就是配套分工，别读成谁更爱谁。`,
+        ? `两人的关系主动性很接近（${initiativeA}:${initiativeB}），提议见面这类事基本轮流来；但把${relationType === "恋爱" ? "浪漫主动" : "破冰主动"}（${romanceA}:${romanceB}）一起算进去，第一步由${initiatorName}发起会更自然——这与「先动的人」的结论一致。`
+        : `发起邀约、打破冷场、记住纪念日，这些事更多落在${initiatorName}身上：TA习惯把关系当成需要经营的事务（关系主动性 ${initiativeA}:${initiativeB}，${relationType === "恋爱" ? "浪漫主动" : "破冰主动"} ${romanceA}:${romanceB}，财星权重 ${aGod.wealth.count}:${bGod.wealth.count}）；${responderName}更习惯在被邀请中确认心意——一个划桨、一个掌舵，本来就是配套分工，别读成谁更爱谁。`,
     },
     {
-      label: "醋意浓度",
+      label: relationType === "恋爱" ? "醋意浓度" : "在意浓度",
       conclusion: Math.abs(jealousyA - jealousyB) <= 6
         ? "旗鼓相当，互相在意"
-        : `${jealousName}的醋意更明显`,
+        : relationType === "恋爱" ? `${jealousName}的醋意更明显` : `${jealousName}更在意这段关系`,
       basis: Math.abs(jealousyA - jealousyB) <= 6
-        ? `对"你跟谁走得近"这件事，你们的敏感度不相上下（关系警觉 ${vigilanceA}:${vigilanceB}）——属于互相留意型，醋意都不算重，但都不许对方表现得无所谓。`
-        : `对方与别人聊得正欢时，先安静下来的多半是${jealousName}：TA的关系警觉与情感强度偏高（${vigilanceA}:${vigilanceB} / ${a.personality.emotion}:${b.personality.emotion}）${anxiousNote}，信息空白容易被自动补全成剧情。这种醋意说破即化——说出口的是在乎，憋出来的才是事故。`,
+        ? `对这段关系的风吹草动，你们的敏感度不相上下（关系警觉 ${vigilanceA}:${vigilanceB}）——属于互相留意型，都不算重，但都不许对方表现得无所谓。`
+        : relationType === "恋爱"
+          ? `对方与别人聊得正欢时，先安静下来的多半是${jealousName}：TA的关系警觉与情感强度偏高（${vigilanceA}:${vigilanceB} / ${a.personality.emotion}:${b.personality.emotion}）${anxiousNote}，信息空白容易被自动补全成剧情。这种醋意说破即化——说出口的是在乎，憋出来的才是事故。`
+          : `对这段关系的风吹草动，更敏感的一方是${jealousName}（关系警觉 ${vigilanceA}:${vigilanceB}，情感强度 ${a.personality.emotion}:${b.personality.emotion}）${anxiousNote}。在意不是负担——说出来的在意是重视，憋出来的才是隔阂。`,
     },
     {
       label: "相处氛围",
@@ -1562,7 +1571,7 @@ export function analyzeRelationship(a: UserProfile, b: UserProfile, relationType
         ]),
     initiator: {
       name: initiatorName,
-      why: `${initiatorName}关系主动性 ${initiatorIsUser ? initiativeA : initiativeB}、浪漫主动 ${initiatorIsUser ? romanceA : romanceB}，综合高于${responderName}；且其主轴为${initiatorProfile.dominantPersona.god}，财星权重 ${initiatorGodStats.wealth.count}——这类结构由自己发起最自然，被动等待反而容易积累怨气。主动权明确归属，比轮流试探更省损耗。`,
+      why: `${initiatorName}关系主动性 ${initiatorIsUser ? initiativeA : initiativeB}、${relationType === "恋爱" ? "浪漫主动" : "破冰主动"} ${initiatorIsUser ? romanceA : romanceB}，综合高于${responderName}；且其主轴为${initiatorProfile.dominantPersona.god}，财星权重 ${initiatorGodStats.wealth.count}——这类结构由自己发起最自然，被动等待反而容易积累怨气。主动权明确归属，比轮流试探更省损耗。`,
       firstMove: responderPace === "slow"
         ? vary("firstmove-slow", [
           `建议由${initiatorName}发起一次时长可控、退出成本低的见面，发出之后不追问。${responderName}是慢热结构，第一步的全部目标是让下一次自然发生，而不是推进关系定义。`,

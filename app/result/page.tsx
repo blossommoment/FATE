@@ -1015,6 +1015,7 @@ export async function ResultContent({
       <nav className="mobile-bottom-nav" aria-label="移动端主导航">
         <Link className={view === "overview" ? "active" : ""} href={`/?${baseQuery}&view=overview`}><i>⌂</i><span>首页</span></Link>
         <Link className={view === "deep" ? "active" : ""} href={`/?${baseQuery}&view=deep`}><i>≋</i><span>深度</span></Link>
+        <Link className="nav-plot" href="/#method" aria-label="重新排盘"><i>盘</i><span>排盘</span></Link>
         <Link className={view === "match" ? "active" : ""} href={`/?${baseQuery}&view=match`}><i>◇</i><span>剧本</span></Link>
         <Link className={view === "square" ? "active" : ""} href={`/?${baseQuery}&view=square`}><i>◉</i><span>广场</span></Link>
       </nav>
