@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { CSSProperties } from "react";
-import { analyzeAnnualFlow, analyzeBirth, analyzeRelationship, matchProfiles, validateBirth } from "@/lib/fate";
+import { analyzeAnnualFlow, analyzeBirth, analyzeRelationship, matchProfiles, monthGanZhi, validateBirth } from "@/lib/fate";
 import type { BirthInput } from "@/lib/types";
 import ChatAssistant from "@/components/ChatAssistant";
 import InviteShare from "@/components/InviteShare";
@@ -162,10 +162,17 @@ export async function ResultContent({
     { key: "boundary", no: "叁", category: "边界与冲突" as const },
     { key: "growth", no: "肆", category: "成长与行动" as const },
     { key: "special", no: "伍", category: null },
+    { key: "social", no: "陆", category: null },
   ].map((item) => {
     const group = item.category ? deepCategories.find((candidate) => candidate.category === item.category) : null;
     const topCard = group?.items.slice().sort((x, y) => y.score - x.score)[0];
     const topSpecial = profile.specialtyAnalysis.slice().sort((x, y) => y.score - x.score)[0];
+    if (item.key === "social") return {
+      ...item,
+      title: "社交模式",
+      subtitle: "连接如何建立与维持",
+      teaser: `${socialLabels[profile.socialProfile.communication_need]}沟通需求 · 偏${socialLabels[profile.socialProfile.attachment_style]}依恋`,
+    };
     return {
       ...item,
       title: item.category ?? "专项观察",
@@ -489,6 +496,20 @@ export async function ResultContent({
             })}
           </div>
         </section>}
+        {deepActive.key === "social" && <section className="specialty-analysis">
+          <header>
+            <div><span>社交行为模式</span><h3>你通常如何建立并维持连接</h3></div>
+            <p>由人格分布与关系倾向综合推导：四个维度分别对应联系频率、分歧处理、关系推进与安全感来源，描述的是更常出现的互动方式而非固定人设。</p>
+          </header>
+          <div className="social-model-grid social-chapter-grid">
+            {socialModelItems.map((item) => <article key={item.key}>
+              <header><i>{item.symbol}</i><div><span>{item.label}</span><strong>{item.value}</strong></div></header>
+              <div className="social-spectrum">{item.options.map((option, optionIndex) => <span className={optionIndex === item.active ? "active" : ""} key={option}>{option}</span>)}</div>
+              <p>{item.description}</p>
+            </article>)}
+          </div>
+          <blockquote className="social-chapter-quote">“{profile.summary}”</blockquote>
+        </section>}
         <nav className="module-pager">
           {deepActiveIndex > 0
             ? <Link href={`/?${baseQuery}&view=deep&module=${deepModules[deepActiveIndex - 1].key}#deep-report`}>← {deepModules[deepActiveIndex - 1].no} · {deepModules[deepActiveIndex - 1].title}</Link>
@@ -499,18 +520,11 @@ export async function ResultContent({
             : <Link href={`/?${baseQuery}&view=deep#deep-report`}>返回目录 →</Link>}
         </nav>
         </div>}
-        {!deepActive && <div className="profile-grid">
-          <section className="social-model-card">
-            <header><div><small>社交行为模式</small><h3>你通常如何建立并维持连接</h3></div><p>由人格分布与关系倾向综合推导，描述更常出现的互动方式。</p></header>
-            <div className="social-model-grid">
-              {socialModelItems.map((item) => <article key={item.key}>
-                <header><i>{item.symbol}</i><div><span>{item.label}</span><strong>{item.value}</strong></div></header>
-                <div className="social-spectrum">{item.options.map((option, index) => <span className={index === item.active ? "active" : ""} key={option}>{option}</span>)}</div>
-                <p>{item.description}</p>
-              </article>)}
-            </div>
-          </section>
+        {!deepActive && <div className="persona-signature">
           <blockquote>“{profile.summary}”</blockquote>
+          <div className="signature-keywords">
+            {profile.deepAnalysis.slice().sort((x, y) => y.score - x.score).slice(0, 6).map((item) => <span key={item.key}><b>{item.keywords[0]}</b><small>{item.label} {item.score}</small></span>)}
+          </div>
         </div>}
         <div className="relation-coordinate">
           <div className="coordinate-head">
@@ -639,20 +653,25 @@ export async function ResultContent({
             ["情绪稳定", profile.personality.stability, partnerProfile.personality.stability],
           ];
           const seedOf = (text: string) => { let hash = 0; for (let index = 0; index < text.length; index++) hash = (hash * 31 + text.charCodeAt(index)) | 0; return Math.abs(hash); };
-          const monthTag = `${new Date().getFullYear()}年${new Date().getMonth() + 1}月`;
-          const ideaPool: { title: string; note: string }[] = [
-            { title: "老地方，新菜单", note: "回到你们最熟的馆子，只点没吃过的菜——在稳定里放一点新意，两种结构都舒服。" },
-            { title: "交换歌单散步", note: "各备十首歌，边走边轮流放。低成本的共享体验，比问一百句「在干嘛」更能同频。" },
-            { title: "二手书店寻宝", note: "给对方挑一本「你觉得TA会喜欢的书」。挑中与否都是话题，这是一次公开的共情测验。" },
-            { title: "随机终点站", note: "坐一条没坐过的公交或地铁到终点再回来。把探索欲放进一个有边界的容器里。" },
-            { title: "厨房协作局", note: "一人主厨一人副手，下次互换。主导权协商的低风险演练场，锅铲比言语诚实。" },
-            { title: "沉默观影会", note: "看完先不讨论，各写三行观后感再交换。表达译码的专项训练，慢表达者的主场。" },
-            { title: "三张「我眼里的你」", note: "各给对方拍三张照片。被看见，是所有依恋结构共同的底层需求。" },
-            { title: "五十元早市挑战", note: "赶一次早市，预算五十，各买三样。现实协作里藏着最真实的分工默契。" },
-            { title: "不带手机的一小时", note: "天台、湖边，或任何安静的地方，只是坐着。检验你们的沉默是舒适还是尴尬。" },
-            { title: "三个月后拆的信", note: "各写一封给三个月后对方的短信封存。承诺与期待，都需要一个具体的容器。" },
-            { title: "互授小技能", note: "各教对方一件自己擅长的小事。比劫结构最吃这一套：平等交换，而非单方给予。" },
-            { title: "旧照片故事会", note: "各带五张老照片讲背后的事。信任建立的加速器，慢热结构也乐意开口。" },
+          const today = new Date();
+          const monthTag = `${today.getFullYear()}年${today.getMonth() + 1}月`;
+          const flowMonth = monthGanZhi(today.getFullYear(), today.getMonth() + 1, today.getDate());
+          const monthElement = annualTone(flowMonth[0]) as keyof typeof elementLabels;
+          const weakestElement = (Object.keys(elementLabels) as (keyof typeof elementLabels)[])
+            .reduce((weakest, key) => (profile.bazi.elements[key] + partnerProfile.bazi.elements[key]) < (profile.bazi.elements[weakest] + partnerProfile.bazi.elements[weakest]) ? key : weakest, "wood" as keyof typeof elementLabels);
+          const ideaPool: { title: string; note: string; element: keyof typeof elementLabels }[] = [
+            { element: "earth", title: "老地方，新菜单", note: "回到你们最熟的馆子，只点没吃过的菜——在稳定里放一点新意，两种结构都舒服。" },
+            { element: "wood", title: "交换歌单散步", note: "各备十首歌，边走边轮流放。低成本的共享体验，比问一百句「在干嘛」更能同频。" },
+            { element: "wood", title: "二手书店寻宝", note: "给对方挑一本「你觉得TA会喜欢的书」。挑中与否都是话题，这是一次公开的共情测验。" },
+            { element: "fire", title: "随机终点站", note: "坐一条没坐过的公交或地铁到终点再回来。把探索欲放进一个有边界的容器里。" },
+            { element: "fire", title: "厨房协作局", note: "一人主厨一人副手，下次互换。主导权协商的低风险演练场，锅铲比言语诚实。" },
+            { element: "water", title: "沉默观影会", note: "看完先不讨论，各写三行观后感再交换。表达译码的专项训练，慢表达者的主场。" },
+            { element: "metal", title: "三张「我眼里的你」", note: "各给对方拍三张照片。被看见，是所有依恋结构共同的底层需求。" },
+            { element: "earth", title: "五十元早市挑战", note: "赶一次早市，预算五十，各买三样。现实协作里藏着最真实的分工默契。" },
+            { element: "water", title: "不带手机的一小时", note: "天台、湖边，或任何安静的地方，只是坐着。检验你们的沉默是舒适还是尴尬。" },
+            { element: "metal", title: "三个月后拆的信", note: "各写一封给三个月后对方的短信封存。承诺与期待，都需要一个具体的容器。" },
+            { element: "wood", title: "互授小技能", note: "各教对方一件自己擅长的小事。比劫结构最吃这一套：平等交换，而非单方给予。" },
+            { element: "water", title: "旧照片故事会", note: "各带五张老照片讲背后的事。信任建立的加速器，慢热结构也乐意开口。" },
           ];
           const topicPool = [
             "你小时候最得意的一件事是什么",
@@ -662,8 +681,11 @@ export async function ResultContent({
             "理想中的假期，是躺着的还是跑着的",
             "有什么一直想试、但没人陪的事",
           ];
-          const inspireSeed = seedOf(`${profile.id}|${partnerProfile.id}|${monthTag}`);
-          const inspirations = Array.from({ length: 3 }, (_, index) => ideaPool[(inspireSeed + index * 7) % ideaPool.length]);
+          const inspireSeed = seedOf(`${profile.id}|${partnerProfile.id}|${flowMonth}|${monthTag}`);
+          const inspirations = ideaPool
+            .map((idea, index) => ({ ...idea, weight: (idea.element === monthElement ? 4 : 0) + (idea.element === weakestElement ? 2 : 0) + ((inspireSeed + index * 7) % 12) * .1 }))
+            .sort((x, y) => y.weight - x.weight)
+            .slice(0, 3);
           const inspireTopics = Array.from({ length: 2 }, (_, index) => topicPool[(inspireSeed + index * 5) % topicPool.length]);
           return (
           <div className="relationship-result" id="match-report">
@@ -698,9 +720,10 @@ export async function ResultContent({
             </div>
           </div>
           <section className="match-inspire">
-            <header><div><span>MONTHLY PICKS · {monthTag}</span><h3>缘分签 · 本月相处灵感</h3></div><small>依双方结构与月份抽取 · 每月更新三签</small></header>
+            <header><div><span>流月 {flowMonth} · {elementLabels[monthElement]}气当令</span><h3>缘分签 · 本月相处灵感</h3></div><small>{monthTag} · 随流月更换</small></header>
+            <p className="inspire-logic">选签依据：本月节令为 {flowMonth} 月，天干属{elementLabels[monthElement]}；你们两盘合计最弱的一行为{elementLabels[weakestElement]}。三签循「顺当令之{elementLabels[monthElement]}、补两盘之{elementLabels[weakestElement]}」而定，非随机抽取。</p>
             <div className="inspire-grid">
-              {inspirations.map((idea, index) => <article key={idea.title}><i>{["壹", "贰", "叁"][index]}</i><div><h4>{idea.title}</h4><p>{idea.note}</p></div></article>)}
+              {inspirations.map((idea, index) => <article key={idea.title}><i>{["壹", "贰", "叁"][index]}</i><div><h4>{idea.title}<em className={`inspire-el el-${idea.element}`}>{elementLabels[idea.element]}</em></h4><p>{idea.note}</p></div></article>)}
             </div>
             <div className="inspire-topics"><b>开场话题</b>{inspireTopics.map((topic) => <span key={topic}>{topic}</span>)}</div>
           </section>
@@ -712,6 +735,9 @@ export async function ResultContent({
             score={relationship.score}
             headline={relationship.headline}
             relationType={relationship.relationType}
+            verdictTitle={relationship.guide.verdict.title}
+            verdictQuip={relationship.guide.verdict.quip}
+            chapters={moduleMeta.map((item) => `${item.no}·${item.title}`)}
             highlights={relationship.scoreBreakdown.slice().sort((x, y) => y.score - x.score).slice(0, 3).map((item) => ({ label: item.label, score: item.score }))}
           />
           </>}

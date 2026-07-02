@@ -1569,3 +1569,8 @@ export function buildRelationshipFacts(a: UserProfile, b: UserProfile, analysis:
     longRun: analysis.guide.longRun,
   };
 }
+
+// 当前日期所处的流月干支（按节气交接），供流月相关推荐使用。
+export function monthGanZhi(year: number, month: number, day: number): string {
+  return Solar.fromYmdHms(year, month, day, 12, 0, 0).getLunar().getMonthInGanZhi();
+}
