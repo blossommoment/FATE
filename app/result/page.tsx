@@ -73,7 +73,7 @@ export async function ResultContent({
     summary: `总分 ${relationship.score}：${relationship.headline}。${relationship.guide.philosophy}`,
     evidence: [
       ...relationship.scoreBreakdown.map((item) => `${item.label} ${item.score} 分（权重 ${item.weight}%）`),
-      `双方依恋：${socialLabels[profile.socialProfile.attachment_style]} × ${socialLabels[partnerProfile.socialProfile.attachment_style]}`,
+      `依恋倾向：偏${socialLabels[profile.socialProfile.attachment_style]} × 偏${socialLabels[partnerProfile.socialProfile.attachment_style]}`,
       `主轴十神：${profile.dominantPersona.god} × ${partnerProfile.dominantPersona.god}`,
       ...(relationship.branchDynamics[0] ? [`最强跨盘结构：${relationship.branchDynamics[0].title}（${relationship.branchDynamics[0].scoreImpact > 0 ? "+" : ""}${relationship.branchDynamics[0].scoreImpact} 分）`] : []),
       `建议先主动的一方：${relationship.guide.initiator.name}`,
@@ -664,6 +664,7 @@ export async function ResultContent({
             <article className="guide-verdict">
               <div className="verdict-seal"><small>关系判词</small><strong>{relationship.guide.verdict.title}</strong></div>
               <div>
+                <p className="verdict-quip">{relationship.guide.verdict.quip}</p>
                 <p>{relationship.guide.verdict.tagline}</p>
                 <small>判据：{relationship.guide.verdict.basis}</small>
               </div>

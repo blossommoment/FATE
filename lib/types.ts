@@ -226,7 +226,7 @@ export type RelationshipAnalysis = {
     advice: string;
   }[];
   guide: {
-    verdict: { title: string; tagline: string; basis: string };
+    verdict: { title: string; quip: string; tagline: string; basis: string };
     philosophy: string;
     initiator: { name: string; why: string; firstMove: string };
     behaviors: { label: string; conclusion: string; basis: string }[];

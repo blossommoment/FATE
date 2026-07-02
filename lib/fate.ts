@@ -1082,15 +1082,25 @@ function analyzeCrossBranchDynamics(a: UserProfile, b: UserProfile): Relationshi
     .filter((item, index, all) => all.findIndex((candidate) =>
       candidate.userEntry.stem === item.userEntry.stem && candidate.partnerEntry.stem === item.partnerEntry.stem) === index)
     .slice(0, 2);
+  // 五行相制的意象表达：以材质分工描述，不写成"谁克谁"
+  const controlMetaphors: Record<string, { name: string; controllerRole: string; receiverRole: string; scene: string }> = {
+    金木: { name: "金木相制", controllerRole: "修枝", receiverRole: "生长", scene: "讨论计划与改进意见时" },
+    木土: { name: "木土相制", controllerRole: "扎根", receiverRole: "承载", scene: "分配责任、占用彼此精力时" },
+    土水: { name: "土水相制", controllerRole: "筑堤", receiverRole: "奔流", scene: "商定边界与自由度时" },
+    水火: { name: "水火相制", controllerRole: "降温", receiverRole: "燃烧", scene: "一方兴头正盛、另一方保持冷静时" },
+    火金: { name: "火金相制", controllerRole: "熔炼", receiverRole: "成器", scene: "一方催促改变、另一方坚持原则时" },
+  };
   stemTensions.forEach(({ userEntry, partnerEntry, userControls, importance }) => {
     const strength = clamp(32 + importance * .55);
     const controller = userControls ? userName : partnerName;
     const receiver = userControls ? partnerName : userName;
+    const controllerEntry = userControls ? userEntry : partnerEntry;
+    const receiverEntry = userControls ? partnerEntry : userEntry;
+    const metaphor = controlMetaphors[`${controllerEntry.element}${receiverEntry.element}`]
+      ?? { name: `${controllerEntry.element}${receiverEntry.element}相制`, controllerRole: "定形", receiverRole: "舒展", scene: "商议做法与标准时" };
     result.push({
       type: "天干克",
-      title: userControls
-        ? `${userName}${userEntry.stem}${userEntry.element}克${partnerName}${partnerEntry.stem}${partnerEntry.element}`
-        : `${partnerName}${partnerEntry.stem}${partnerEntry.element}克${userName}${userEntry.stem}${userEntry.element}`,
+      title: `${metaphor.name} · ${controller}主${metaphor.controllerRole}，${receiver}主${metaphor.receiverRole}`,
       branches: [userEntry.stem, partnerEntry.stem],
       userRole: userEntry.god,
       partnerRole: partnerEntry.god,
@@ -1098,9 +1108,9 @@ function analyzeCrossBranchDynamics(a: UserProfile, b: UserProfile): Relationshi
       partnerPillars: [partnerEntry.pillar],
       strength,
       scoreImpact: -Math.max(1, Math.round(strength / 28)),
-      summary: `${controller}更容易在这组互动里提出标准、方向或修正，${receiver}则更容易感到自己的${godThemesForRelationship(userControls ? partnerEntry.god : userEntry.god)}被要求调整。`,
-      scenarioImpact: "天干是较外显的表达与行为层，因此这组克更容易出现在说话方式、决策权和谁来定义“正确做法”上；它是协商成本，不等同于地支层面的深层冲突。",
-      advice: `让提出要求的人同时给出理由和可协商范围；被要求的一方明确说出可接受边界，避免把具体分歧升级成对人格的否定。`,
+      summary: `${controller}天干${controllerEntry.stem}属${controllerEntry.element}，${receiver}天干${receiverEntry.stem}属${receiverEntry.element}。${metaphor.scene}，${controller}会自然站到提出修正的一侧，${receiver}则更常是被要求调整的一方——这不是谁压制谁，而是两种材质相遇时的默认分工。`,
+      scenarioImpact: "天干属于外显的表达与行为层，这组相制多出现在说话方式、决策权与谁来定义“更好的做法”上；它是一种协商成本，并不等同于地支层面的深层冲突。",
+      advice: `提出修正的一方宜同时给出理由与可协商的余地；被修正的一方宜明确说出可接受的边界——将分歧留在具体事务上，勿升级为对人格的评判。`,
     });
   });
   return result.sort((left, right) => right.strength - left.strength);
@@ -1225,70 +1235,93 @@ export function analyzeRelationship(a: UserProfile, b: UserProfile, relationType
   const verdict: RelationshipAnalysis["guide"]["verdict"] =
     a.dominantPersona.god === b.dominantPersona.god ? {
       title: "双星同轨",
-      tagline: `两张命盘的主轴同为${a.dominantPersona.god}（权重 ${a.dominantPersona.weight}:${b.dominantPersona.weight}），如同一型号的两台发动机：同频毫不费力，缺点是没有人负责踩刹车。`,
+      quip: `翻译一下：世界上另一个自己。优点是从不需要解释，缺点是连犯错都挑同一个坑——坑里见了面，还得互相笑一声"你也在啊"。`,
+      tagline: `两张命盘的主轴同为${a.dominantPersona.god}（权重 ${a.dominantPersona.weight}:${b.dominantPersona.weight}），同频毫不费力，只是没有人负责踩刹车。`,
       basis: `主导十神相同 · 均为${a.dominantPersona.name}`,
     } : clashDynamic && breakdownScore("attraction") >= 62 ? {
       title: "相爱相杀",
-      tagline: `${clashDynamic.title}，而初见引力偏偏有 ${breakdownScore("attraction")} 分——吸引与摩擦出自同一组地支，你们最热闹与最僵持的场面，大概率围绕同一个话题。`,
+      quip: `翻译一下：让你笑得最大声的和气得摔门的，是同一个人。外人劝你们冷静，你们自己知道——这日子过得挺来劲。`,
+      tagline: `${clashDynamic.title}，而初见引力偏有 ${breakdownScore("attraction")} 分：吸引与摩擦出自同一组地支，最热闹与最僵持的场面，大概率围绕同一个话题。`,
       basis: `${clashDynamic.title}（强度 ${clashDynamic.strength}）× 初见引力 ${breakdownScore("attraction")}`,
     } : breakdownScore("expression") >= 78 ? {
       title: "高山流水",
-      tagline: `表达译码 ${breakdownScore("expression")} 分：一方起调，另一方接得住，误译率远低于常人。伯牙不常有，而钟子期就坐在对面。`,
+      quip: `翻译一下：你话说一半，TA已经把后半句接完了。想吵架都难——误会还没长大，就被听懂掐灭了。`,
+      tagline: `表达译码 ${breakdownScore("expression")} 分，一方起调，另一方接得住，误译率远低于常人。伯牙不常有，而钟子期就坐在对面。`,
       basis: `表达译码 ${breakdownScore("expression")} · 食伤权重 ${aGod.output.count}:${bGod.output.count}`,
     } : bondDynamic && bondDynamic.scoreImpact >= 4 ? {
       title: "榫卯相合",
-      tagline: `${bondDynamic.title}将两张盘扣在一处，属于结构性的合得来——不依赖情绪热度维持，拆开反而费劲。`,
+      quip: `翻译一下：不是干柴烈火，是拼图"咔哒"一声对上的那种合适。安静，但严丝合缝——拆开反而费劲。`,
+      tagline: `${bondDynamic.title}将两张盘扣在一处，属于结构性的合得来，不依赖情绪热度维持。`,
       basis: `${bondDynamic.title} · 结构修正 +${bondDynamic.scoreImpact}`,
     } : conflictA >= 62 && conflictB >= 62 ? {
       title: "针尖麦芒",
-      tagline: `两支伤官（冲突表达 ${conflictA}:${conflictB}）谁也不肯让话。争执必然精彩，和好得也快——前提是无人翻旧账。`,
+      quip: `翻译一下：嘴上谁都不服，心里谁都放不下。外人看是辩论赛，你们自己心里清楚——这是你们独有的调情方式。`,
+      tagline: `两支伤官（冲突表达 ${conflictA}:${conflictB}）谁也不肯让话，争执必然精彩，和好得也快——前提是无人翻旧账。`,
       basis: `冲突表达双高 · 伤官权重 ${a.tenGodCounts["伤官"]}:${b.tenGodCounts["伤官"]}`,
     } : extGap >= 25 ? {
       title: "一动一静",
+      quip: `翻译一下：一个负责精彩，一个负责稳当。风筝飞得再高也不慌——线在对方手里，而且对方从不撒手。`,
       tagline: `外向表达 ${a.personality.extroversion}:${b.personality.extroversion}，一人生风，一人定锚。只要不试图把对方改造成自己，便是上好的配置。`,
       basis: `外向差 ${extGap} · 动静结构互补`,
     } : paceA === "slow" && paceB === "slow" ? {
       title: "文火慢炖",
+      quip: `翻译一下：前三个月像同事，三年后像失散多年的家人。这锅汤急不得——但凡是炖出来的，都散不了。`,
       tagline: `两个慢热结构相遇，升温以年为单位计。急不来，同样也散不快——耐心在这里按复利计息。`,
       basis: `关系速度均为慢热 · 信任建立 ${deepScore(a, "trust_speed")}:${deepScore(b, "trust_speed")}`,
     } : relationType !== "恋爱" && breakdownScore("daily") >= 72 ? {
       title: "福禄同席",
-      tagline: `日常黏合 ${breakdownScore("daily")} 分：生活节奏天然咬合，属于可以长期同桌吃饭而不生嫌隙的结构。`,
+      quip: `翻译一下：一起吃饭不用找话题、沉默也不尴尬的缘分。饭搭子里的天花板，搭伙过日子的免检产品。`,
+      tagline: `日常黏合 ${breakdownScore("daily")} 分，生活节奏天然咬合，属于可以长期同桌吃饭而不生嫌隙的结构。`,
       basis: `日常黏合 ${breakdownScore("daily")} · ${relationType}场景加权`,
     } : relationshipScore >= 78 ? {
       title: "珠联璧合",
-      tagline: `总分 ${relationshipScore}，六维没有明显短板。这类组合的风险只剩一个：把顺利当作理所当然。`,
+      quip: `翻译一下：别人磨合三年才解决的问题，你们出厂就自带答案。唯一要练的本事，是别把好运气过成理所当然。`,
+      tagline: `总分 ${relationshipScore}，六维没有明显短板，此类组合的风险只剩把顺利当作寻常。`,
       basis: `总分 ${relationshipScore} · 六维均衡`,
     } : relationshipScore >= 65 ? {
       title: "渐入佳境",
+      quip: `翻译一下：第一印象平平无奇，处久了真香。属于几年后翻聊天记录，会对着屏幕笑出声的那种。`,
       tagline: `总分 ${relationshipScore}，吸引与磨合并存，属于"处着处着就顺了"的类型——前提是熬过前三次别扭。`,
       basis: `总分 ${relationshipScore} · 磨合型结构`,
     } : {
       title: "各自成篇",
-      tagline: `总分 ${relationshipScore}：两套完整但语法不同的叙事。译得好是互补，译不好是平行——好在译法都写在下面。`,
+      quip: `翻译一下：两本好书，语言不同。读懂对方得查字典——但查着查着，你就成了世界上最懂那本书的译者。`,
+      tagline: `总分 ${relationshipScore}，两套完整但语法不同的叙事：译得好是互补，译不好是平行——好在译法都写在下面。`,
       basis: `总分 ${relationshipScore} · 差异型结构`,
     };
-  // 关系样态判读：谁主动、谁易生醋意、氛围如何，均给出命盘依据
+  // 关系样态判读：结论落在具体互动情景上，命盘数据退居括号作佐证
   const jealousyA = clamp(vigilanceA * .45 + a.personality.emotion * .35 + (a.socialProfile.attachment_style === "anxious" ? 14 : 0));
   const jealousyB = clamp(vigilanceB * .45 + b.personality.emotion * .35 + (b.socialProfile.attachment_style === "anxious" ? 14 : 0));
   const softenA = a.personality.stability - conflictA * .5;
   const softenB = b.personality.stability - conflictB * .5;
   const outputScoreA = aGod.output.score;
   const outputScoreB = bGod.output.score;
+  const jealousName = jealousyA > jealousyB ? userName : partnerName;
+  const initiativeLead = initiativeA > initiativeB ? userName : partnerName;
+  const initiativeFollow = initiativeA > initiativeB ? partnerName : userName;
+  const softenLead = softenA > softenB ? userName : partnerName;
+  const dependLead = dependencyA > dependencyB ? userName : partnerName;
+  const dependFollow = dependencyA > dependencyB ? partnerName : userName;
+  const anxiousNote = (a.socialProfile.attachment_style === "anxious" && jealousyA >= jealousyB) || (b.socialProfile.attachment_style === "anxious" && jealousyB > jealousyA)
+    ? "，且更倾向焦虑型依恋" : "";
   const behaviors: RelationshipAnalysis["guide"]["behaviors"] = [
     {
       label: "主动权归属",
       conclusion: Math.abs(initiativeA - initiativeB) <= 8
-        ? "双向发起，难分高下"
-        : `${initiativeA > initiativeB ? userName : partnerName}执主动之柄`,
-      basis: `关系主动性 ${initiativeA}:${initiativeB}，财星权重 ${aGod.wealth.count}:${bGod.wealth.count}。财星主投入经营，${initiativeA >= initiativeB ? userName : partnerName}的结构更习惯把关系当作需要打理的事务，而非等待发生的际遇。`,
+        ? "双向发起，轮流坐庄"
+        : `${initiativeLead}执主动之柄`,
+      basis: Math.abs(initiativeA - initiativeB) <= 8
+        ? `提议见面、打破冷场这类事，你们会自然轮到谁算谁——两人的主动性相当（${initiativeA}:${initiativeB}），谁恰好有空谁开局，不存在一方总在等另一方。`
+        : `发起邀约、打破冷场、记住纪念日，这些事多半会落在${initiativeLead}身上：TA的结构习惯把关系当成需要经营的事务（关系主动性 ${initiativeA}:${initiativeB}，财星权重 ${aGod.wealth.count}:${bGod.wealth.count}）；${initiativeFollow}则更习惯在被邀请中确认自己的心意——一个执桨、一个掌舵，本是配套，别读成谁更爱谁。`,
     },
     {
       label: "醋意浓度",
       conclusion: Math.abs(jealousyA - jealousyB) <= 6
         ? "旗鼓相当，互相在意"
-        : `${jealousyA > jealousyB ? userName : partnerName}的醋意更为可观`,
-      basis: `关系警觉 ${vigilanceA}:${vigilanceB}，情感强度 ${a.personality.emotion}:${b.personality.emotion}${a.socialProfile.attachment_style === "anxious" || b.socialProfile.attachment_style === "anxious" ? `，${a.socialProfile.attachment_style === "anxious" ? userName : partnerName}兼为焦虑型依恋` : ""}。醋意的本质是安全感校验：警觉偏高者会在信息空白处自动补全剧情，且补全得更快。`,
+        : `${jealousName}的醋意更为可观`,
+      basis: Math.abs(jealousyA - jealousyB) <= 6
+        ? `对"你跟谁走得近"这件事，你们的敏感度不相上下（关系警觉 ${vigilanceA}:${vigilanceB}）——属于互相留意型，醋意都不算重，但都不许对方表现得无所谓。`
+        : `对方与别人聊得正欢时，先安静下来的多半是${jealousName}：TA的关系警觉与情感强度偏高（${vigilanceA}:${vigilanceB} / ${a.personality.emotion}:${b.personality.emotion}）${anxiousNote}，信息空白容易被自动补全成剧情。这种醋意说破即化——说出口的是在乎，憋出来的才是事故。`,
     },
     {
       label: "相处氛围",
@@ -1298,24 +1331,28 @@ export function analyzeRelationship(a: UserProfile, b: UserProfile, relationType
           ? "静而不僵，各自安好"
           : "一人递话，一人接住",
       basis: outputScoreA >= 55 && outputScoreB >= 55
-        ? `双方食伤权重 ${aGod.output.count}:${bGod.output.count} 皆旺，表达欲互相点燃；对你们而言，突然的安静才是需要留意的信号。${clashDynamic ? `唯${clashDynamic.title}在场，气氛偶尔带电。` : ""}`
+        ? `你们的饭桌不会冷：双方食伤皆旺（权重 ${aGod.output.count}:${bGod.output.count}），一个话头能接出十个岔路。对你们而言，突然的安静反而才是值得留意的信号。${clashDynamic ? `唯${clashDynamic.title}在场，热闹里偶尔带电。` : ""}`
         : outputScoreA < 40 && outputScoreB < 40
-          ? `双方食伤皆收敛（${aGod.output.count}:${bGod.output.count}），交流密度低、压力也低；在这种结构里，沉默即是舒适，而非冷场。`
-          : `食伤权重 ${aGod.output.count}:${bGod.output.count}，一放一收：话题多由${outputScoreA >= outputScoreB ? userName : partnerName}起头，${outputScoreA >= outputScoreB ? partnerName : userName}负责接与收。配合得当是相声，失衡则成独角戏。`,
+          ? `你们可以一起安静很久而不觉尴尬——双方食伤皆收（${aGod.output.count}:${bGod.output.count}），各做各的事、偶尔搭一句，就是你们的舒适区。外人看着冷清，你们自己知道那叫安稳。`
+          : `一人负责起话头，一人负责接住收尾（食伤 ${aGod.output.count}:${bGod.output.count}）：${outputScoreA >= outputScoreB ? userName : partnerName}像逗哏，${outputScoreA >= outputScoreB ? partnerName : userName}像捧哏。配合得当是相声，但逗哏若长期得不到回应也会泄气——捧哏的记得偶尔主动抛一句。`,
     },
     {
       label: "服软次序",
       conclusion: Math.abs(softenA - softenB) <= 6
         ? "视事由而定，各让一半"
-        : `${softenA > softenB ? userName : partnerName}多半先递台阶`,
-      basis: `情绪稳定 ${a.personality.stability}:${b.personality.stability}，冲突表达 ${conflictA}:${conflictB}。稳定度高者降温更快，伤官轻者更少恋战——先低头非关输赢，是结构使然。`,
+        : `${softenLead}多半先递台阶`,
+      basis: Math.abs(softenA - softenB) <= 6
+        ? `吵完架谁先发那句"睡了吗"，你们基本轮流——情绪稳定与冲突表达都接近（${a.personality.stability}:${b.personality.stability} / ${conflictA}:${conflictB}），谁理亏谁心软，看具体事由。`
+        : `冷战大概率由${softenLead}先打破：TA情绪降温更快（稳定 ${a.personality.stability}:${b.personality.stability}），伤官较轻、不恋战（冲突表达 ${conflictA}:${conflictB}）。先递台阶的不是输家——是TA心里那杆秤回正得更快。`,
     },
     {
       label: "依附程度",
       conclusion: Math.abs(dependencyA - dependencyB) <= 7
         ? "黏度对等，进退同步"
-        : `${dependencyA > dependencyB ? userName : partnerName}更为依附`,
-      basis: `情感依赖 ${dependencyA}:${dependencyB}，印星权重 ${aGod.resource.count}:${bGod.resource.count}。印重者需要被持续接住，对联系的连续性要求更高；另一方的独立，不宜被误读为疏远。`,
+        : `${dependLead}更为依附`,
+      basis: Math.abs(dependencyA - dependencyB) <= 7
+        ? `想见就见、各忙各的也不慌——你们的黏度基本对等（情感依赖 ${dependencyA}:${dependencyB}），这种进退同步，在两人关系里是稀缺品。`
+        : `忙季或异地时，先觉得不对劲的多半是${dependLead}：TA的情感依赖更高（${dependencyA}:${dependencyB}，印星权重 ${aGod.resource.count}:${bGod.resource.count}），需要被持续接住。${dependFollow}的独立不是冷淡，是出厂设置——但独立的人不开口，不等于不需要。`,
     },
   ];
   // 双方性情释读：以命盘结构为据，给出行为倾向与相处要领
@@ -1492,5 +1529,43 @@ export function analyzeRelationship(a: UserProfile, b: UserProfile, relationType
     cards,
     branchDynamics,
     guide,
+  };
+}
+
+// 标准化事实清单：把规则引擎的全部结论压缩为机器可读 JSON，供 AI 叙述层使用。
+// 契约：AI 只允许转述清单中的事实与数字，不得新增判断——事实相同、结构相同，措辞可变。
+export function buildRelationshipFacts(a: UserProfile, b: UserProfile, analysis: RelationshipAnalysis) {
+  const attachmentTendency = { secure: "偏安全型", anxious: "偏焦虑型", avoidant: "偏回避型" } as const;
+  const person = (profile: UserProfile) => ({
+    name: profile.birth.name ?? "未命名",
+    dayPillar: profile.bazi.dayPillar,
+    archetype: profile.archetype,
+    persona: profile.combinedPersona.name,
+    dominantGod: profile.dominantPersona.god,
+    attachmentTendency: attachmentTendency[profile.socialProfile.attachment_style],
+    personality: profile.personality,
+    keyScores: {
+      initiative: profile.traitAnalysis[6].score,
+      expressiveness: traitScore(profile, "expressiveness"),
+      conflictExpression: deepScore(profile, "conflict_expression"),
+      vigilance: deepScore(profile, "vigilance"),
+      dependency: deepScore(profile, "dependency"),
+      autonomy: deepScore(profile, "autonomy"),
+      novelty: deepScore(profile, "novelty"),
+      romance: deepScore(profile, "romance"),
+    },
+    identityTags: profile.identityTags,
+  });
+  return {
+    relationType: analysis.relationType,
+    score: analysis.score,
+    verdict: analysis.guide.verdict,
+    persons: [person(a), person(b)],
+    dimensions: analysis.scoreBreakdown.map(({ key, label, score, weight, summary }) => ({ key, label, score, weight, summary })),
+    structures: analysis.branchDynamics.map(({ type, title, scoreImpact, summary }) => ({ type, title, scoreImpact, summary })),
+    behaviors: analysis.guide.behaviors,
+    dispositions: analysis.guide.dispositions,
+    frictions: analysis.guide.hotspots,
+    longRun: analysis.guide.longRun,
   };
 }
