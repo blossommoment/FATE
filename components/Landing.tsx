@@ -76,7 +76,8 @@ export default function Landing({ embeddedResult = false }: { embeddedResult?: b
     setTimeout(() => document.querySelector("#match-result")?.scrollIntoView({ behavior: "smooth" }), 50);
   }
 
-  const update = (key: keyof BirthInput, value: string) => setBirth((old) => ({ ...old, [key]: Number(value) }));
+  // 清空输入时保留空白（不自动补 0）；提交由表单 required 与服务端校验兜底
+  const update = (key: keyof BirthInput, value: string) => setBirth((old) => ({ ...old, [key]: (value === "" ? "" : Number(value)) as unknown as number }));
   const updateGender = (value: string) => setBirth((old) => ({ ...old, gender: value as BirthInput["gender"] }));
   const updateCalendar = (value: "solar" | "lunar") => setBirth((old) => ({ ...old, calendarType: value, isLeapMonth: value === "lunar" ? old.isLeapMonth : false }));
   const updateName = (value: string) => setBirth((old) => ({ ...old, name: value }));

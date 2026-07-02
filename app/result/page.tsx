@@ -7,6 +7,7 @@ import InviteShare from "@/components/InviteShare";
 import ShareCard from "@/components/ShareCard";
 import HistoryRecorder from "@/components/HistoryRecorder";
 import PillarLinks from "@/components/PillarLinks";
+import PlotPanel, { PlotTrigger } from "@/components/PlotPanel";
 import { askDeepSeek } from "@/lib/deepseek";
 
 const zodiacLabels: Record<string, string> = {
@@ -296,7 +297,7 @@ export async function ResultContent({
       }} />
       {!embedded && <nav>
         <Link className="brand" href="/"><i>缘</i>FATE<span>°</span></Link>
-        <div className="nav-links"><span>关系档案 · 已生成</span><Link href="/">重新分析</Link></div>
+        <div className="nav-links"><span>关系档案 · 已生成</span><PlotTrigger variant="link" /></div>
       </nav>}
       <nav className="profile-tabs" aria-label="分析栏目">
         <Link className={view === "overview" ? "active" : ""} href={`/?${baseQuery}&view=overview`}><span>01</span>首页排盘</Link>
@@ -1015,10 +1016,11 @@ export async function ResultContent({
       <nav className="mobile-bottom-nav" aria-label="移动端主导航">
         <Link className={view === "overview" ? "active" : ""} href={`/?${baseQuery}&view=overview`}><i>⌂</i><span>首页</span></Link>
         <Link className={view === "deep" ? "active" : ""} href={`/?${baseQuery}&view=deep`}><i>≋</i><span>深度</span></Link>
-        <Link className="nav-plot" href="/#method" aria-label="重新排盘"><i>缘</i><span>排盘</span></Link>
+        <PlotTrigger />
         <Link className={view === "match" ? "active" : ""} href={`/?${baseQuery}&view=match`}><i>◇</i><span>剧本</span></Link>
         <Link className={view === "square" ? "active" : ""} href={`/?${baseQuery}&view=square`}><i>◉</i><span>广场</span></Link>
       </nav>
+      <PlotPanel defaults={birth} />
       <ChatAssistant contextTitle={assistantContext.title} contextSummary={assistantContext.summary} evidence={assistantContext.evidence} suggestions={assistantContext.suggestions} answer={assistantAnswer} baseHref={assistantHref} returnAnchor={returnAnchor} hiddenFields={assistantFields} />
     </main>
   );
