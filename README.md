@@ -18,7 +18,9 @@ Copy-Item .env.example .env.local
 # Set DEEPSEEK_API_KEY in .env.local, then restart npm run dev
 ```
 
-The assistant uses `deepseek-v4-flash` through the server-side Chat Completions API. Without a key, the UI clearly falls back to local rule explanations.
+The assistant uses the server-side Chat Completions API. The current example targets SiliconFlow with `deepseek-ai/DeepSeek-V3.2`; without a key, the UI falls back to local rule explanations.
+
+For a China-friendly free deployment path, see [docs/DEPLOY_CN.md](docs/DEPLOY_CN.md).
 
 ## Production check
 

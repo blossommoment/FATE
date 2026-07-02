@@ -8,3 +8,10 @@ node_modules/
 out/
 *.tsbuildinfo
 .env*.local
+
+# Tencent Cloud EdgeOne
+.env
+.edgeone/*
+.tef_dist/*
+  
+.vercel
