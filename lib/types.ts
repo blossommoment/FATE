@@ -108,6 +108,14 @@ export type UserProfile = {
     relationship: string;
     weight: number;
   };
+  tertiaryPersona: {
+    god: string;
+    name: string;
+    drive: string;
+    behavior: string;
+    relationship: string;
+    weight: number;
+  } | null;
   combinedPersona: {
     name: string;
     summary: string;

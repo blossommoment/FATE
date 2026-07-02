@@ -64,10 +64,11 @@ export default async function Home({ searchParams }: {
     isLeapMonth: query.partnerIsLeapMonth === "true",
   } : undefined;
   const view = query.view === "deep" || query.view === "match" || query.view === "square" ? query.view : "overview";
+  // 排盘后结果页顶部直接是日主信息卡；落地页只在没有生辰参数时出现
   return (
     <>
-      {(!hasBirth || view === "overview") && <Landing embeddedResult={hasBirth} />}
-      {hasBirth && <ResultContent birth={birth} embedded={view === "overview"} view={view} partnerBirth={partnerBirth} relationType={String(query.relationType ?? "恋爱")} detail={String(query.detail ?? "")} assistantQuestion={String(query.ask ?? "")} flowYear={Number(query.flowYear ?? new Date().getFullYear())} moduleKey={typeof query.module === "string" ? query.module : ""} />}
+      {!hasBirth && <Landing />}
+      {hasBirth && <ResultContent birth={birth} view={view} partnerBirth={partnerBirth} relationType={String(query.relationType ?? "恋爱")} detail={String(query.detail ?? "")} assistantQuestion={String(query.ask ?? "")} flowYear={Number(query.flowYear ?? new Date().getFullYear())} moduleKey={typeof query.module === "string" ? query.module : ""} />}
     </>
   );
 }

@@ -53,7 +53,8 @@ export async function ResultContent({
 
   const profile = analyzeBirth(birth);
   // 推荐候选盘只在广场视图计算：8 张完整排盘是页面最贵的计算，其他视图不需要
-  const recommendations = view === "square" ? candidates
+  const squareEnabled = false; // 广场未开发完，先锁
+  const recommendations = squareEnabled && view === "square" ? candidates
     .map((candidate) => {
       const candidateProfile = analyzeBirth(candidate.birth);
       return { ...candidate, candidateProfile, result: matchProfiles(profile, candidateProfile) };
@@ -389,7 +390,7 @@ export async function ResultContent({
             {profile.specialPoints.map((point, index) => <article className={`special-${point.type}`} key={`${point.title}-${index}`}>
               <div className="special-symbol"><span>{point.type}</span><strong>{point.branches.join(" · ")}</strong></div>
               <div className="special-content"><div><small>结构强度</small><i><b style={{ width: `${point.strength}%` }} /></i></div><h3>{point.title}</h3><p>{point.summary}</p><aside>{point.relationshipImpact}</aside></div>
-              <div className="special-gods">{point.tenGods.map((god) => <span key={god}>{god}</span>)}</div>
+              <div className="special-gods">{point.tenGods.map((god, godIndex) => <span key={`${god}-${godIndex}`}>{god}</span>)}</div>
             </article>)}
           </div> : <div className="special-empty">这张命盘没有形成明显的三合、三会或六冲结构，关系倾向更多由单柱十神承担。</div>}
         </section>
@@ -403,7 +404,7 @@ export async function ResultContent({
         </div>
         <section className="dominant-persona">
           <div className="persona-god"><span>主轴 · {profile.dominantPersona.weight}分 · {profile.dominantBasis}</span><strong>{profile.dominantPersona.god}</strong><small>{profile.dominantPersona.name}</small></div>
-          <div className="persona-god secondary"><span>副轴 · {profile.secondaryPersona.weight}分</span><strong>{profile.secondaryPersona.god}</strong><small>{profile.secondaryPersona.name}</small></div>
+          <div className={`persona-god secondary${profile.tertiaryPersona ? " dual" : ""}`}><span>{profile.tertiaryPersona ? `双副轴 · ${profile.secondaryPersona.weight}/${profile.tertiaryPersona.weight}分` : `副轴 · ${profile.secondaryPersona.weight}分`}</span><strong>{profile.secondaryPersona.god}{profile.tertiaryPersona ? `·${profile.tertiaryPersona.god}` : ""}</strong><small>{profile.secondaryPersona.name}{profile.tertiaryPersona ? ` × ${profile.tertiaryPersona.name}` : ""}</small></div>
           <div className="persona-combined"><span>组合人格</span><h3>{profile.combinedPersona.name}</h3><p>{profile.combinedPersona.summary}</p></div>
           <div><span>行为特征</span><p>{profile.dominantPersona.behavior}；同时带有{profile.secondaryPersona.behavior}的副轴倾向。</p></div>
           <div><span>关系表现</span><p>{profile.dominantPersona.relationship}；副轴表现为{profile.secondaryPersona.relationship}。</p></div>
@@ -542,7 +543,14 @@ export async function ResultContent({
         </div>}
       </section>
 
-      <section className="social-square">
+      {view === "square" && !squareEnabled && <section className="feature-locked">
+        <i>◌</i>
+        <div className="section-number">COMING SOON</div>
+        <h2>同频广场，<br />还在打磨。</h2>
+        <p>该功能还未开放。广场将汇聚同频人的动态与话题——开放之前，先看看你的命盘与合盘。</p>
+        <Link href={`/?${baseQuery}&view=overview`}>← 返回排盘</Link>
+      </section>}
+      {squareEnabled && <section className="social-square">
         <div className="square-main">
           <header className="square-header">
             <div><span>FATE SQUARE</span><h2>同频广场</h2><p>分享此刻，也遇见生活节奏相近的人。</p></div>
@@ -582,7 +590,7 @@ export async function ResultContent({
           <div className="daily-card"><span>今日关系气象</span><strong>适合主动<br />发出邀请</strong><p>你的表达能量比过去一周更松弛。</p></div>
           <div className="hot-topics"><h3>正在发生</h3><div><b>01</b><span># 朋友是选择的家人<small>1.8k 人参与</small></span></div><div><b>02</b><span># 城市散步地图<small>936 人参与</small></span></div><div><b>03</b><span># 独处充电时刻<small>728 人参与</small></span></div></div>
         </aside>
-      </section>
+      </section>}
 
       <section className="match-workspace">
         <div className="match-intro">
@@ -671,10 +679,22 @@ export async function ResultContent({
             "有什么一直想试、但没人陪的事",
           ];
           const inspireSeed = seedOf(`${profile.id}|${partnerProfile.id}|${flowMonth}|${monthTag}`);
-          const inspirations = ideaPool
-            .map((idea, index) => ({ ...idea, weight: (idea.element === monthElement ? 4 : 0) + (idea.element === weakestElement ? 2 : 0) + ((inspireSeed + index * 7) % 12) * .1 }))
-            .sort((x, y) => y.weight - x.weight)
-            .slice(0, 3);
+          // 三签分工：当令签顺流月之气，补益签补两盘之弱，机缘签由印记抽出——避免同属性扎堆
+          const pickIdea = (element: keyof typeof elementLabels, offset: number, exclude: string[]) => {
+            const pool = ideaPool.filter((idea) => idea.element === element && !exclude.includes(idea.title));
+            const fallback = ideaPool.filter((idea) => !exclude.includes(idea.title));
+            const source = pool.length ? pool : fallback;
+            return source[(inspireSeed + offset) % source.length];
+          };
+          const seasonSign = pickIdea(monthElement, 1, []);
+          const remedySign = pickIdea(weakestElement, 3, [seasonSign.title]);
+          const wildcardPool = ideaPool.filter((idea) => ![seasonSign.title, remedySign.title].includes(idea.title));
+          const wildcardSign = wildcardPool[(inspireSeed + 5) % wildcardPool.length];
+          const inspirations = [
+            { ...seasonSign, role: "当令签", why: `流月${flowMonth}天干属${elementLabels[monthElement]}，取${elementLabels[seasonSign.element]}性之事顺势` },
+            { ...remedySign, role: "补益签", why: `两盘合计最弱为${elementLabels[weakestElement]}，取${elementLabels[remedySign.element]}性之事补气` },
+            { ...wildcardSign, role: "机缘签", why: `由两盘印记与当月月份共同抽出` },
+          ];
           const inspireTopics = Array.from({ length: 2 }, (_, index) => topicPool[(inspireSeed + index * 5) % topicPool.length]);
           return (
           <div className="relationship-result" id="match-report">
@@ -710,9 +730,9 @@ export async function ResultContent({
           </div>
           <section className="match-inspire">
             <header><div><span>流月 {flowMonth} · {elementLabels[monthElement]}气当令</span><h3>缘分签 · 本月相处灵感</h3></div><small>{monthTag} · 随流月更换</small></header>
-            <p className="inspire-logic">选签依据：本月节令为 {flowMonth} 月，天干属{elementLabels[monthElement]}；你们两盘合计最弱的一行为{elementLabels[weakestElement]}。三签循「顺当令之{elementLabels[monthElement]}、补两盘之{elementLabels[weakestElement]}」而定，非随机抽取。</p>
+            <p className="inspire-logic">选签逻辑：每件小事按气质归入五行——交换与学习属木、外出与热闹属火、务实与日常属土、承诺与定格属金、安静与沉浸属水。三签分工：当令签顺流月{flowMonth}之{elementLabels[monthElement]}气，补益签补你们两盘合计最弱的{elementLabels[weakestElement]}气，机缘签由两盘印记抽出——三签属性不重复。</p>
             <div className="inspire-grid">
-              {inspirations.map((idea, index) => <article key={idea.title}><i>{["壹", "贰", "叁"][index]}</i><div><h4>{idea.title}<em className={`inspire-el el-${idea.element}`}>{elementLabels[idea.element]}</em></h4><p>{idea.note}</p></div></article>)}
+              {inspirations.map((idea) => <article key={idea.title}><i>{idea.role.slice(0, 1)}</i><div><h4>{idea.title}<em className={`inspire-el el-${idea.element}`}>{elementLabels[idea.element]}性</em></h4><p>{idea.note}</p><small className="inspire-why">{idea.role} · {idea.why}</small></div></article>)}
             </div>
             <div className="inspire-topics"><b>开场话题</b>{inspireTopics.map((topic) => <span key={topic}>{topic}</span>)}</div>
           </section>
@@ -912,6 +932,10 @@ export async function ResultContent({
                 </div>
               </article>
               <p className="guide-philosophy">{relationship.guide.philosophy}</p>
+              <div className="summary-dims">
+                <h4>六维一览<small>全篇唯一的全景一屏</small></h4>
+                {relationship.scoreBreakdown.map((item) => <div className="summary-dim-row" key={item.key}><span>{item.label}</span><i><b style={{ width: `${item.score}%` }} /></i><small>{item.score}</small></div>)}
+              </div>
               <div className="guide-behaviors">
                 <h4>要点回顾<small>最高维度 · 最需留意 · 破局之人</small></h4>
                 <article><span>最高维度</span><div><strong>{bestDim.label} · {bestDim.score} 分</strong><p>{bestDim.summary}</p></div></article>

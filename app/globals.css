@@ -1153,3 +1153,32 @@ main:not(.result-page) .entry form input { font-size:23px; }
 .pl-pair { font:10px DM Mono,monospace; fill:#8a9690; text-anchor:middle; }
 .pl-box.pl-day { stroke-width:2.4; }
 @media (max-width:760px) { .nature-stats strong { font-size:19px; } }
+
+/* 首页 CTA 按钮 */
+.hero-cta { position:relative; z-index:3; margin-top:36px; display:inline-flex; align-items:center; gap:14px; padding:13px 26px 13px 13px; border-radius:44px; background:var(--ink); color:white; transition:.25s; box-shadow:0 16px 40px #11111122; }
+.hero-cta:hover { transform:translateY(-3px); box-shadow:0 22px 52px #11111136; }
+.hero-cta i { width:46px; height:46px; border-radius:50%; display:grid; place-items:center; font:21px Georgia,"Songti SC",serif; font-style:normal; background:linear-gradient(135deg,#4e9a83,#6575aa); }
+.hero-cta span { font:15px Georgia,"Songti SC",serif; }
+.hero-cta span small { display:block; margin-top:4px; font:8px DM Mono,monospace; letter-spacing:.12em; color:#b9b6ae; }
+.hero-cta b { margin-left:8px; font-size:17px; }
+/* 广场未开放 */
+.feature-locked { min-height:56vh; padding:90px 7vw; display:grid; place-content:center; text-align:center; }
+.feature-locked i { width:74px; height:74px; margin:0 auto 22px; border-radius:50%; display:grid; place-items:center; font:30px Georgia,serif; font-style:normal; color:var(--muted); border:1px dashed #b7b3a8; }
+.feature-locked h2 { font-size:clamp(34px,5vw,56px); line-height:1.12; letter-spacing:-.04em; font-weight:400; margin:16px 0; }
+.feature-locked p { max-width:390px; margin:0 auto 30px; color:var(--muted); font-size:13px; line-height:1.85; }
+.feature-locked a { display:inline-block; justify-self:center; padding:13px 28px; border:1px solid var(--ink); border-radius:26px; font:11px DM Mono,monospace; letter-spacing:.1em; transition:.2s; }
+.feature-locked a:hover { background:var(--ink); color:white; }
+/* 柒章六维一览 */
+.summary-dims { margin-top:20px; padding:18px 20px; border-radius:16px; background:white; box-shadow:0 7px 22px #52675e0c; }
+.summary-dims h4 { margin:0 0 14px; font-size:14px; color:#3f4a45; }
+.summary-dims h4 small { margin-left:10px; font-size:9px; font-weight:400; color:#98a29d; }
+.summary-dim-row { display:grid; grid-template-columns:76px 1fr 30px; gap:12px; align-items:center; margin-bottom:9px; }
+.summary-dim-row span { font-size:11px; color:#586962; }
+.summary-dim-row i { height:5px; border-radius:4px; background:#eef1ec; overflow:hidden; display:block; }
+.summary-dim-row b { display:block; height:100%; border-radius:4px; background:linear-gradient(90deg,#4b9a82,#8179b4,#d47c88); }
+.summary-dim-row small { font:11px DM Mono,monospace; color:#98a29d; text-align:right; }
+/* 缘分签取签说明 */
+.inspire-why { display:block; margin-top:8px; font:9px DM Mono,monospace; color:#a3762f; }
+/* 双副轴展示 */
+.persona-god.secondary.dual strong { font-size:30px; line-height:1.2; margin:20px 0 10px; }
+@media (max-width:760px) { .hero-cta { margin-top:26px; } }

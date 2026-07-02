@@ -721,6 +721,11 @@ export function analyzeBirth(birth: BirthInput): UserProfile {
   const secondary = tenGodPersonas[secondaryGodName];
   const dominantPersona = { god: dominantGodName, ...persona, weight: adjustedGodCounts[dominantGodName] };
   const secondaryPersona = { god: secondaryGodName, ...secondary, weight: adjustedGodCounts[secondaryGodName] };
+  // 双副轴：第三位十神权重 ≥15 且与副轴差距 ≤4 时，副轴呈双轴并立
+  const tertiaryGodName = godNames.slice().sort((a, b) => adjustedGodCounts[b] - adjustedGodCounts[a])[2];
+  const tertiaryPersona = adjustedGodCounts[tertiaryGodName] >= 15 && adjustedGodCounts[secondaryGodName] - adjustedGodCounts[tertiaryGodName] <= 4
+    ? { god: tertiaryGodName, ...tenGodPersonas[tertiaryGodName], weight: adjustedGodCounts[tertiaryGodName] }
+    : null;
   const personaNouns: Record<string, string> = {
     七杀: "决断者", 正官: "秩序者", 伤官: "破界者", 食神: "体验者", 正印: "守护者",
     偏印: "洞察者", 正财: "建设者", 偏财: "连接者", 比肩: "独行者", 劫财: "竞合者",
@@ -731,7 +736,7 @@ export function analyzeBirth(birth: BirthInput): UserProfile {
   };
   const combinedPersona = {
     name: `${personaAdjectives[secondaryGodName]}${personaNouns[dominantGodName]}`,
-    summary: `以${dominantGodName}的${persona.drive.replaceAll(" / ", "、")}为主轴，同时带有${secondaryGodName}的${secondary.drive.replaceAll(" / ", "、")}。`,
+    summary: `以${dominantGodName}的${persona.drive.replaceAll(" / ", "、")}为主轴，同时带有${secondaryGodName}的${secondary.drive.replaceAll(" / ", "、")}。${tertiaryPersona ? `另外，${tertiaryPersona.god}（${tertiaryPersona.weight}分）与${secondaryGodName}（${secondaryPersona.weight}分）权重相近，副轴呈双轴并立——${tertiaryPersona.drive.replaceAll(" / ", "、")}的驱动同样清晰，不同场景会切换出面。` : ""}`,
   };
   const rawDeep = (key: string) => deepBase.find((item) => item.key === key)?.score ?? 50;
   // 社交行为模式：综合深维原始分、十神权重与人格四维定档
@@ -832,6 +837,7 @@ export function analyzeBirth(birth: BirthInput): UserProfile {
     tenGodSources,
     dominantPersona,
     secondaryPersona,
+    tertiaryPersona,
     combinedPersona,
     luckCycles,
     specialPoints,

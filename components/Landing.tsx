@@ -82,6 +82,11 @@ export default function Landing({ embeddedResult = false }: { embeddedResult?: b
         <div className="eyebrow">关系人格建模系统 / SOCIAL MATCHING</div>
         <h1>遇见与你<br /><em>相互成全的人。</em></h1>
         <p className="hero-copy">出生数据不是答案。它是一组坐标，用来理解你如何靠近、表达，以及与谁产生真正的张力。</p>
+        <a className="hero-cta" href="#method">
+          <i>缘</i>
+          <span>开始排盘<small>八字四柱 · 三十秒生成关系画像</small></span>
+          <b>↗</b>
+        </a>
         <div className="five-orbit" aria-hidden="true">
           <span className="wood">木</span><span className="fire">火</span><span className="earth">土</span><span className="metal">金</span><span className="water">水</span>
           <b>你</b>
