@@ -1312,57 +1312,57 @@ export function analyzeRelationship(a: UserProfile, b: UserProfile, relationType
   const verdict: RelationshipAnalysis["guide"]["verdict"] =
     a.dominantPersona.god === b.dominantPersona.god ? {
       title: "双星同轨",
-      quip: `翻译一下：世界上另一个自己。优点是从不需要解释，缺点是连犯错都挑同一个坑——坑里见了面，还得互相笑一声"你也在啊"。`,
+      quip: `世界上另一个自己。优点是从不需要解释，缺点是连犯错都挑同一个坑——坑里见了面，还得互相笑一声"你也在啊"。`,
       tagline: `两张命盘的主轴同为${a.dominantPersona.god}（权重 ${a.dominantPersona.weight}:${b.dominantPersona.weight}），同频毫不费力，只是没有人负责踩刹车。`,
       basis: `主导十神相同 · 均为${a.dominantPersona.name}`,
     } : clashDynamic && breakdownScore("attraction") >= 62 ? {
       title: "相爱相杀",
-      quip: `翻译一下：让你笑得最大声的和气得摔门的，是同一个人。外人劝你们冷静，你们自己知道——这日子过得挺来劲。`,
+      quip: `让你笑得最大声的和气得摔门的，是同一个人。外人劝你们冷静，你们自己知道——这日子过得挺来劲。`,
       tagline: `${clashDynamic.title}，而初见引力偏有 ${breakdownScore("attraction")} 分：吸引与摩擦出自同一组地支，最热闹与最僵持的场面，大概率围绕同一个话题。`,
       basis: `${clashDynamic.title}（强度 ${clashDynamic.strength}）× 初见引力 ${breakdownScore("attraction")}`,
     } : breakdownScore("expression") >= 78 ? {
       title: "高山流水",
-      quip: `翻译一下：你话说一半，TA已经把后半句接完了。想吵架都难——误会还没长大，就被听懂掐灭了。`,
+      quip: `你话说一半，TA已经把后半句接完了。想吵架都难——误会还没长大，就被听懂掐灭了。`,
       tagline: `表达译码 ${breakdownScore("expression")} 分，一方起调，另一方接得住，误译率远低于常人。伯牙不常有，而钟子期就坐在对面。`,
       basis: `表达译码 ${breakdownScore("expression")} · 食伤权重 ${aGod.output.count}:${bGod.output.count}`,
     } : bondDynamic && bondDynamic.scoreImpact >= 4 ? {
       title: "榫卯相合",
-      quip: `翻译一下：不是干柴烈火，是拼图"咔哒"一声对上的那种合适。安静，但严丝合缝——拆开反而费劲。`,
+      quip: `不是干柴烈火，是拼图"咔哒"一声对上的那种合适。安静，但严丝合缝——拆开反而费劲。`,
       tagline: `${bondDynamic.title}将两张盘扣在一处，属于结构性的合得来，不依赖情绪热度维持。`,
       basis: `${bondDynamic.title} · 结构修正 +${bondDynamic.scoreImpact}`,
     } : conflictA >= 62 && conflictB >= 62 ? {
       title: "针尖麦芒",
-      quip: `翻译一下：嘴上谁都不服，心里谁都放不下。外人看是辩论赛，你们自己心里清楚——这是你们独有的调情方式。`,
+      quip: `嘴上谁都不服，心里谁都放不下。外人看是辩论赛，你们自己心里清楚——这是你们独有的调情方式。`,
       tagline: `两支伤官（冲突表达 ${conflictA}:${conflictB}）谁也不肯让话，争执必然精彩，和好得也快——前提是无人翻旧账。`,
       basis: `冲突表达双高 · 伤官权重 ${a.tenGodCounts["伤官"]}:${b.tenGodCounts["伤官"]}`,
     } : extGap >= 25 ? {
       title: "一动一静",
-      quip: `翻译一下：一个负责精彩，一个负责稳当。风筝飞得再高也不慌——线在对方手里，而且对方从不撒手。`,
+      quip: `一个负责精彩，一个负责稳当。风筝飞得再高也不慌——线在对方手里，而且对方从不撒手。`,
       tagline: `外向表达 ${a.personality.extroversion}:${b.personality.extroversion}，一人生风，一人定锚。只要不试图把对方改造成自己，便是上好的配置。`,
       basis: `外向差 ${extGap} · 动静结构互补`,
     } : paceA === "slow" && paceB === "slow" ? {
       title: "文火慢炖",
-      quip: `翻译一下：前三个月像同事，三年后像失散多年的家人。这锅汤急不得——但凡是炖出来的，都散不了。`,
+      quip: `前三个月像同事，三年后像失散多年的家人。这锅汤急不得——但凡是炖出来的，都散不了。`,
       tagline: `两个慢热结构相遇，升温以年为单位计。急不来，同样也散不快——耐心在这里按复利计息。`,
       basis: `关系速度均为慢热 · 信任建立 ${deepScore(a, "trust_speed")}:${deepScore(b, "trust_speed")}`,
     } : relationType !== "恋爱" && breakdownScore("daily") >= 72 ? {
       title: "福禄同席",
-      quip: `翻译一下：一起吃饭不用找话题、沉默也不尴尬的缘分。饭搭子里的天花板，搭伙过日子的免检产品。`,
+      quip: `一起吃饭不用找话题、沉默也不尴尬的缘分。饭搭子里的天花板，搭伙过日子的免检产品。`,
       tagline: `日常黏合 ${breakdownScore("daily")} 分，生活节奏天然咬合，属于可以长期同桌吃饭而不生嫌隙的结构。`,
       basis: `日常黏合 ${breakdownScore("daily")} · ${relationType}场景加权`,
     } : relationshipScore >= 80 ? {
       title: "珠联璧合",
-      quip: `翻译一下：别人磨合三年才解决的问题，你们出厂就自带答案。唯一要练的本事，是别把好运气过成理所当然。`,
+      quip: `别人磨合三年才解决的问题，你们出厂就自带答案。唯一要练的本事，是别把好运气过成理所当然。`,
       tagline: `总分 ${relationshipScore}，六维没有明显短板，此类组合的风险只剩把顺利当作寻常。`,
       basis: `总分 ${relationshipScore} · 六维均衡`,
     } : relationshipScore >= 65 ? {
       title: "渐入佳境",
-      quip: `翻译一下：第一印象平平无奇，处久了真香。属于几年后翻聊天记录，会对着屏幕笑出声的那种。`,
+      quip: `第一印象平平无奇，处久了真香。属于几年后翻聊天记录，会对着屏幕笑出声的那种。`,
       tagline: `总分 ${relationshipScore}，吸引与磨合并存，属于"处着处着就顺了"的类型——前提是熬过前三次别扭。`,
       basis: `总分 ${relationshipScore} · 磨合型结构`,
     } : {
       title: "各自成篇",
-      quip: `翻译一下：两本好书，语言不同。读懂对方得查字典——但查着查着，你就成了世界上最懂那本书的译者。`,
+      quip: `两本好书，语言不同。读懂对方得查字典——但查着查着，你就成了世界上最懂那本书的译者。`,
       tagline: `总分 ${relationshipScore}，两套完整但语法不同的叙事：译得好是互补，译不好是平行——好在译法都写在下面。`,
       basis: `总分 ${relationshipScore} · 差异型结构`,
     };
