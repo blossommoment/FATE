@@ -1133,3 +1133,23 @@ main:not(.result-page) .entry form input { font-size:23px; }
 .inspire-el.el-earth { background:#d6a64f; }
 .inspire-el.el-metal { background:#b09a4e; }
 .inspire-el.el-water { background:#5b83bd; }
+
+/* ───────── 特殊流年标记 ───────── */
+.annual-year-strip a { position:relative; }
+.annual-flag { position:absolute; top:-7px; right:-4px; padding:2px 7px; border-radius:9px; font:8px "Songti SC",serif; font-style:normal; color:#fff; background:linear-gradient(120deg,#b46275,#d68a72); box-shadow:0 3px 9px #b4627540; white-space:nowrap; }
+.annual-specials { margin-top:14px; display:grid; gap:8px; }
+.annual-specials article { padding:15px 17px; border-radius:14px; border:1px solid #ecd9d2; background:linear-gradient(120deg,#fdf6f2,#faeee9); }
+.annual-specials b { display:inline-block; margin-bottom:6px; padding:4px 11px; border-radius:11px; font:10px "Songti SC",serif; color:#fff; background:linear-gradient(120deg,#b46275,#d68a72); }
+.annual-specials p { margin:0; font-size:11px; line-height:1.75; color:#7a6d64; }
+/* ───────── 性情档案数值块 ───────── */
+.nature-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+.nature-stats>div { padding:12px 6px; text-align:center; border-radius:12px; background:#f4f7f4; }
+.nature-stats strong { display:block; font:300 24px DM Mono,monospace; color:#39433e; }
+.nature-stats span { font-size:9px; color:#8a9690; }
+.nature-basis { margin:12px 0 0; font-size:10px; line-height:1.7; color:#7c8983; }
+/* ───────── 社交模式判定依据 ───────── */
+.social-basis { display:block; margin-top:10px; padding-top:9px; border-top:1px dashed #e2e8e2; font:9px DM Mono,monospace; color:#98a29d; line-height:1.7; }
+/* ───────── 连线图补充 ───────── */
+.pl-pair { font:10px DM Mono,monospace; fill:#8a9690; text-anchor:middle; }
+.pl-box.pl-day { stroke-width:2.4; }
+@media (max-width:760px) { .nature-stats strong { font-size:19px; } }

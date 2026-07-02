@@ -361,7 +361,8 @@ export async function ResultContent({
             <div className="annual-year-strip">
               {annualYears.map((year) => {
                 const ganZhi = annualGanZhi(year);
-                return <Link className={`${year === safeFlowYear ? "active " : ""}annual-${annualTone(ganZhi[0])}`} href={`/?${baseQuery}&view=overview&flowYear=${year}#annual-flow`} key={year}><small>{year}</small><strong>{ganZhi}</strong></Link>;
+                const yearSpecials = analyzeAnnualFlow(profile, ganZhi).specials;
+                return <Link className={`${year === safeFlowYear ? "active " : ""}annual-${annualTone(ganZhi[0])}`} href={`/?${baseQuery}&view=overview&flowYear=${year}#annual-flow`} key={year} title={yearSpecials.map((item) => item.name).join("、")}>{yearSpecials.length > 0 && <i className="annual-flag">{yearSpecials[0].name.slice(0, 2)}</i>}<small>{year}</small><strong>{ganZhi}</strong></Link>;
               })}
             </div>
             <article className={`annual-detail annual-${annualTone(selectedAnnual[0])}`}>
@@ -369,6 +370,9 @@ export async function ResultContent({
               <div><span>当年元素标记</span><h3>{selectedAnnual}流年</h3><p>流年天干{selectedAnnual[0]}为{annualFlow.stemElement}，对你的{profile.bazi.dayPillar[0]}日主属于{annualFlow.stemRole}——这一年{annualFlow.stemTheme}相关的主题更容易走到台前。</p></div>
               <div className="annual-element-pills"><span className={`tone-${annualTone(selectedAnnual[0])}`}>天干 · {annualElementNames[annualTone(selectedAnnual[0]) as keyof typeof annualElementNames]}</span><span className={`tone-${annualTone(selectedAnnual[1])}`}>地支 · {annualElementNames[annualTone(selectedAnnual[1]) as keyof typeof annualElementNames]}</span></div>
             </article>
+            {annualFlow.specials.length > 0 && <div className="annual-specials">
+              {annualFlow.specials.map((item) => <article key={item.name}><b>{item.name}</b><p>{item.summary}</p></article>)}
+            </div>}
             {annualFlow.interactions.length > 0 ? <div className="annual-relations">
               {annualFlow.interactions.map((item, index) => <article className={`annual-rel-${item.type}`} key={`${item.title}-${index}`}>
                 <span>{item.type}</span>
@@ -398,7 +402,7 @@ export async function ResultContent({
           <div className="signature"><small>西方星座</small><strong>{zodiacLabels[profile.zodiac]}</strong><span>作为辅助变量参与人格建模</span></div>
         </div>
         <section className="dominant-persona">
-          <div className="persona-god"><span>主轴 · {profile.dominantPersona.weight}分</span><strong>{profile.dominantPersona.god}</strong><small>{profile.dominantPersona.name}</small></div>
+          <div className="persona-god"><span>主轴 · {profile.dominantPersona.weight}分 · {profile.dominantBasis}</span><strong>{profile.dominantPersona.god}</strong><small>{profile.dominantPersona.name}</small></div>
           <div className="persona-god secondary"><span>副轴 · {profile.secondaryPersona.weight}分</span><strong>{profile.secondaryPersona.god}</strong><small>{profile.secondaryPersona.name}</small></div>
           <div className="persona-combined"><span>组合人格</span><h3>{profile.combinedPersona.name}</h3><p>{profile.combinedPersona.summary}</p></div>
           <div><span>行为特征</span><p>{profile.dominantPersona.behavior}；同时带有{profile.secondaryPersona.behavior}的副轴倾向。</p></div>
@@ -503,11 +507,20 @@ export async function ResultContent({
             <p>由人格分布与关系倾向综合推导：四个维度分别对应联系频率、分歧处理、关系推进与安全感来源，描述的是更常出现的互动方式而非固定人设。</p>
           </header>
           <div className="social-model-grid social-chapter-grid">
-            {socialModelItems.map((item) => <article key={item.key}>
-              <header><i>{item.symbol}</i><div><span>{item.label}</span><strong>{item.value}</strong></div></header>
-              <div className="social-spectrum">{item.options.map((option, optionIndex) => <span className={optionIndex === item.active ? "active" : ""} key={option}>{option}</span>)}</div>
-              <p>{item.description}</p>
-            </article>)}
+            {socialModelItems.map((item) => {
+              const socialBasis = {
+                communication: `判定依据：食伤权重 ${profile.tenGodAnalysis[4].count}（表达输出）· 外向表达 ${profile.personality.extroversion} · 情感依赖 ${profile.deepAnalysis.find((d) => d.key === "dependency")?.score}`,
+                conflict: `判定依据：情绪稳定 ${profile.personality.stability} · 压力韧性 ${profile.deepAnalysis.find((d) => d.key === "resilience")?.score} · 官杀权重 ${profile.tenGodAnalysis[0].count}`,
+                pace: `判定依据：信任建立速度 ${profile.deepAnalysis.find((d) => d.key === "trust_speed")?.score} · 社交开放度 ${profile.deepAnalysis.find((d) => d.key === "social_openness")?.score} · 关系警觉 ${profile.deepAnalysis.find((d) => d.key === "vigilance")?.score}`,
+                attachment: `判定依据：情感依赖 ${profile.deepAnalysis.find((d) => d.key === "dependency")?.score} · 自主空间 ${profile.deepAnalysis.find((d) => d.key === "autonomy")?.score} · 情感强度 ${profile.personality.emotion}`,
+              }[item.key];
+              return <article key={item.key}>
+                <header><i>{item.symbol}</i><div><span>{item.label}</span><strong>{item.value}</strong></div></header>
+                <div className="social-spectrum">{item.options.map((option, optionIndex) => <span className={optionIndex === item.active ? "active" : ""} key={option}>{option}</span>)}</div>
+                <p>{item.description}</p>
+                <small className="social-basis">{socialBasis}</small>
+              </article>;
+            })}
           </div>
           <blockquote className="social-chapter-quote">“{profile.summary}”</blockquote>
         </section>}
@@ -608,13 +621,13 @@ export async function ResultContent({
           const dscore = (target: typeof profile, key: string) => target.deepAnalysis.find((item) => item.key === key)?.score ?? 50;
           const bestDim = relationship.scoreBreakdown.slice().sort((x, y) => y.score - x.score)[0];
           const moduleMeta = [
-            { key: "dimensions", no: "壹", title: "六维总览", subtitle: "总起：分数、剧本与建议", teaser: `${bestDim.label} ${bestDim.score} 分领跑六维` },
-            { key: "nature", no: "贰", title: "性情底色", subtitle: "两个人各自的出厂设置", teaser: relationship.guide.dispositions[0]?.trait ?? "结构安稳，各有分寸" },
-            { key: "structure", no: "叁", title: "盘中脉络", subtitle: "两张命盘之间的合冲连线", teaser: relationship.branchDynamics[0]?.title ?? "无强合冲，互动由行为层主导" },
-            { key: "manner", no: "肆", title: "相处样态", subtitle: "谁主动、谁吃醋、氛围如何", teaser: relationship.guide.behaviors[1]?.conclusion ?? relationship.guide.behaviors[0].conclusion },
-            { key: "reef", no: "伍", title: "摩擦与化解", subtitle: "易起分歧的情境与解法", teaser: relationship.guide.hotspots[0].scene },
-            { key: "voyage", no: "陆", title: "长线经营", subtitle: "首步、节奏与相处路径", teaser: `主动权宜在${relationship.guide.initiator.name}` },
-            { key: "summary", no: "柒", title: "关系总结", subtitle: "判词、要点与 AI 点评", teaser: `判词：${relationship.guide.verdict.title}` },
+            { key: "dimensions", no: "壹", title: "关系总览", subtitle: "总分、六维与剧本", teaser: `${bestDim.label} ${bestDim.score} 分领跑六维` },
+            { key: "nature", no: "贰", title: "两人底色", subtitle: "各自的性情与出厂设置", teaser: relationship.guide.dispositions[0]?.trait ?? "结构安稳，各有分寸" },
+            { key: "structure", no: "叁", title: "八字化学反应", subtitle: "两张命盘如何咬合", teaser: relationship.branchDynamics[0]?.title ?? "无强合冲，互动由行为层主导" },
+            { key: "manner", no: "肆", title: "相处样态", subtitle: "日常里的你们：谁主动、谁吃醋", teaser: relationship.guide.behaviors[1]?.conclusion ?? relationship.guide.behaviors[0].conclusion },
+            { key: "reef", no: "伍", title: "摩擦与化解", subtitle: "最容易起分歧的具体情景", teaser: relationship.guide.hotspots[0].scene },
+            { key: "voyage", no: "陆", title: "长线经营", subtitle: "给这段关系的行动建议", teaser: `先动的人：${relationship.guide.initiator.name}` },
+            { key: "summary", no: "柒", title: "总结与要点", subtitle: "判词回顾与全景收束", teaser: `判词：${relationship.guide.verdict.title}` },
           ];
           const activeIndex = moduleMeta.findIndex((item) => item.key === moduleKey);
           const active = activeIndex >= 0 ? moduleMeta[activeIndex] : null;
@@ -683,7 +696,7 @@ export async function ResultContent({
           <div className="match-keypoints">
             <article><i>合</i><div><span>最合的地方</span><h4>{bestDim.label} · {bestDim.score} 分</h4><p>{bestDim.summary}</p></div></article>
             <article><i>磨</i><div><span>最要留意</span><h4>{relationship.guide.hotspots[0].scene}</h4><p>{relationship.guide.hotspots[0].playbook}</p></div></article>
-            <article><i>先</i><div><span>破局之人</span><h4>主动权宜在{relationship.guide.initiator.name}</h4><p>{relationship.guide.initiator.firstMove}</p></div></article>
+            <article><i>先</i><div><span>破局之人</span><h4>先动的人：{relationship.guide.initiator.name}</h4><p>{relationship.guide.initiator.firstMove}</p></div></article>
           </div>
           <div className="module-directory">
             <header><div><span>REPORT CHAPTERS</span><h3>报告目录 · 六章</h3></div><small>逐章展开，每一章都可单独转发</small></header>
@@ -777,10 +790,6 @@ export async function ResultContent({
             </section>
             </>}
             {active.key === "structure" && <>
-            <section className="match-score-method">
-              <header><div><span>结构连线</span><h3>合、冲、相制，各落在哪一柱</h3></div><small>冲＝红 · 六合＝绿 · 三合三会＝蓝 · 相制＝金（虚线）</small></header>
-              <PillarLinks user={profile} partner={partnerProfile} userName={userNameSafe} partnerName={partnerNameSafe} dynamics={relationship.branchDynamics} />
-            </section>
             <section className="duo-bazi-comparison">
               <header>
                 <div><span>双人四柱命盘</span><h3>先看清两个人，再谈这段关系</h3></div>
@@ -802,6 +811,10 @@ export async function ResultContent({
                   </div>
                 </article>)}
               </div>
+            </section>
+            <section className="match-score-method">
+              <header><div><span>结构连线</span><h3>合、冲、相制，各落在哪一柱</h3></div><small>冲＝红 · 六合＝绿 · 三合三会＝蓝 · 相制＝金（虚线）</small></header>
+              <PillarLinks user={profile} partner={partnerProfile} userName={userNameSafe} partnerName={partnerNameSafe} dynamics={relationship.branchDynamics} />
             </section>
             <section className="duo-branch-script">
               <header><div><span>合盘特殊结构</span><h3>两张命盘放在一起，新发生了什么</h3></div><small>六合 · 六冲 · 三合 · 三会 · 天干相制</small></header>
@@ -846,9 +859,10 @@ export async function ResultContent({
               <div className="nature-persons">
                 {[{ target: profile, name: userNameSafe, tone: "mine" }, { target: partnerProfile, name: partnerNameSafe, tone: "theirs" }].map(({ target, name, tone }) => <article className={`nature-card ${tone}`} key={tone}>
                   <header><i>{target.bazi.dayPillar[0]}</i><div><strong>{name}</strong><span>{target.bazi.dayPillar}日柱 · {target.combinedPersona.name}</span></div><b>{attachLabel(target)}依恋</b></header>
-                  <div className="nature-bars">
-                    {personalityRows.map(([label, key]) => <div key={key}><span>{label}</span><i><b style={{ width: `${target.personality[key]}%` }} /></i><small>{target.personality[key]}</small></div>)}
+                  <div className="nature-stats">
+                    {personalityRows.map(([label, key]) => <div key={key}><strong>{target.personality[key]}</strong><span>{label}</span></div>)}
                   </div>
+                  <p className="nature-basis">主轴{target.dominantPersona.god}（{target.dominantBasis}）· {target.dominantPersona.drive.replaceAll(" / ", "、")}驱动</p>
                   <div className="nature-tags">{target.identityTags.map((tag) => <span key={tag}>{tag}</span>)}</div>
                 </article>)}
               </div>
@@ -878,13 +892,13 @@ export async function ResultContent({
               <article className="guide-initiator">
                 <i>先</i>
                 <div>
-                  <h4>主动之权，宜在{relationship.guide.initiator.name}</h4>
+                  <h4>主动权，建议交给{relationship.guide.initiator.name}</h4>
                   <p>{relationship.guide.initiator.why}</p>
                 </div>
               </article>
               <div className="voyage-path">
                 <article><i>壹</i><div><span>首步</span><p>{relationship.guide.initiator.firstMove}</p></div></article>
-                <article><i>贰</i><div><span>磨合</span><p>{relationship.guide.hotspots[0].playbook}</p></div></article>
+                <article><i>贰</i><div><span>磨合</span><p>{(relationship.guide.hotspots[1] ?? relationship.guide.hotspots[0]).playbook}</p></div></article>
                 <article><i>叁</i><div><span>长线</span><p>{relationship.guide.longRun}</p></div></article>
               </div>
             </section>}
@@ -902,7 +916,7 @@ export async function ResultContent({
                 <h4>要点回顾<small>最高维度 · 最需留意 · 破局之人</small></h4>
                 <article><span>最高维度</span><div><strong>{bestDim.label} · {bestDim.score} 分</strong><p>{bestDim.summary}</p></div></article>
                 <article><span>最需留意</span><div><strong>{relationship.guide.hotspots[0].scene}</strong><p>{relationship.guide.hotspots[0].playbook}</p></div></article>
-                <article><span>破局之人</span><div><strong>主动权宜在{relationship.guide.initiator.name}</strong><p>{relationship.guide.initiator.firstMove}</p></div></article>
+                <article><span>破局之人</span><div><strong>先动的人：{relationship.guide.initiator.name}</strong><p>{relationship.guide.initiator.firstMove}</p></div></article>
               </div>
               <p className="guide-longrun">{relationship.guide.longRun}</p>
               <Link className="guide-ai" href={`${moduleBase}&module=summary&ask=${encodeURIComponent("综合所有维度点评我们这段关系，并给出三条最重要的相处建议")}#match-report`}>

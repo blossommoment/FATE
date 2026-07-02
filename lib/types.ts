@@ -69,6 +69,7 @@ export type UserProfile = {
   socialProfile: SocialProfile;
   summary: string;
   archetype: string;
+  dominantBasis: string;
   identityTags: string[];
   traitAnalysis: {
     key: string;
