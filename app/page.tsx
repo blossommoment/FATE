@@ -1,7 +1,35 @@
+import type { Metadata } from "next";
 import Landing from "@/components/Landing";
 import InviteLanding from "@/components/InviteLanding";
 import { ResultContent } from "@/app/result/page";
 import type { BirthInput } from "@/lib/types";
+
+export async function generateMetadata({ searchParams }: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}): Promise<Metadata> {
+  const query = await searchParams;
+  const ogImage = { url: "/images/five-elements-hero.png", width: 1200, height: 630 };
+  if (query.inviteYear && query.year === undefined) {
+    const inviter = String(query.inviteName ?? "TA");
+    const title = `「${inviter}」想和你合一盘 | FATE°`;
+    const description = "填上你的出生时间，两个人的关系剧本同时展开：怎么沟通、如何升温、冲突从哪里开始。不需要注册，一条链接就是档案。";
+    return { title, description, openGraph: { title, description, images: [ogImage] } };
+  }
+  if (query.year !== undefined) {
+    const name = String(query.name ?? "我");
+    const isMatch = query.partnerYear !== undefined;
+    const title = isMatch
+      ? `${name} × ${String(query.partnerName ?? "TA")}的${String(query.relationType ?? "恋爱")}合盘 | FATE°`
+      : `${name}的八字关系画像 | FATE°`;
+    const description = isMatch
+      ? "两张命盘放在一起，看你们怎么沟通、如何升温、冲突从哪里开始、吵架后怎么修复。"
+      : "四柱、五行、十神与十二维关系人格——出生数据变成一种理解关系的新语言。";
+    return { title, description, openGraph: { title, description, images: [ogImage] } };
+  }
+  const title = "FATE° — 遇见与你相互成全的人";
+  const description = "不是算命，而是一种理解关系的新语言。输入出生时间，生成可解释的八字关系画像与双人合盘。";
+  return { title, description, openGraph: { title, description, images: [ogImage] } };
+}
 
 export default async function Home({ searchParams }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;

@@ -863,7 +863,9 @@ function compatibilityBreakdown(
     ? { attraction: 8, emotional: 12, expression: 22, power: 24, daily: 14, repair: 20 }
     : relationType === "朋友"
       ? { attraction: 15, emotional: 17, expression: 22, power: 14, daily: 17, repair: 15 }
-      : { attraction: 20, emotional: 22, expression: 16, power: 14, daily: 16, repair: 12 };
+      : relationType === "家人"
+        ? { attraction: 4, emotional: 23, expression: 19, power: 18, daily: 18, repair: 18 }
+        : { attraction: 20, emotional: 22, expression: 16, power: 14, daily: 16, repair: 12 };
   const dynamicLabels = dynamics.length ? dynamics.map((item) => `${item.title}${item.scoreImpact > 0 ? "+" : ""}${item.scoreImpact}`).join("、") : "无强合冲";
   const items = [
     { key: "attraction", label: "初见引力", score: attraction, weight: weights.attraction, summary: attraction >= 70 ? "差异与互补能形成明显注意力，容易很快感到对方有意思。" : "吸引更依赖共同经历，不一定在第一眼就形成强张力。", basis: [`火水、木金互补 ${elementComplement.toFixed(1)}`, `表达差 ${extGap}`, `合会增益 ${positiveDynamic}`] },
@@ -895,6 +897,59 @@ export function matchProfiles(a: UserProfile, b: UserProfile): MatchResult {
 export function explainMatch(score: number, reasons: string[]): string {
   const tone = score >= 80 ? "你们呈现出很强的关系潜力" : score >= 65 ? "你们具备值得探索的互补空间" : "你们的连接更需要耐心建立";
   return `${tone}。${reasons.join("")}这份解释只描述规则结果，不替代真实互动；最好的验证，仍然是一次诚实而轻松的对话。`;
+}
+
+export type AnnualFlow = {
+  stemElement: string;
+  stemRole: string;
+  stemTheme: string;
+  interactions: { type: "冲" | "六合" | "半合" | "同气"; title: string; summary: string }[];
+};
+
+// 流年干支与原局四柱的结构关系：只描述哪一柱的主题被触发，不作吉凶判断。
+export function analyzeAnnualFlow(profile: UserProfile, ganZhi: string): AnnualFlow {
+  const dayStem = profile.bazi.dayPillar[0];
+  const elementCn: Record<keyof Elements, string> = { wood: "木", fire: "火", earth: "土", metal: "金", water: "水" };
+  const stemElement = elementCn[stemElements[stems.indexOf(ganZhi[0])]];
+  const stemRole = elementRoleForDayMaster(dayStem, stemElement);
+  const roleThemes: Record<string, string> = {
+    比劫: "自我立场与同伴关系", 食伤: "表达、体验与输出", 财星: "投入、经营与现实事务",
+    官杀: "规则、责任与外部压力", 印星: "学习、支持与安全感",
+  };
+  const branch = ganZhi[1];
+  const clashMap: Record<string, string> = { 子: "午", 午: "子", 丑: "未", 未: "丑", 寅: "申", 申: "寅", 卯: "酉", 酉: "卯", 辰: "戌", 戌: "辰", 巳: "亥", 亥: "巳" };
+  const sixMap: Record<string, string> = { 子: "丑", 丑: "子", 寅: "亥", 亥: "寅", 卯: "戌", 戌: "卯", 辰: "酉", 酉: "辰", 巳: "申", 申: "巳", 午: "未", 未: "午" };
+  const trioGroups: [string, string, string, string][] = [
+    ["申", "子", "辰", "水"], ["亥", "卯", "未", "木"], ["寅", "午", "戌", "火"], ["巳", "酉", "丑", "金"],
+  ];
+  const interactions: AnnualFlow["interactions"] = [];
+  profile.bazi.pillars.forEach((pillar) => {
+    const god = pillar.hiddenTenGods[0] ?? "日主";
+    if (clashMap[branch] === pillar.zhi) interactions.push({
+      type: "冲", title: `流年${branch}冲${pillar.label}${pillar.zhi}`,
+      summary: `${pillar.label}承载的${god}（${godThemesForRelationship(god)}）这一年更容易被外部事件正面触发，原有节奏会被打断或加速。`,
+    });
+    if (sixMap[branch] === pillar.zhi) interactions.push({
+      type: "六合", title: `流年${branch}与${pillar.label}${pillar.zhi}六合`,
+      summary: `外部环境与${pillar.label}的${god}（${godThemesForRelationship(god)}）更容易形成配合接口，相关主题推进阻力较小。`,
+    });
+    if (branch === pillar.zhi) interactions.push({
+      type: "同气", title: `流年${branch}与${pillar.label}同支`,
+      summary: `${pillar.label}的既有模式被同类能量加强，${god}相关的惯性这一年更明显。`,
+    });
+  });
+  trioGroups.forEach(([first, second, third, element]) => {
+    const group = [first, second, third];
+    if (!group.includes(branch)) return;
+    const partners = profile.bazi.pillars.filter((pillar) => group.includes(pillar.zhi) && pillar.zhi !== branch);
+    if (!partners.length) return;
+    const role = elementRoleForDayMaster(dayStem, element);
+    interactions.push({
+      type: "半合", title: `流年${branch}与${[...new Set(partners.map((pillar) => pillar.zhi))].join("、")}半合${element}`,
+      summary: `${element}属性的主题（对你属于${role}，即${roleThemes[role]}）这一年更容易被激活，相关场景出现频率上升。`,
+    });
+  });
+  return { stemElement, stemRole, stemTheme: roleThemes[stemRole], interactions };
 }
 
 function elementRoleForDayMaster(dayStem: string, targetElement: string) {

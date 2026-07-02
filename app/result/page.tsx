@@ -1,9 +1,11 @@
 import Link from "next/link";
 import type { CSSProperties } from "react";
-import { analyzeBirth, analyzeRelationship, matchProfiles, validateBirth } from "@/lib/fate";
+import { analyzeAnnualFlow, analyzeBirth, analyzeRelationship, matchProfiles, validateBirth } from "@/lib/fate";
 import type { BirthInput } from "@/lib/types";
 import ChatAssistant from "@/components/ChatAssistant";
 import InviteShare from "@/components/InviteShare";
+import ShareCard from "@/components/ShareCard";
+import HistoryRecorder from "@/components/HistoryRecorder";
 import { askDeepSeek } from "@/lib/deepseek";
 
 const zodiacLabels: Record<string, string> = {
@@ -240,8 +242,15 @@ export async function ResultContent({
     : profile.luckCycles.currentYear;
   const selectedAnnual = annualGanZhi(safeFlowYear);
   const annualElementNames = { wood: "木", fire: "火", earth: "土", metal: "金", water: "水" };
+  const annualFlow = analyzeAnnualFlow(profile, selectedAnnual);
   return (
     <main id={`view-${view}`} className={`result-page view-${view} day-theme-${dayTheme}`}>
+      <HistoryRecorder entry={{
+        name: birth.name ?? "我",
+        birthLabel: `${birth.calendarType === "lunar" ? "农历" : "公历"} ${birth.year}.${birth.month}.${birth.day} ${String(birth.hour).padStart(2, "0")}:${String(birth.minute ?? 0).padStart(2, "0")}`,
+        ...(partnerBirth ? { partnerName: partnerBirth.name ?? "TA" } : {}),
+        url: `/?${baseQuery}&view=${view}${partnerQuery}`,
+      }} />
       {!embedded && <nav>
         <Link className="brand" href="/"><i>缘</i>FATE<span>°</span></Link>
         <div className="nav-links"><span>关系档案 · 已生成</span><Link href="/">重新分析</Link></div>
@@ -315,9 +324,16 @@ export async function ResultContent({
             </div>
             <article className={`annual-detail annual-${annualTone(selectedAnnual[0])}`}>
               <div className="annual-seal"><small>{safeFlowYear}</small><strong>{selectedAnnual[0]}<b>{selectedAnnual[1]}</b></strong></div>
-              <div><span>当年元素标记</span><h3>{selectedAnnual}流年</h3><p>天干为{annualElementNames[annualTone(selectedAnnual[0]) as keyof typeof annualElementNames]}，地支为{annualElementNames[annualTone(selectedAnnual[1]) as keyof typeof annualElementNames]}。此处仅作为时间视觉索引，后续可再加入流年与原局的合冲关系。</p></div>
+              <div><span>当年元素标记</span><h3>{selectedAnnual}流年</h3><p>流年天干{selectedAnnual[0]}为{annualFlow.stemElement}，对你的{profile.bazi.dayPillar[0]}日主属于{annualFlow.stemRole}——这一年{annualFlow.stemTheme}相关的主题更容易走到台前。</p></div>
               <div className="annual-element-pills"><span className={`tone-${annualTone(selectedAnnual[0])}`}>天干 · {annualElementNames[annualTone(selectedAnnual[0]) as keyof typeof annualElementNames]}</span><span className={`tone-${annualTone(selectedAnnual[1])}`}>地支 · {annualElementNames[annualTone(selectedAnnual[1]) as keyof typeof annualElementNames]}</span></div>
             </article>
+            {annualFlow.interactions.length > 0 ? <div className="annual-relations">
+              {annualFlow.interactions.map((item, index) => <article className={`annual-rel-${item.type}`} key={`${item.title}-${index}`}>
+                <span>{item.type}</span>
+                <div><h4>{item.title}</h4><p>{item.summary}</p></div>
+              </article>)}
+              <small>以上只标注流年与原局的结构触发点，不构成吉凶判断。</small>
+            </div> : <p className="annual-relations-empty">{selectedAnnual}流年与你的四柱没有形成明显的冲、六合或半合，这一年的节奏更多由大运与现实安排决定。</p>}
           </section>
           <footer>年龄按传统排盘虚岁显示；起运时刻精确到分钟。</footer>
         </section>
@@ -530,7 +546,7 @@ export async function ResultContent({
           <label className="relation-select"><span>日期类型</span><select name="partnerCalendarType" defaultValue={partnerBirth?.calendarType ?? "solar"}><option value="solar">公历</option><option value="lunar">农历</option></select></label>
           <label className="relation-select"><span>对方性别</span><select name="partnerGender" defaultValue={partnerBirth?.gender ?? "male"}><option value="female">女</option><option value="male">男</option></select></label>
           <label className="leap-check"><span>农历闰月</span><span><input type="checkbox" name="partnerIsLeapMonth" value="true" defaultChecked={partnerBirth?.isLeapMonth ?? false} />仅农历闰月时勾选</span></label>
-          <label className="relation-select"><span>你们的关系</span><select name="relationType" defaultValue={relationType}><option>恋爱</option><option>朋友</option><option>同事</option></select></label>
+          <label className="relation-select"><span>你们的关系</span><select name="relationType" defaultValue={relationType}><option>恋爱</option><option>朋友</option><option>同事</option><option>家人</option></select></label>
           <button type="submit">生成双人互动分析 <span>→</span></button>
         </form>
 
@@ -564,6 +580,16 @@ export async function ResultContent({
             <h3>{relationship.headline}</h3>
             <p>{relationship.scoreSummary}</p>
           </div>
+          <ShareCard
+            userName={birth.name ?? "我"}
+            partnerName={partnerBirth?.name ?? "TA"}
+            userPillar={profile.bazi.dayPillar}
+            partnerPillar={partnerProfile.bazi.dayPillar}
+            score={relationship.score}
+            headline={relationship.headline}
+            relationType={relationship.relationType}
+            highlights={relationship.scoreBreakdown.slice().sort((a, b) => b.score - a.score).slice(0, 3).map((item) => ({ label: item.label, score: item.score }))}
+          />
           <section className="duo-radar-panel">
             <header><div><span>双人六维关系图</span><h3>你们在哪些地方相似，哪里互补</h3></div><div className="duo-legend"><i />你 <b />对方</div></header>
             <div className="duo-radar-chart">

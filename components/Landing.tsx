@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import HistoryPanel from "@/components/HistoryPanel";
 import type { BirthInput, MatchResult, UserProfile } from "@/lib/types";
 
 const candidates: { name: string; role: string; birth: BirthInput }[] = [
@@ -111,6 +112,8 @@ export default function Landing({ embeddedResult = false }: { embeddedResult?: b
           {error && <p className="error">{error}</p>}
         </form>
       </section>
+
+      <HistoryPanel />
 
       {profile && (
         <section className="report" id="report">
