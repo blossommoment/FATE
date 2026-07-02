@@ -1,4 +1,5 @@
 import Landing from "@/components/Landing";
+import InviteLanding from "@/components/InviteLanding";
 import { ResultContent } from "@/app/result/page";
 import type { BirthInput } from "@/lib/types";
 
@@ -7,6 +8,17 @@ export default async function Home({ searchParams }: {
 }) {
   const query = await searchParams;
   const hasBirth = ["year", "month", "day", "hour"].every((key) => query[key] !== undefined);
+  if (!hasBirth && query.inviteYear) {
+    const inviter: BirthInput = {
+      year: Number(query.inviteYear), month: Number(query.inviteMonth),
+      day: Number(query.inviteDay), hour: Number(query.inviteHour),
+      minute: Number(query.inviteMinute ?? 0), name: String(query.inviteName ?? "TA"),
+      gender: query.inviteGender === "male" ? "male" : "female",
+      calendarType: query.inviteCalendarType === "lunar" ? "lunar" : "solar",
+      isLeapMonth: query.inviteIsLeapMonth === "true",
+    };
+    return <InviteLanding inviter={inviter} relationType={String(query.relationType ?? "恋爱")} />;
+  }
   const birth: BirthInput = {
     year: Number(query.year), month: Number(query.month),
     day: Number(query.day), hour: Number(query.hour),

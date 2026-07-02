@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import ElementFlames from "@/components/ElementFlames";
 import type { BirthInput, MatchResult, UserProfile } from "@/lib/types";
 
 const candidates: { name: string; role: string; birth: BirthInput }[] = [
@@ -129,9 +130,9 @@ export default function Landing({ embeddedResult = false }: { embeddedResult?: b
           </div>
 
           <div className="profile-grid">
-            <div className="element-card">
-              <small>五行能量分布 / 共 8 个字</small>
-              <div className="elements">{Object.entries(profile.bazi.elements).map(([key, value]) => <div key={key}><b>{value}</b><span>{elementLabels[key as keyof typeof elementLabels]}</span></div>)}</div>
+            <div className="element-card element-flames-panel landing-flames">
+              <div className="element-flames-copy"><small>五行能量分布 / 加权占比</small></div>
+              <ElementFlames strength={profile.bazi.elementStrength} counts={profile.bazi.elements} />
             </div>
             <div className="social-card">
               <small>社交行为模型</small>
