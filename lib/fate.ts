@@ -3,7 +3,8 @@ import type {
   UserProfile, Zodiac,
   RelationshipAnalysis,
 } from "./types";
-import { Solar } from "lunar-javascript";
+import { Lunar, Solar } from "lunar-javascript";
+import { ChildLimit, DefaultChildLimitProvider, Gender as TymeGender, SolarTime } from "tyme4ts";
 
 const stems = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"];
 const branches = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
@@ -13,85 +14,64 @@ const branchElements: (keyof Elements)[] = ["water", "earth", "wood", "wood", "e
 const clamp = (value: number) => Math.max(0, Math.min(100, Math.round(value)));
 const pillar = (index: number) => stems[((index % 10) + 10) % 10] + branches[((index % 12) + 12) % 12];
 
-const branchMainStem: Record<string, string> = {
-  子: "癸", 丑: "己", 寅: "甲", 卯: "乙", 辰: "戊", 巳: "丙",
-  午: "丁", 未: "己", 申: "庚", 酉: "辛", 戌: "戊", 亥: "壬",
-};
-
-function tenGodForStem(dayStem: string, targetStem: string) {
-  const dayStemIndex = stems.indexOf(dayStem);
-  const targetStemIndex = stems.indexOf(targetStem);
-  if (dayStemIndex < 0 || targetStemIndex < 0) return "未知";
-  const dayElement = Math.floor(dayStemIndex / 2);
-  const targetElement = Math.floor(targetStemIndex / 2);
-  const samePolarity = dayStemIndex % 2 === targetStemIndex % 2;
-  if (dayElement === targetElement) return samePolarity ? "比肩" : "劫财";
-  if ((dayElement + 1) % 5 === targetElement) return samePolarity ? "食神" : "伤官";
-  if ((dayElement + 2) % 5 === targetElement) return samePolarity ? "偏财" : "正财";
-  if ((targetElement + 2) % 5 === dayElement) return samePolarity ? "七杀" : "正官";
-  return samePolarity ? "偏印" : "正印";
+function toSolarBirth(birth: BirthInput): BirthInput {
+  if (birth.calendarType !== "lunar") return birth;
+  const lunar = Lunar.fromYmdHms(
+    birth.year,
+    birth.isLeapMonth ? -birth.month : birth.month,
+    birth.day,
+    birth.hour,
+    birth.minute ?? 0,
+    0,
+  );
+  const solar = lunar.getSolar();
+  return {
+    ...birth,
+    year: solar.getYear(),
+    month: solar.getMonth(),
+    day: solar.getDay(),
+    calendarType: "solar",
+    isLeapMonth: false,
+  };
 }
 
-const luckGodThemes: Record<string, { theme: string; action: string }> = {
-  比肩: { theme: "自主与同伴关系", action: "更强调自己的选择，也会重新整理同伴边界" },
-  劫财: { theme: "竞争与资源重组", action: "合作、竞争和主导权议题更容易同时出现" },
-  食神: { theme: "表达与生活体验", action: "适合把想法做成作品，也更在意生活是否舒展" },
-  伤官: { theme: "突破与自我表达", action: "更容易质疑旧规则，主动寻找新的表达出口" },
-  偏财: { theme: "机会与流动连接", action: "外部机会、人际流动和快速判断会变得更活跃" },
-  正财: { theme: "现实经营与积累", action: "更关注可兑现的结果、稳定投入与长期建设" },
-  七杀: { theme: "挑战与快速决断", action: "压力会推着你加快决策，同时考验边界和节奏" },
-  正官: { theme: "责任与秩序建立", action: "身份、承诺与规则感会被放到更重要的位置" },
-  偏印: { theme: "洞察与路径转向", action: "会更依赖自己的判断，并尝试非标准的解决路径" },
-  正印: { theme: "学习与安全支撑", action: "学习、休整、被支持以及内在稳定感更值得经营" },
-};
-
-function calculateLuckCycles(birth: BirthInput, dayStem: string): UserProfile["luckCycles"] {
-  const solar = Solar.fromYmdHms(birth.year, birth.month, birth.day, birth.hour, birth.minute ?? 0, 0);
-  const chart = solar.getLunar().getEightChar();
-  chart.setSect(2);
-  const yun = chart.getYun(birth.gender === "male" ? 1 : 0, 2);
+function calculateLuckCycles(birth: BirthInput): UserProfile["luckCycles"] {
+  const solarBirth = toSolarBirth(birth);
+  ChildLimit.provider = new DefaultChildLimitProvider();
+  const childLimit = ChildLimit.fromSolarTime(
+    SolarTime.fromYmdHms(solarBirth.year, solarBirth.month, solarBirth.day, solarBirth.hour, solarBirth.minute ?? 0, 0),
+    birth.gender === "male" ? TymeGender.MAN : TymeGender.WOMAN,
+  );
   const currentYear = new Date().getFullYear();
-  const periods: UserProfile["luckCycles"]["periods"] = yun.getDaYun(9).slice(1).map((cycle: {
-    getIndex: () => number;
-    getGanZhi: () => string;
-    getStartYear: () => number;
-    getEndYear: () => number;
-    getStartAge: () => number;
-    getEndAge: () => number;
-  }) => {
-    const ganZhi = cycle.getGanZhi();
-    const stemTenGod = tenGodForStem(dayStem, ganZhi[0]);
-    const branchTenGod = tenGodForStem(dayStem, branchMainStem[ganZhi[1]]);
-    const stemTheme = luckGodThemes[stemTenGod] ?? { theme: "阶段转换", action: "生活重点会随环境重新排序" };
-    const branchTheme = luckGodThemes[branchTenGod] ?? stemTheme;
+  const firstCycle = childLimit.getStartDecadeFortune();
+  const periods: UserProfile["luckCycles"]["periods"] = Array.from({ length: 8 }, (_, index) => {
+    const cycle = firstCycle.next(index);
+    const startYear = cycle.getStartSixtyCycleYear().getYear();
+    const endYear = cycle.getEndSixtyCycleYear().getYear();
     return {
-      index: cycle.getIndex(),
-      ganZhi,
-      startYear: cycle.getStartYear(),
-      endYear: cycle.getEndYear(),
+      index: index + 1,
+      ganZhi: cycle.getName(),
+      startYear,
+      endYear,
       startAge: cycle.getStartAge(),
       endAge: cycle.getEndAge(),
-      stemTenGod,
-      branchTenGod,
-      theme: stemTheme.theme,
-      analysis: `${stemTenGod}在外显层推动${stemTheme.theme}，${branchTenGod}作为阶段底色；${stemTheme.action}，同时会以“${branchTheme.theme}”的方式落到日常。`,
-      isCurrent: currentYear >= cycle.getStartYear() && currentYear <= cycle.getEndYear(),
+      isCurrent: currentYear >= startYear && currentYear <= endYear,
     };
   });
   const current = periods.find((period) => period.isCurrent);
   const startParts = [
-    yun.getStartYear() ? `${yun.getStartYear()}年` : "",
-    yun.getStartMonth() ? `${yun.getStartMonth()}个月` : "",
-    yun.getStartDay() ? `${yun.getStartDay()}天` : "",
+    childLimit.getYearCount() ? `${childLimit.getYearCount()}年` : "",
+    childLimit.getMonthCount() ? `${childLimit.getMonthCount()}个月` : "",
+    childLimit.getDayCount() ? `${childLimit.getDayCount()}天` : "",
+    childLimit.getHourCount() ? `${childLimit.getHourCount()}小时` : "",
+    childLimit.getMinuteCount() ? `${childLimit.getMinuteCount()}分` : "",
   ].filter(Boolean).join("");
   return {
-    direction: yun.isForward() ? "顺排" : "逆排",
+    direction: childLimit.isForward() ? "顺排" : "逆排",
     startAgeText: startParts || "出生后不久",
-    startDate: yun.getStartSolar().toYmd(),
+    startDate: childLimit.getEndTime().toString(),
     currentYear,
-    currentAnalysis: current
-      ? `现在走到 ${current.ganZhi} 大运（${current.startYear}—${current.endYear}）。${current.analysis}`
-      : `首步大运将从 ${periods[0]?.startYear ?? birth.year} 年开始，当前仍在起运前的基础阶段。`,
+    currentGanZhi: current?.ganZhi ?? "童限",
     periods,
   };
 }
@@ -100,6 +80,17 @@ export function validateBirth(input: BirthInput): string | null {
   if (![input.year, input.month, input.day, input.hour].every(Number.isInteger)) return "Birth fields must be integers.";
   if (input.year < 1900 || input.year > 2100) return "Year must be between 1900 and 2100.";
   if (input.month < 1 || input.month > 12) return "Month must be between 1 and 12.";
+  if (input.calendarType === "lunar") {
+    try {
+      Lunar.fromYmdHms(input.year, input.isLeapMonth ? -input.month : input.month, input.day, input.hour, input.minute ?? 0, 0);
+    } catch {
+      return "所选农历日期不存在，请检查月份、日期或闰月。";
+    }
+    if (input.day < 1 || input.day > 30) return "农历日期必须在初一至三十之间。";
+    if (input.hour < 0 || input.hour > 23) return "Hour must be between 0 and 23.";
+    if ((input.minute ?? 0) < 0 || (input.minute ?? 0) > 59) return "Minute must be between 0 and 59.";
+    return null;
+  }
   const days = new Date(input.year, input.month, 0).getDate();
   if (input.day < 1 || input.day > days) return "Day is not valid for the selected month.";
   if (input.hour < 0 || input.hour > 23) return "Hour must be between 0 and 23.";
@@ -108,7 +99,8 @@ export function validateBirth(input: BirthInput): string | null {
 }
 
 export function calculateBazi(birth: BirthInput): Bazi {
-  const solar = Solar.fromYmdHms(birth.year, birth.month, birth.day, birth.hour, birth.minute ?? 0, 0);
+  const solarBirth = toSolarBirth(birth);
+  const solar = Solar.fromYmdHms(solarBirth.year, solarBirth.month, solarBirth.day, solarBirth.hour, solarBirth.minute ?? 0, 0);
   const lunar = solar.getLunar();
   const chart = lunar.getEightChar();
   chart.setSect(2);
@@ -125,6 +117,22 @@ export function calculateBazi(birth: BirthInput): Bazi {
     ["日柱", chart.getDayHideGan(), chart.getDayShiShenZhi(), "日主", chart.getDayNaYin(), chart.getDayDiShi()],
     ["时柱", chart.getTimeHideGan(), chart.getTimeShiShenZhi(), chart.getTimeShiShenGan(), chart.getTimeNaYin(), chart.getTimeDiShi()],
   ] as [string, string[], string[], string, string, string][];
+  const branchWeights = [[8, 5, 2], [20, 10, 5], [8, 5, 2], [10, 6, 4]];
+  const stemWeights = [5, 5, 0, 5];
+  const weightedElements: Elements = { wood: 0, fire: 0, earth: 0, metal: 0, water: 0 };
+  details.forEach(([, hiddenStems], pillarIndex) => {
+    const visibleStem = values[pillarIndex][0];
+    const visibleKey = stemElements[stems.indexOf(visibleStem)];
+    if (visibleKey) weightedElements[visibleKey] += stemWeights[pillarIndex];
+    hiddenStems.forEach((stem, hiddenIndex) => {
+      const key = stemElements[stems.indexOf(stem)];
+      if (key) weightedElements[key] += branchWeights[pillarIndex][hiddenIndex] ?? 0;
+    });
+  });
+  const weightedTotal = Object.values(weightedElements).reduce((sum, value) => sum + value, 0) || 1;
+  const elementStrength = Object.fromEntries(
+    Object.entries(weightedElements).map(([key, value]) => [key, Math.round(value / weightedTotal * 1000) / 10]),
+  ) as Elements;
 
   return {
     yearPillar: values[0],
@@ -132,6 +140,8 @@ export function calculateBazi(birth: BirthInput): Bazi {
     dayPillar: values[2],
     hourPillar: values[3],
     elements,
+    elementStrength,
+    solarDate: solar.toYmdHms(),
     lunarDate: lunar.toString(),
     previousSolarTerm: { name: prev.getName(), at: prev.getSolar().toYmdHms() },
     nextSolarTerm: { name: next.getName(), at: next.getSolar().toYmdHms() },
@@ -142,7 +152,8 @@ export function calculateBazi(birth: BirthInput): Bazi {
   };
 }
 
-export function calculateZodiac({ month, day }: BirthInput): Zodiac {
+export function calculateZodiac(birth: BirthInput): Zodiac {
+  const { month, day } = toSolarBirth(birth);
   const signs: [Zodiac, number, number][] = [
     ["Capricorn", 1, 20], ["Aquarius", 2, 19], ["Pisces", 3, 21],
     ["Aries", 4, 20], ["Taurus", 5, 21], ["Gemini", 6, 21],
@@ -195,7 +206,7 @@ export function buildSocialProfile(p: Personality): SocialProfile {
 
 export function analyzeBirth(birth: BirthInput): UserProfile {
   const bazi = calculateBazi(birth);
-  const luckCycles = calculateLuckCycles(birth, bazi.dayPillar[0]);
+  const luckCycles = calculateLuckCycles(birth);
   const zodiac = calculateZodiac(birth);
   const personality = buildPersonality(bazi.elements, zodiac);
   const socialProfile = buildSocialProfile(personality);
@@ -458,6 +469,133 @@ export function analyzeBirth(birth: BirthInput): UserProfile {
     ],
   };
   const deepBandIndex = (score: number) => score >= 82 ? 0 : score >= 65 ? 1 : score >= 45 ? 2 : score >= 28 ? 3 : 4;
+  const deepMeta: Record<string, {
+    category: UserProfile["deepAnalysis"][number]["category"];
+    descriptors: [string, string, string, string, string];
+    keywords: [string[], string[], string[], string[], string[]];
+    scenes: (score: number) => UserProfile["deepAnalysis"][number]["sceneInsights"];
+  }> = {
+    ambition: {
+      category: "成长与行动",
+      descriptors: ["强目标型推进者", "主动破局者", "选择性进取者", "稳态经营者", "体验优先者"],
+      keywords: [["好胜", "果断", "突破"], ["进取", "敢试", "结果导向"], ["审慎", "择机", "有后劲"], ["稳健", "耐心", "少冒险"], ["随性", "低竞争", "重体验"]],
+      scenes: (score) => [
+        { scene: "感情中", title: score >= 60 ? "会想把关系往前推" : "不急着定义关系进度", text: score >= 60 ? "喜欢的人会被纳入未来计划，暧昧过久容易失去耐心，也可能把“确认关系”当成一个必须完成的目标。" : "更在意相处是否舒服，不会为了赶进度强行确认，通常需要生活质量与关系目标同时成立。" },
+        { scene: "人际中", title: score >= 60 ? "容易成为发起者" : "更愿意做稳定参与者", text: score >= 60 ? "面对机会、项目或竞争场景，会自然抢先承担难题；别人容易觉得你有主见，也可能感到被推进。" : "不争无意义的主导权，只有遇到真正认同的目标才会持续投入。" },
+        { scene: "压力下", title: score >= 60 ? "越难越容易兴奋" : "先保住节奏再行动", text: score >= 60 ? "七杀与伤官会把压力转成行动，但需防止用不断加码证明自己。" : "倾向先评估风险与消耗，确定值得后再投入，不适合长期高压驱动。" },
+      ],
+    },
+    vigilance: {
+      category: "亲密与安全",
+      descriptors: ["高警觉验证型", "谨慎观察型", "边走边验证型", "善意优先型", "低防御信任型"],
+      keywords: [["多疑", "敏锐", "反复核对"], ["谨慎", "看细节", "慢交付"], ["观察", "可沟通", "有保留"], ["松弛", "愿解释", "少预设"], ["直接信任", "低防御", "不内耗"]],
+      scenes: (score) => [
+        { scene: "感情中", title: score >= 60 ? "会检查前后一致性" : "更愿意先相信善意", text: score >= 60 ? "回复速度、措辞变化和承诺是否兑现都会被纳入判断；信息空白时容易自己补全原因。" : "对方只要整体稳定，就不太会逐条审查信号，猜疑通常来自明确矛盾而非日常波动。" },
+        { scene: "人际中", title: score >= 60 ? "入口窄，识人靠长期观察" : "关系入口较轻松", text: score >= 60 ? "不会因为短期热络就交底，更相信持续行动；优点是识别风险早，代价是别人可能觉得一直在被考试。" : "愿意通过聊天快速建立基本信任，但仍需要事实来决定关系深度。" },
+        { scene: "压力下", title: score >= 60 ? "最坏情境会先进入脑内" : "倾向直接确认事实", text: score >= 60 ? "偏印负责推演、七杀负责预警，容易在证据不足时过度解释沉默。" : "更可能直接询问或等待信息补齐，不会长期停留在猜测里。" },
+      ],
+    },
+    autonomy: {
+      category: "边界与冲突",
+      descriptors: ["强自主边界型", "独立协商型", "共享与独处平衡型", "关系协同型", "高度共同体型"],
+      keywords: [["独立", "不服管", "空间感"], ["自主", "讲边界", "可协商"], ["平衡", "互相尊重", "能共享"], ["配合", "重共同", "愿让步"], ["黏合", "共决策", "高共享"]],
+      scenes: (score) => [
+        { scene: "感情中", title: score >= 60 ? "亲密不等于交出决定权" : "更享受共同安排", text: score >= 60 ? "需要保留自己的时间、朋友和判断，被连续追问会先退开；清楚告知空间需求比突然消失更重要。" : "愿意把日程与重要决定放进关系里讨论，长期各自行动反而会削弱连接感。" },
+        { scene: "人际中", title: score >= 60 ? "平等比照顾更重要" : "容易进入团队节奏", text: score >= 60 ? "不喜欢居高临下的建议，对被管理或被替你决定非常敏感。" : "能根据团队需要调整个人节奏，关系稳定时也愿意让出部分主导权。" },
+        { scene: "压力下", title: score >= 60 ? "先独处恢复控制感" : "会寻求共同商量", text: score >= 60 ? "比肩、劫财和偏印让你先靠自己消化，外界越催越可能沉默。" : "更愿意把问题带回关系或团队中处理，完全独自承担会增加不安。" },
+      ],
+    },
+    social_openness: {
+      category: "沟通与连接",
+      descriptors: ["流动社交型", "主动连接型", "情境开放型", "熟人深交型", "小圈层守门型"],
+      keywords: [["人来熟", "话题多", "圈层流动"], ["主动", "会破冰", "外部取向"], ["看场合", "可热可静", "先判断"], ["慢热", "少而深", "熟人舒展"], ["封闭入口", "固定圈层", "低社交耗散"]],
+      scenes: (score) => [
+        { scene: "感情中", title: score >= 60 ? "容易从互动热度进入关系" : "更可能从熟悉感进入关系", text: score >= 60 ? "偏财与食伤让你愿意制造话题、邀约和新鲜体验，关系通常先有流动再谈稳定。" : "需要多次自然接触才会展示真实热度，突然的高强度示好反而可能造成负担。" },
+        { scene: "人际中", title: score >= 60 ? "擅长打开新连接" : "擅长维护核心关系", text: score >= 60 ? "在陌生环境较容易找到共同话题，但要注意连接广度不自动等于关系深度。" : "不追求认识很多人，优势是能把有限精力投入少数可信关系。" },
+        { scene: "压力下", title: score >= 60 ? "通过外部互动换气" : "通过减少社交恢复", text: score >= 60 ? "聊天、换场景和接触新信息能帮你恢复流动感。" : "需要缩小关系半径，回到熟人或独处环境才容易恢复。" },
+      ],
+    },
+    trust_speed: {
+      category: "亲密与安全",
+      descriptors: ["快速交付型", "开放确认型", "渐进信任型", "慢速验证型", "长期审查型"],
+      keywords: [["信任快", "敢暴露", "先连接"], ["开放", "看一致性", "可推进"], ["渐进", "边走边看", "事实导向"], ["慢热", "重兑现", "防受伤"], ["极慢交付", "高验证", "核心保留"]],
+      scenes: (score) => [
+        { scene: "感情中", title: score >= 60 ? "好感容易转成真实靠近" : "有好感也不会立刻交底", text: score >= 60 ? "只要对方回应稳定，就愿意分享更私人的信息；需区分亲密感和真实可靠性。" : "语言热度不能直接换来信任，需要时间、行动一致和边界尊重。" },
+        { scene: "人际中", title: score >= 60 ? "合作先从基本信任开始" : "合作先从小事验证开始", text: score >= 60 ? "愿意先给机会，再根据后续表现调整关系层级。" : "更习惯用小承诺、小合作观察可靠度，不喜欢被催着交付信任。" },
+        { scene: "压力下", title: score >= 60 ? "仍愿意求助" : "容易收回核心信息", text: score >= 60 ? "遇到困难较可能向可信对象表达需要。" : "受伤后会延长验证周期，需要明确的修复动作而非口头保证。" },
+      ],
+    },
+    dependency: {
+      category: "亲密与安全",
+      descriptors: ["高连接依恋型", "回应敏感型", "弹性依恋型", "自主依恋型", "低依赖独行型"],
+      keywords: [["黏着", "需要确认", "情绪联动"], ["重回应", "怕降温", "需要陪伴"], ["可亲密", "可独处", "安全感弹性"], ["自主", "少确认", "有个人领域"], ["低依赖", "自我消化", "不爱求助"]],
+      scenes: (score) => [
+        { scene: "感情中", title: score >= 60 ? "联系连续性会影响安全感" : "亲密之外仍需要个人生活", text: score >= 60 ? "关系状态容易牵动日常情绪，对方忙碌时若没有说明，可能被理解为降温。" : "不会把所有情绪都交给关系处理，对高频确认需求可能感到被占用。" },
+        { scene: "人际中", title: score >= 60 ? "重视被记得和被回应" : "重视互不拖累的可靠", text: score >= 60 ? "愿意照顾关系，也期待对方持续反馈；单向付出会很快积累委屈。" : "朋友不必高频联系，但关键时刻是否出现很重要。" },
+        { scene: "压力下", title: score >= 60 ? "会放大关系反馈" : "先自己消化再决定是否求助", text: score >= 60 ? "沉默、失联和含糊回应更容易触发不安，需要事先约定忙碌时的沟通方式。" : "不容易主动说需要，别人可能误判为你完全不需要支持。" },
+      ],
+    },
+    responsibility: {
+      category: "成长与行动",
+      descriptors: ["高承诺承担型", "稳定兑现型", "边界责任型", "弹性承诺型", "自由流动型"],
+      keywords: [["负责", "长期主义", "容易多扛"], ["可靠", "守约", "可持续"], ["公平", "分工", "看边界"], ["灵活", "不爱被框", "看状态"], ["自由", "低结构", "抗拒固定"]],
+      scenes: (score) => [
+        { scene: "感情中", title: score >= 60 ? "确认后会进入经营模式" : "更重视当下真实感", text: score >= 60 ? "会记住约定、规划未来并处理现实问题；风险是把照顾变成单方面兜底。" : "不喜欢让承诺先于感受，关系需要清楚讨论什么是双方都能长期做到的。" },
+        { scene: "人际中", title: score >= 60 ? "容易成为可靠的人" : "更愿意按真实能力承诺", text: score >= 60 ? "别人会把重要任务交给你，但也可能默认你会处理所有收尾。" : "不会轻易答应，答应前会保留弹性，需要明确分工才更稳定。" },
+        { scene: "压力下", title: score >= 60 ? "先扛责任后处理自己" : "先调整承诺再恢复", text: score >= 60 ? "正官、正财会推动你维持秩序，需防止过度承担造成隐性怨气。" : "压力过大时会重新评估投入，不适合用道德压力推动。" },
+      ],
+    },
+    romance: {
+      category: "沟通与连接",
+      descriptors: ["热烈示好型", "主动营造型", "氛围回应型", "行动含蓄型", "低调陪伴型"],
+      keywords: [["会撩", "制造惊喜", "推进快"], ["主动", "有仪式", "重体验"], ["看氛围", "有回应", "不冒进"], ["含蓄", "用行动", "慢升温"], ["低表达", "陪伴式", "不爱表演"]],
+      scenes: (score) => [
+        { scene: "感情中", title: score >= 60 ? "喜欢让好感被看见" : "喜欢藏在行动里", text: score >= 60 ? "会通过邀约、分享和新场景制造关系温度，也期待对方给出明确反馈。" : "示爱更像陪伴、解决问题和记住细节，若对方只识别语言热度，容易错过你的信号。" },
+        { scene: "人际中", title: score >= 60 ? "擅长制造共同体验" : "擅长提供稳定在场", text: score >= 60 ? "聚会、旅行和兴趣活动会成为建立关系的主要方式。" : "不一定组织热闹活动，但在具体需要时更容易出现。" },
+        { scene: "压力下", title: score >= 60 ? "会用行动找回热度" : "浪漫表达会先收缩", text: score >= 60 ? "关系降温时倾向安排一次新的互动重新连接。" : "压力越高越务实，需要对方看见低调投入而不是只追问情绪表达。" },
+      ],
+    },
+    empathy_deep: {
+      category: "沟通与连接",
+      descriptors: ["高共感吸收型", "细腻体察型", "感受判断平衡型", "事实共情型", "方案优先型"],
+      keywords: [["高敏感", "会吸收", "情绪雷达"], ["细腻", "先陪伴", "读空气"], ["理解", "不失判断", "可切换"], ["需要明说", "重事实", "少猜测"], ["解决问题", "低情绪读取", "直接"]],
+      scenes: (score) => [
+        { scene: "感情中", title: score >= 60 ? "容易听见话外情绪" : "需要对方把需求说清", text: score >= 60 ? "语气、停顿与情绪变化都会被接收，优点是细腻，风险是把对方情绪背到自己身上。" : "表达越具体越容易给出有效回应，暗示和试探反而会造成错位。" },
+        { scene: "人际中", title: score >= 60 ? "常成为倾听与缓冲者" : "常成为问题解决者", text: score >= 60 ? "能提前感知气氛变化，但需要学会问“这是你的感受，还是我的责任”。" : "更擅长梳理事实、提供方案，不代表冷漠，只是共情入口不同。" },
+        { scene: "压力下", title: score >= 60 ? "容易情绪过载" : "容易显得过早讲道理", text: score >= 60 ? "多人情绪同时出现时会消耗很快，需要明确边界与恢复时间。" : "七杀或理性信号会先处理问题，记得先确认感受再给建议。" },
+      ],
+    },
+    resilience: {
+      category: "成长与行动",
+      descriptors: ["高压聚焦型", "危机行动型", "可恢复承压型", "稳定环境型", "高敏恢复型"],
+      keywords: [["抗压", "硬撑", "先解决"], ["果断", "能扛事", "延后情绪"], ["有韧性", "需恢复", "可求助"], ["怕持续不确定", "重节奏", "需缓冲"], ["敏感", "易耗竭", "需要安全"]],
+      scenes: (score) => [
+        { scene: "感情中", title: score >= 60 ? "危机里先处理问题" : "需要先确认关系安全", text: score >= 60 ? "遇到矛盾会先找解决方案，情绪可能延后出现；伴侣容易误以为你没有感受。" : "持续冲突会明显消耗连接感，明确暂停与恢复时间比硬谈到底更有效。" },
+        { scene: "人际中", title: score >= 60 ? "关键时刻容易被依赖" : "适合稳定可预期的协作", text: score >= 60 ? "突发任务中能快速集中，但长期被当作救火队会透支。" : "准备充分时表现稳定，不适合反复临时变更与高压催促。" },
+        { scene: "压力下", title: score >= 60 ? "能扛，但恢复可能滞后" : "恢复需要更明确的缓冲", text: score >= 60 ? "注意压力结束后的失眠、空耗或迟发情绪，高韧性不等于无需支持。" : "减少刺激、恢复规律和获得具体支持，比要求自己立刻振作更有效。" },
+      ],
+    },
+    conflict_expression: {
+      category: "边界与冲突",
+      descriptors: ["锋利直球型", "主动摊牌型", "协商表达型", "延后表达型", "回避冲突型"],
+      keywords: [["直言", "攻击性风险", "不忍"], ["敢说", "重真实", "语气先行"], ["协商", "看后果", "能调整"], ["压住", "事后说", "怕伤关系"], ["退让", "沉默", "积累不满"]],
+      scenes: (score) => [
+        { scene: "感情中", title: score >= 60 ? "问题会很快被摆上桌" : "问题容易在心里停留", text: score >= 60 ? "伤官与劫财让你不愿装作没事，清楚是优势，情绪高时则可能把诚实变成刺。" : "会先考虑关系后果再说，不满若长期延后，容易在小事上集中爆发。" },
+        { scene: "人际中", title: score >= 60 ? "敢挑战不合理规则" : "擅长维持表面合作", text: score >= 60 ? "能说出群体里没人愿意说的问题，但要区分解决问题和证明对方错误。" : "更愿意私下沟通或用委婉方式修正，需避免默认别人能读懂暗示。" },
+        { scene: "压力下", title: score >= 60 ? "语速与锋利度一起上升" : "沉默与退让先出现", text: score >= 60 ? "先描述事实和需要，再评价动机，可以减少伤官式越界。" : "先说“我需要暂停，但会回来谈”，避免沉默被误解为惩罚。" },
+      ],
+    },
+    novelty: {
+      category: "边界与冲突",
+      descriptors: ["高变化需求型", "持续更新型", "仪式与变化平衡型", "熟悉积累型", "固定节奏依赖型"],
+      keywords: [["怕无聊", "探索", "易厌重复"], ["爱尝试", "要成长", "主动更新"], ["稳定中求新", "有仪式", "可持续"], ["熟悉", "低刺激", "重积累"], ["固定", "可预期", "抗变化"]],
+      scenes: (score) => [
+        { scene: "感情中", title: score >= 60 ? "稳定里也必须有更新" : "重复会累积安全感", text: score >= 60 ? "需要新话题、共同成长或新体验来维持投入；这不等于容易变心，而是关系不能长期停滞。" : "固定联系、熟悉地点和共同习惯会让感情更稳，频繁制造刺激反而可能疲惫。" },
+        { scene: "人际中", title: score >= 60 ? "喜欢跨圈层与新项目" : "喜欢长期熟人与固定合作", text: score >= 60 ? "新的观点和场景能激活你，关系网络可能随阶段流动。" : "信任与默契来自时间累积，不会仅因新鲜就更换关系。" },
+        { scene: "压力下", title: score >= 60 ? "会通过换场景重新启动" : "会通过恢复秩序稳定自己", text: score >= 60 ? "短途出行、新计划或学习新东西能打破停滞。" : "回到固定作息与熟悉环境更有恢复力，突然变化需要预告。" },
+      ],
+    },
+  };
   const rankedScores = deepBase
     .map((item, index) => ({ raw: item.score, index }))
     .sort((a, b) => a.raw - b.raw || a.index - b.index);
@@ -465,11 +603,17 @@ export function analyzeBirth(birth: BirthInput): UserProfile {
     const rank = rankedScores.findIndex((entry) => entry.index === itemIndex);
     const rankScore = 18 + rank / Math.max(1, rankedScores.length - 1) * 74;
     const score = clamp(item.score * .45 + rankScore * .55);
+    const band = deepBandIndex(score);
+    const meta = deepMeta[item.key];
     return {
       ...item,
       score,
       level: level(score),
-      summary: deepBandTexts[item.key][deepBandIndex(score)],
+      category: meta.category,
+      descriptor: meta.descriptors[band],
+      keywords: meta.keywords[band],
+      summary: deepBandTexts[item.key][band],
+      sceneInsights: meta.scenes(score),
       logic: { ...deepLogicBase[item.key], ...deepExtras[item.key] },
     };
   });
@@ -578,6 +722,59 @@ export function analyzeBirth(birth: BirthInput): UserProfile {
     personality.stability >= 68 ? "情绪稳定" : personality.emotion >= 68 ? "感受细腻" : "理性感性平衡",
     personality.control >= 65 ? "边界清晰" : expressiveness >= 65 ? "善于表达" : "重视默契",
   ];
+  const tenSpiritDays = new Set(["甲辰", "乙亥", "丙辰", "丁酉", "戊午", "庚戌", "庚寅", "辛亥", "壬寅", "癸未"]);
+  const isTenSpiritDay = tenSpiritDays.has(bazi.dayPillar);
+  const groupTarget = (branch: string, kind: "huagai" | "peach") => {
+    if (["寅", "午", "戌"].includes(branch)) return kind === "huagai" ? "戌" : "卯";
+    if (["亥", "卯", "未"].includes(branch)) return kind === "huagai" ? "未" : "子";
+    if (["申", "子", "辰"].includes(branch)) return kind === "huagai" ? "辰" : "酉";
+    return kind === "huagai" ? "丑" : "午";
+  };
+  const bases = [bazi.pillars[0].zhi, bazi.pillars[2].zhi];
+  const huagaiTargets: string[] = [...new Set<string>(bases.map((branch) => groupTarget(branch, "huagai")))];
+  const peachTargets: string[] = [...new Set<string>(bases.map((branch) => groupTarget(branch, "peach")))];
+  const huagaiCount = branchEntries.filter((entry) => huagaiTargets.includes(entry.branch)).length;
+  const peachCount = branchEntries.filter((entry) => peachTargets.includes(entry.branch)).length;
+  const relationshipPenalty = birth.gender === "male"
+    ? Math.max(0, Math.min(25, g("劫财") * 10 + g("比肩") * 4 - g("正财") * 2))
+    : birth.gender === "female"
+      ? Math.max(0, Math.min(25, g("伤官") * 8 + Math.min(g("伤官"), g("正官") + g("七杀")) * 8))
+      : Math.max(0, Math.min(18, g("劫财") * 5 + g("伤官") * 5));
+  const specialtyLevel = (score: number) => score >= 82 ? "非常突出" : score >= 65 ? "明显" : score >= 45 ? "中等" : score >= 28 ? "偏弱" : "低显";
+  const specialty = (
+    key: UserProfile["specialtyAnalysis"][number]["key"], label: string, raw: number,
+    descriptors: [string, string, string], summaries: [string, string, string], evidence: string[], caution: string,
+  ) => {
+    const score = clamp(raw);
+    const band = score >= 68 ? 0 : score >= 42 ? 1 : 2;
+    return { key, label, score, level: specialtyLevel(score), descriptor: descriptors[band], summary: summaries[band], evidence, caution };
+  };
+  const specialtyAnalysis: UserProfile["specialtyAnalysis"] = [
+    specialty("intuition", "玄学感知力",
+      24 + g("偏印") * 14 + g("正印") * 5 + huagaiCount * 12 + (isTenSpiritDay ? 15 : 0) + bazi.elements.water * 3,
+      ["直觉捕捉型", "理性验证型", "现实感知型"],
+      ["对隐喻、象征与他人未说出口的状态更敏锐，适合把直觉发展成可复盘的方法。", "有感受力，但通常需要知识框架或现实证据确认，不会只凭第一感觉下结论。", "更依赖直接经验与清晰信息，玄学兴趣未必低，只是不容易把模糊感受当作依据。"],
+      [`偏印 ${g("偏印")}×14，正印 ${g("正印")}×5`, `华盖命中 ${huagaiCount}×12`, `十灵日 ${isTenSpiritDay ? "命中 +15" : "未命中"}`, `水元素 ${bazi.elements.water}×3`],
+      "此分数衡量象征感知、模式联想与直觉敏锐度，不代表超自然能力。"),
+    specialty("love_structure", "感情结构稳定度",
+      50 + g("正财") * 7 + g("正官") * 6 + g("正印") * 4 + personality.stability * .16 - relationshipPenalty,
+      ["持续经营型", "需要磨合型", "高波动课题型"],
+      ["更容易把喜欢落实为持续投入、责任和可预期的行动。", "有进入关系的能力，但投入、表达与边界之间需要现实磨合。", "关系里较容易出现竞争、挑剔或承诺压力，重点不是“好不好”，而是能否识别自己的触发模式。"],
+      [`正财 ${g("正财")}×7，正官 ${g("正官")}×6，正印 ${g("正印")}×4`, `稳定度 ${personality.stability}×0.16`, birth.gender === "male" ? `男命比劫对财星修正 −${relationshipPenalty.toFixed(1)}` : birth.gender === "female" ? `女命伤官与官杀同见修正 −${relationshipPenalty.toFixed(1)}` : `比劫与伤官综合修正 −${relationshipPenalty.toFixed(1)}`],
+      "这是关系经营成本模型，不判断婚姻吉凶；真实关系仍取决于选择、沟通和环境。"),
+    specialty("attraction", "心动与吸引力",
+      31 + peachCount * 12 + g("偏财") * 7 + g("伤官") * 5 + g("食神") * 4 + bazi.elements.fire * 3,
+      ["高辨识度型", "氛围启动型", "熟悉后显现型"],
+      ["容易通过表达、反差或社交流动形成辨识度，关系开场通常不缺记忆点。", "吸引力更依赖合适场景与互动反馈，不一定第一眼强烈，但有继续聊的空间。", "魅力通常在熟悉与安全感建立后出现，第一印象可能比真实状态安静。"],
+      [`桃花支命中 ${peachCount}×12`, `偏财 ${g("偏财")}×7，伤官 ${g("伤官")}×5，食神 ${g("食神")}×4`, `火元素 ${bazi.elements.fire}×3`],
+      "吸引力不等于关系质量，高分更需要边界与筛选能力。"),
+    specialty("creative_sensitivity", "审美与创作灵感",
+      27 + g("伤官") * 8 + g("食神") * 7 + g("偏印") * 8 + huagaiCount * 7 + bazi.elements.wood * 3,
+      ["非线性创作型", "输入转化型", "实用表达型"],
+      ["更容易把跳跃联想、私人感受和独特视角转化为作品或表达。", "需要持续输入与具体主题才能进入状态，灵感和执行之间要靠结构连接。", "偏好清晰、实用和可落地的表达，创作冲动不是主要驱动力。"],
+      [`伤官 ${g("伤官")}×8，食神 ${g("食神")}×7`, `偏印 ${g("偏印")}×8，华盖 ${huagaiCount}×7`, `木元素 ${bazi.elements.wood}×3`],
+      "高灵感不等于高产出；完成度仍依赖训练、时间和反馈。"),
+  ];
   const traitAnalysis = [
     { key: "extroversion", label: "社交外向", score: relationScores.extroversion, basis: `食伤 ${tenGodAnalysis[4].count} 权重 + 财星 ${tenGodAnalysis[2].count} 权重，结合火木外放性` },
     { key: "stability", label: "情绪稳定", score: relationScores.stability, basis: `印星 ${tenGodAnalysis[1].count} 提供安全感，官杀 ${tenGodAnalysis[0].count} 提供秩序，结合土金强度` },
@@ -607,45 +804,91 @@ export function analyzeBirth(birth: BirthInput): UserProfile {
     luckCycles,
     specialPoints,
     deepAnalysis,
+    specialtyAnalysis,
     summary: `你的五行以${elementName}为主要能量，日主为${bazi.dayPillar[0]}。${zodiacName}为这组底色加入了新的表达方式：你有${({ low: "较低", medium: "适中", high: "较高" } as const)[socialProfile.communication_need]}的沟通需求，关系通常以${({ slow: "慢热", medium: "自然", fast: "快速" } as const)[socialProfile.relationship_speed]}的节奏展开，并呈现${({ secure: "安全型", anxious: "焦虑型", avoidant: "回避型" } as const)[socialProfile.attachment_style]}依恋倾向。`,
   };
 }
 
-const hasBalance = (a: Elements, b: Elements, x: keyof Elements, y: keyof Elements) =>
-  (a[x] >= 2 && b[y] >= 2) || (a[y] >= 2 && b[x] >= 2);
+const traitScore = (profile: UserProfile, key: string) =>
+  profile.traitAnalysis.find((item) => item.key === key)?.score ?? 50;
+
+const deepScore = (profile: UserProfile, key: string) =>
+  profile.deepAnalysis.find((item) => item.key === key)?.score ?? 50;
+
+function compatibilityBreakdown(
+  a: UserProfile,
+  b: UserProfile,
+  relationType = "恋爱",
+  dynamics: RelationshipAnalysis["branchDynamics"] = [],
+): RelationshipAnalysis["scoreBreakdown"] {
+  const difference = (left: number, right: number) => Math.abs(left - right);
+  const extGap = difference(a.personality.extroversion, b.personality.extroversion);
+  const expressionGap = difference(traitScore(a, "expressiveness"), traitScore(b, "expressiveness"));
+  const emotionGap = difference(a.personality.emotion, b.personality.emotion);
+  const paceMap = { slow: 0, medium: 1, fast: 2 };
+  const paceGap = Math.abs(paceMap[a.socialProfile.relationship_speed] - paceMap[b.socialProfile.relationship_speed]);
+  const controlGap = difference(a.personality.control, b.personality.control);
+  const autonomyGap = difference(deepScore(a, "autonomy"), deepScore(b, "autonomy"));
+  const noveltyGap = difference(deepScore(a, "novelty"), deepScore(b, "novelty"));
+  const conflictGap = difference(deepScore(a, "conflict_expression"), deepScore(b, "conflict_expression"));
+  const resilienceA = deepScore(a, "resilience");
+  const resilienceB = deepScore(b, "resilience");
+  const groupScore = (profile: UserProfile, key: string) => profile.tenGodAnalysis.find((item) => item.key === key)?.score ?? 0;
+  const elementComplement =
+    Math.min(a.bazi.elements.fire + b.bazi.elements.water, b.bazi.elements.fire + a.bazi.elements.water)
+    + Math.min(a.bazi.elements.wood + b.bazi.elements.metal, b.bazi.elements.wood + a.bazi.elements.metal);
+  const positiveDynamic = dynamics.filter((item) => item.scoreImpact > 0).reduce((sum, item) => sum + item.scoreImpact, 0);
+  const frictionDynamic = Math.abs(dynamics.filter((item) => item.scoreImpact < 0).reduce((sum, item) => sum + item.scoreImpact, 0));
+  const dayDynamic = dynamics
+    .filter((item) => item.userPillars.includes("日柱") || item.partnerPillars.includes("日柱"))
+    .reduce((sum, item) => sum + item.scoreImpact, 0);
+
+  const attraction = clamp(52 + Math.min(16, elementComplement * 1.6) + positiveDynamic * .7
+    + (extGap >= 12 && extGap <= 36 ? 7 : extGap > 48 ? -6 : 2));
+  const emotionalHolding = clamp(58 - emotionGap * .32
+    + Math.min(a.personality.stability, b.personality.stability) * .28
+    + Math.min(groupScore(a, "resource"), groupScore(b, "resource")) * .16
+    - (a.socialProfile.attachment_style !== b.socialProfile.attachment_style ? 7 : 0));
+  const expressionTranslation = clamp(74 - expressionGap * .38 - emotionGap * .18
+    + Math.min(groupScore(a, "output"), groupScore(b, "output")) * .15
+    + Math.min(groupScore(a, "resource"), groupScore(b, "resource")) * .12);
+  const powerNegotiation = clamp(84 - controlGap * .34 - autonomyGap * .3
+    - (a.personality.control >= 72 && b.personality.control >= 72 ? 9 : 0) - frictionDynamic * .45);
+  const dailyBond = clamp(78 - paceGap * 14 - noveltyGap * .24 + dayDynamic * .85
+    + Math.min(groupScore(a, "wealth"), groupScore(b, "wealth")) * .12);
+  const repair = clamp(48 + Math.min(a.personality.stability, b.personality.stability) * .27
+    + Math.min(resilienceA, resilienceB) * .24 - conflictGap * .22 - frictionDynamic * .35);
+
+  const weights = relationType === "同事"
+    ? { attraction: 8, emotional: 12, expression: 22, power: 24, daily: 14, repair: 20 }
+    : relationType === "朋友"
+      ? { attraction: 15, emotional: 17, expression: 22, power: 14, daily: 17, repair: 15 }
+      : { attraction: 20, emotional: 22, expression: 16, power: 14, daily: 16, repair: 12 };
+  const dynamicLabels = dynamics.length ? dynamics.map((item) => `${item.title}${item.scoreImpact > 0 ? "+" : ""}${item.scoreImpact}`).join("、") : "无强合冲";
+  const items = [
+    { key: "attraction", label: "初见引力", score: attraction, weight: weights.attraction, summary: attraction >= 70 ? "差异与互补能形成明显注意力，容易很快感到对方有意思。" : "吸引更依赖共同经历，不一定在第一眼就形成强张力。", basis: [`火水、木金互补 ${elementComplement.toFixed(1)}`, `表达差 ${extGap}`, `合会增益 ${positiveDynamic}`] },
+    { key: "emotional", label: "情绪承接", score: emotionalHolding, weight: weights.emotional, summary: emotionGap <= 18 ? "情绪浓度接近，感受较容易被对方识别。" : "两人的情绪音量不同，需要把安慰方式说清楚。", basis: [`情感差 ${emotionGap}`, `最低稳定度 ${Math.min(a.personality.stability, b.personality.stability)}`, `双方印星 ${groupScore(a, "resource")}/${groupScore(b, "resource")}`] },
+    { key: "expression", label: "表达译码", score: expressionTranslation, weight: weights.expression, summary: expressionGap <= 15 ? "说话强度接近，表面含义与真实意图较少错位。" : "一方偏直接、一方偏内收，同一句话容易被翻译成不同意思。", basis: [`表达差 ${expressionGap}`, `双方食伤 ${groupScore(a, "output")}/${groupScore(b, "output")}`, `情感差 ${emotionGap}`] },
+    { key: "power", label: "主导权协商", score: powerNegotiation, weight: weights.power, summary: controlGap <= 15 && autonomyGap <= 18 ? "对决定权和个人空间的预期接近。" : "谁定义关系、谁掌握节奏会成为真实议题。", basis: [`控制差 ${controlGap}`, `空间需求差 ${autonomyGap}`, `冲克压力 ${frictionDynamic}`] },
+    { key: "daily", label: "日常黏合", score: dailyBond, weight: weights.daily, summary: paceGap === 0 && noveltyGap <= 18 ? "联系频率、约会更新和生活安排较容易形成稳定惯性。" : "热度不等于生活适配，需要试过真实日常才知道能否长期舒服。", basis: [`推进差 ${paceGap}`, `新鲜感差 ${noveltyGap}`, `日支结构 ${dayDynamic > 0 ? "+" : ""}${dayDynamic}`] },
+    { key: "repair", label: "冲突修复", score: repair, weight: weights.repair, summary: repair >= 68 ? "出现分歧后仍有能力回到事实、责任和下一步。" : "冲突后容易各自防御，需要提前约定暂停与重启方式。", basis: [`压力韧性 ${resilienceA}/${resilienceB}`, `冲突表达差 ${conflictGap}`, `跨盘结构 ${dynamicLabels}`] },
+  ];
+  return items.map((item) => ({ ...item, contribution: Math.round(item.score * item.weight) / 100 }));
+}
 
 export function matchProfiles(a: UserProfile, b: UserProfile): MatchResult {
-  let score = 50;
-  const reasons: string[] = [];
-  if (hasBalance(a.bazi.elements, b.bazi.elements, "fire", "water")) {
-    score += 15; reasons.push("火与水形成互补，为行动力与感受力带来平衡。");
-  }
-  if (hasBalance(a.bazi.elements, b.bazi.elements, "wood", "metal")) {
-    score += 10; reasons.push("木与金形成互补，表达力和边界感可以互相校准。");
-  }
-  const extDiff = Math.abs(a.personality.extroversion - b.personality.extroversion);
-  if (extDiff >= 25) {
-    score += 10; reasons.push("外向与内向节奏互补，关系同时拥有连接速度与交流深度。");
-  }
-  const emotionDiff = Math.abs(a.personality.emotion - b.personality.emotion);
-  if (emotionDiff >= 12 && emotionDiff <= 30) {
-    score += 8; reasons.push("情绪表达差异适中，既有共鸣也保留调节空间。");
-  }
-  const stabilityDiff = Math.abs(a.personality.stability - b.personality.stability);
-  if (stabilityDiff >= 25) {
-    score += 15; reasons.push("稳定性一强一弱，压力情境中具备明显的互补潜力。");
-  }
-  const bothExtreme = (a.personality.stability >= 85 && b.personality.stability >= 85)
-    || (a.personality.stability <= 30 && b.personality.stability <= 30);
-  if (bothExtreme) {
-    score -= 10; reasons.push("双方稳定性都处于极端区间，需要主动管理关系惯性。");
-  }
-  if (reasons.length === 0) reasons.push("双方特质接近，关系更依赖共同经历与持续沟通。");
-  score = clamp(score);
+  const breakdown = compatibilityBreakdown(a, b);
+  const score = clamp(breakdown.reduce((sum, item) => sum + item.contribution, 0));
+  const reasons = breakdown
+    .slice()
+    .sort((left, right) => right.contribution - left.contribution)
+    .slice(0, 3)
+    .map((item) => `${item.label} ${item.score} 分：${item.summary}`);
   return {
     score,
     reasons,
     analysis: explainMatch(score, reasons),
+    breakdown,
   };
 }
 
@@ -669,8 +912,9 @@ function elementRoleForDayMaster(dayStem: string, targetElement: string) {
 function analyzeCrossBranchDynamics(a: UserProfile, b: UserProfile): RelationshipAnalysis["branchDynamics"] {
   const userName = a.birth.name?.trim() || "你";
   const partnerName = b.birth.name?.trim() || "TA";
-  const aEntries = a.bazi.pillars.map((pillar) => ({ branch: pillar.zhi, god: pillar.hiddenTenGods[0] ?? "日主" }));
-  const bEntries = b.bazi.pillars.map((pillar) => ({ branch: pillar.zhi, god: pillar.hiddenTenGods[0] ?? "日主" }));
+  const pillarWeight: Record<string, number> = { 月柱: 28, 日柱: 24, 时柱: 18, 年柱: 12 };
+  const aEntries = a.bazi.pillars.map((pillar) => ({ pillar: pillar.label, branch: pillar.zhi, god: pillar.hiddenTenGods[0] ?? "日主" }));
+  const bEntries = b.bazi.pillars.map((pillar) => ({ pillar: pillar.label, branch: pillar.zhi, god: pillar.hiddenTenGods[0] ?? "日主" }));
   const aSet = new Set(aEntries.map((item) => item.branch));
   const bSet = new Set(bEntries.map((item) => item.branch));
   const union = new Set([...aSet, ...bSet]);
@@ -678,19 +922,38 @@ function analyzeCrossBranchDynamics(a: UserProfile, b: UserProfile): Relationshi
   const roleMeaning: Record<string, string> = {
     比劫: "自主与同伴立场", 食伤: "表达与体验", 财星: "投入与现实经营", 官杀: "规则与压力", 印星: "理解与安全感",
   };
+  const unique = (values: string[]) => [...new Set(values)];
+  const crossMatches = (left: string, right: string) => aEntries.flatMap((userEntry) =>
+    bEntries
+      .filter((partnerEntry) =>
+        (userEntry.branch === left && partnerEntry.branch === right)
+        || (userEntry.branch === right && partnerEntry.branch === left))
+      .map((partnerEntry) => ({ userEntry, partnerEntry })));
+  const structureStrength = (userPillars: string[], partnerPillars: string[], base: number) =>
+    clamp(base + Math.min(40,
+      userPillars.reduce((sum, name) => sum + pillarWeight[name] * .45, 0)
+      + partnerPillars.reduce((sum, name) => sum + pillarWeight[name] * .45, 0)));
   const clashes = [["子", "午"], ["丑", "未"], ["寅", "申"], ["卯", "酉"], ["辰", "戌"], ["巳", "亥"]];
   clashes.forEach(([left, right]) => {
-    const direct = aSet.has(left) && bSet.has(right);
-    const reverse = aSet.has(right) && bSet.has(left);
-    if (!direct && !reverse) return;
-    const userBranch = direct ? left : right;
-    const partnerBranch = direct ? right : left;
-    const userGod = aEntries.find((item) => item.branch === userBranch)?.god ?? "";
-    const partnerGod = bEntries.find((item) => item.branch === partnerBranch)?.god ?? "";
+    const matches = crossMatches(left, right);
+    if (!matches.length) return;
+    const userPillars = unique(matches.map(({ userEntry }) => userEntry.pillar));
+    const partnerPillars = unique(matches.map(({ partnerEntry }) => partnerEntry.pillar));
+    const userBranches = unique(matches.map(({ userEntry }) => userEntry.branch));
+    const partnerBranches = unique(matches.map(({ partnerEntry }) => partnerEntry.branch));
+    const userGod = unique(matches.map(({ userEntry }) => userEntry.god)).join("、");
+    const partnerGod = unique(matches.map(({ partnerEntry }) => partnerEntry.god)).join("、");
+    const strength = structureStrength(userPillars, partnerPillars, 38 + Math.min(12, (matches.length - 1) * 6));
     result.push({
-      type: "冲", title: `${userName}的${userBranch}冲${partnerName}的${partnerBranch}`, branches: [userBranch, partnerBranch],
+      type: "冲", title: `${userName}的${userBranches.join("、")}冲${partnerName}的${partnerBranches.join("、")}`, branches: [left, right],
       userRole: userGod, partnerRole: partnerGod,
+      userPillars, partnerPillars, strength, scoreImpact: -Math.max(2, Math.round(strength / 18)),
       summary: `${userName}的${userGod}需求与${partnerName}的${partnerGod}需求会直接碰面：${userName}更在意${godThemesForRelationship(userGod)}，${partnerName}更在意${godThemesForRelationship(partnerGod)}。`,
+      scenarioImpact: userPillars.includes("日柱") || partnerPillars.includes("日柱")
+        ? "冲落到日支时，亲密距离、相处习惯与情绪反应更容易被直接触发；吸引力和摩擦常同时出现。"
+        : userPillars.includes("月柱") || partnerPillars.includes("月柱")
+          ? "冲落到月令时，双方长期形成的做事逻辑容易互相挑战，日常磨合比短期热度更重要。"
+          : "这组冲更多在社交环境、未来安排或阶段节奏上出现，不必等同于关系一定不稳定。",
       advice: `不要争谁更合理。先让${userName}说清${godThemesForRelationship(userGod)}的底线，再由${partnerName}说明${godThemesForRelationship(partnerGod)}需要怎样被满足。`,
     });
   });
@@ -699,13 +962,20 @@ function analyzeCrossBranchDynamics(a: UserProfile, b: UserProfile): Relationshi
     ["辰", "酉", "金"], ["巳", "申", "水"], ["午", "未", "土"],
   ];
   harmonies.forEach(([left, right, element]) => {
-    const cross = (aSet.has(left) && bSet.has(right)) || (aSet.has(right) && bSet.has(left));
-    if (!cross) return;
+    const matches = crossMatches(left, right);
+    if (!matches.length) return;
+    const userPillars = unique(matches.map(({ userEntry }) => userEntry.pillar));
+    const partnerPillars = unique(matches.map(({ partnerEntry }) => partnerEntry.pillar));
+    const strength = structureStrength(userPillars, partnerPillars, 34 + Math.min(10, (matches.length - 1) * 5));
     const userRole = elementRoleForDayMaster(a.bazi.dayPillar[0], element);
     const partnerRole = elementRoleForDayMaster(b.bazi.dayPillar[0], element);
     result.push({
       type: "六合", title: `${left}${right}六合${element}`, branches: [left, right], userRole, partnerRole,
+      userPillars, partnerPillars, strength, scoreImpact: Math.max(2, Math.round(strength / 22)),
       summary: `这个${element}的连接，对${userName}落在${userRole}（${roleMeaning[userRole]}），对${partnerName}落在${partnerRole}（${roleMeaning[partnerRole]}）。`,
+      scenarioImpact: userPillars.includes("日柱") && partnerPillars.includes("日柱")
+        ? "双方日支直接六合，生活习惯和亲密互动更容易形成黏合，但也可能为了维持和谐而少说真实分歧。"
+        : "六合提供一个较自然的合作接口，具体表现取决于它落在双方哪一柱，而不是无条件增加好感。",
       advice: `${userName}需要用${roleMeaning[userRole]}参与关系，${partnerName}则通过${roleMeaning[partnerRole]}接住；把两种方式放进同一个具体计划最容易形成黏合。`,
     });
   });
@@ -722,18 +992,63 @@ function analyzeCrossBranchDynamics(a: UserProfile, b: UserProfile): Relationshi
   groups.forEach((group) => {
     if (!group.branches.every((branch) => union.has(branch))) return;
     if (!group.branches.some((branch) => aSet.has(branch)) || !group.branches.some((branch) => bSet.has(branch))) return;
+    const userPillars = unique(aEntries.filter((item) => group.branches.includes(item.branch)).map((item) => item.pillar));
+    const partnerPillars = unique(bEntries.filter((item) => group.branches.includes(item.branch)).map((item) => item.pillar));
+    const strength = structureStrength(userPillars, partnerPillars, group.type === "三会" ? 48 : 44);
     const userRole = elementRoleForDayMaster(a.bazi.dayPillar[0], group.element);
     const partnerRole = elementRoleForDayMaster(b.bazi.dayPillar[0], group.element);
     result.push({
       type: group.type, title: `${group.branches.join("")}${group.type}${group.element}`, branches: group.branches,
       userRole, partnerRole,
+      userPillars, partnerPillars, strength, scoreImpact: Math.max(3, Math.round(strength / 18)),
       summary: `两张命盘合在一起补齐${group.branches.join("、")}。${group.element}对${userName}属于${userRole}（${roleMeaning[userRole]}），对${partnerName}属于${partnerRole}（${roleMeaning[partnerRole]}）。`,
+      scenarioImpact: `${group.element}的主题会成为这段关系的高频场景：${userName}从${godThemesForRelationship(userRole)}体验它，${partnerName}则从${godThemesForRelationship(partnerRole)}体验它。结构越靠近日月支，日常体感越明显。`,
       advice: userRole === partnerRole
         ? `${userName}和${partnerName}会被同一种${roleMeaning[userRole]}同时激活，适合共同做一件能持续推进的事，避免只停留在情绪热度。`
         : `${userName}会从${roleMeaning[userRole]}进入关系，${partnerName}会从${roleMeaning[partnerRole]}进入；先承认入口不同，再设计一个两边都能得到的互动。`,
     });
   });
-  return result;
+
+  const elementCn: Record<keyof Elements, string> = { wood: "木", fire: "火", earth: "土", metal: "金", water: "水" };
+  const controls: Record<string, string> = { 木: "土", 土: "水", 水: "火", 火: "金", 金: "木" };
+  const stemEntries = (profile: UserProfile) => profile.bazi.pillars.map((pillar, index) => ({
+    pillar: pillar.label,
+    stem: pillar.gan,
+    god: pillar.tenGod,
+    element: elementCn[stemElements[stems.indexOf(pillar.gan)]],
+    importance: pillarWeight[pillar.label] + (index === 2 ? 5 : 0),
+  }));
+  const stemTensions = stemEntries(a).flatMap((userEntry) => stemEntries(b).map((partnerEntry) => {
+    const userControls = controls[userEntry.element] === partnerEntry.element;
+    const partnerControls = controls[partnerEntry.element] === userEntry.element;
+    return { userEntry, partnerEntry, userControls, partnerControls, importance: userEntry.importance + partnerEntry.importance };
+  })).filter((item) => item.userControls || item.partnerControls)
+    .sort((left, right) => right.importance - left.importance)
+    .filter((item, index, all) => all.findIndex((candidate) =>
+      candidate.userEntry.stem === item.userEntry.stem && candidate.partnerEntry.stem === item.partnerEntry.stem) === index)
+    .slice(0, 2);
+  stemTensions.forEach(({ userEntry, partnerEntry, userControls, importance }) => {
+    const strength = clamp(32 + importance * .55);
+    const controller = userControls ? userName : partnerName;
+    const receiver = userControls ? partnerName : userName;
+    result.push({
+      type: "天干克",
+      title: userControls
+        ? `${userName}${userEntry.stem}${userEntry.element}克${partnerName}${partnerEntry.stem}${partnerEntry.element}`
+        : `${partnerName}${partnerEntry.stem}${partnerEntry.element}克${userName}${userEntry.stem}${userEntry.element}`,
+      branches: [userEntry.stem, partnerEntry.stem],
+      userRole: userEntry.god,
+      partnerRole: partnerEntry.god,
+      userPillars: [userEntry.pillar],
+      partnerPillars: [partnerEntry.pillar],
+      strength,
+      scoreImpact: -Math.max(1, Math.round(strength / 28)),
+      summary: `${controller}更容易在这组互动里提出标准、方向或修正，${receiver}则更容易感到自己的${godThemesForRelationship(userControls ? partnerEntry.god : userEntry.god)}被要求调整。`,
+      scenarioImpact: "天干是较外显的表达与行为层，因此这组克更容易出现在说话方式、决策权和谁来定义“正确做法”上；它是协商成本，不等同于地支层面的深层冲突。",
+      advice: `让提出要求的人同时给出理由和可协商范围；被要求的一方明确说出可接受边界，避免把具体分歧升级成对人格的否定。`,
+    });
+  });
+  return result.sort((left, right) => right.strength - left.strength);
 }
 
 function godThemesForRelationship(god: string) {
@@ -741,35 +1056,56 @@ function godThemesForRelationship(god: string) {
     正官: "规则与承诺", 七杀: "决断与控制", 正印: "稳定支持", 偏印: "观察与空间",
     正财: "持续投入", 偏财: "新鲜连接", 比肩: "平等与自主", 劫财: "主导与竞争",
     食神: "舒服表达", 伤官: "直接表达", 日主: "自我核心",
+    比劫: "自主与同伴立场", 食伤: "表达与体验", 财星: "投入与现实经营", 官杀: "规则与压力", 印星: "理解与安全感",
   };
-  return themes[god] ?? "关系需求";
+  if (themes[god]) return themes[god];
+  const splitThemes = god.split("、").map((item) => themes[item]).filter(Boolean);
+  return splitThemes.length ? [...new Set(splitThemes)].join("、") : "关系需求";
 }
 
 export function analyzeRelationship(a: UserProfile, b: UserProfile, relationType = "恋爱"): RelationshipAnalysis {
-  const match = matchProfiles(a, b);
   const userName = a.birth.name?.trim() || "你";
   const partnerName = b.birth.name?.trim() || "对方";
+  const branchDynamics = analyzeCrossBranchDynamics(a, b);
+  const scoreBreakdown = compatibilityBreakdown(a, b, relationType, branchDynamics);
+  const relationshipScore = clamp(scoreBreakdown.reduce((sum, item) => sum + item.contribution, 0));
   const diff = (key: keyof Personality) => Math.abs(a.personality[key] - b.personality[key]);
   const aGod = Object.fromEntries(a.tenGodAnalysis.map((item) => [item.key, item]));
   const bGod = Object.fromEntries(b.tenGodAnalysis.map((item) => [item.key, item]));
   const paceA = a.socialProfile.relationship_speed;
   const paceB = b.socialProfile.relationship_speed;
+  const primaryDynamic = branchDynamics[0];
+  const dynamicReason = primaryDynamic
+    ? `本次合盘最强触发是${primaryDynamic.title}：对${userName}落为${primaryDynamic.userRole}，对${partnerName}落为${primaryDynamic.partnerRole}。`
+    : "两盘没有形成强合冲，互动主要由双方原局十神与行为差异承担。";
+  const expressionA = deepScore(a, "social_openness");
+  const expressionB = deepScore(b, "social_openness");
+  const romanceA = deepScore(a, "romance");
+  const romanceB = deepScore(b, "romance");
+  const noveltyA = deepScore(a, "novelty");
+  const noveltyB = deepScore(b, "novelty");
+  const attachmentName = (style: SocialProfile["attachment_style"]) =>
+    ({ secure: "安全型", anxious: "焦虑型", avoidant: "回避型" } as const)[style];
   const cards = [
     {
       key: "communication", label: "你们怎么沟通",
-      summary: diff("extroversion") >= 22 ? `${a.personality.extroversion > b.personality.extroversion ? userName : partnerName}更容易主动展开话题，${a.personality.extroversion > b.personality.extroversion ? partnerName : userName}会先观察再回应。` : `${userName}和${partnerName}的表达速度接近，容易接住日常话题，但深层感受可能都等对方先说。`,
-      why: diff("extroversion") >= 22 ? "一个负责打开场面，一个负责判断关系是否安全，互补感强，但沉默容易被误读。" : "表达轮廓重合，所以相处舒服；真正的推进点在于谁先暴露一点真实情绪。",
-      evidence: `外向表达 ${a.personality.extroversion} : ${b.personality.extroversion}；食伤权重 ${aGod.output.count} : ${bGod.output.count}`,
-      advice: diff("extroversion") >= 22 ? `${a.personality.extroversion > b.personality.extroversion ? userName : partnerName}留出回应空间；${a.personality.extroversion > b.personality.extroversion ? partnerName : userName}明确说“我需要一点时间”，避免被误读为冷淡。` : "不要只停留在舒服话题，每次主动多问一个关于感受的问题。",
-      logic: [`读取双方外向表达：${a.personality.extroversion} 与 ${b.personality.extroversion}`, `比较食伤权重：${aGod.output.count} 与 ${bGod.output.count}`, `差值 ${diff("extroversion")}；达到 22 以上判定为明显节奏差，否则判定为相近`],
+      summary: `${userName}以${a.dominantPersona.god}为主轴，表达开放度 ${expressionA}；${partnerName}以${b.dominantPersona.god}为主轴，表达开放度 ${expressionB}。${diff("extroversion") >= 22 ? `${a.personality.extroversion > b.personality.extroversion ? userName : partnerName}更容易把话题往前推，${a.personality.extroversion > b.personality.extroversion ? partnerName : userName}更习惯确认语气与安全感后再接球。` : "两人的表达速度接近，日常话题容易连续，但涉及真实需求时可能同时等对方先开口。"}`,
+      why: `${dynamicReason}${diff("extroversion") >= 22 ? "表达差制造吸引，也制造误读：主动者容易觉得对方冷，观察者容易觉得被催。" : "相近的表达轮廓降低了聊天成本，但也可能把关键情绪藏在“都懂”里面。"}`,
+      evidence: `外向表达 ${a.personality.extroversion}:${b.personality.extroversion}；社交开放 ${expressionA}:${expressionB}；食伤权重 ${aGod.output.count}:${bGod.output.count}${primaryDynamic ? `；${primaryDynamic.title} 强度 ${primaryDynamic.strength}` : ""}`,
+      advice: diff("extroversion") >= 22
+        ? `${a.personality.extroversion > b.personality.extroversion ? userName : partnerName}一次只抛一个明确问题并留出回应时间；${a.personality.extroversion > b.personality.extroversion ? partnerName : userName}不要只回“嗯”，至少补一句当下感受或下一次可聊的时间。`
+        : `${userName}和${partnerName}每次聊天都多完成一步：从“发生了什么”继续问到“你当时是什么感觉”，避免只交换信息。`,
+      logic: [`读取双方日主与主轴十神：${a.bazi.dayPillar[0]}·${a.dominantPersona.god} / ${b.bazi.dayPillar[0]}·${b.dominantPersona.god}`, `比较外向表达 ${a.personality.extroversion}:${b.personality.extroversion} 与食伤权重 ${aGod.output.count}:${bGod.output.count}`, primaryDynamic ? `叠加跨盘结构 ${primaryDynamic.title}，分别落为${primaryDynamic.userRole}/${primaryDynamic.partnerRole}` : "跨盘无强合冲，不额外修正沟通判断", `表达差值 ${diff("extroversion")}；22 以上判为主导—观察结构`],
     },
     {
       key: "pace", label: "关系如何升温",
-      summary: paceA === paceB ? `${userName}和${partnerName}都属于${paceA === "fast" ? "快速靠近" : paceA === "slow" ? "慢热确认" : "自然升温"}型，关系节奏基本同步。` : `${userName}更偏${paceA === "fast" ? "快速靠近" : paceA === "slow" ? "慢热确认" : "自然升温"}，${partnerName}更偏${paceB === "fast" ? "快速靠近" : paceB === "slow" ? "慢热确认" : "自然升温"}。`,
-      why: paceA === paceB ? `${userName}和${partnerName}对联系频率和确认速度的期待接近，不容易因为快慢产生误会。` : `${userName}与${partnerName}确认安全感的速度不同，需要找到两个人都能持续的联系频率。`,
-      evidence: `关系速度 ${paceA} : ${paceB}；情感强度 ${a.personality.emotion} : ${b.personality.emotion}`,
-      advice: paceA === paceB ? "保持节奏的同时设置一个具体的下一次互动，让关系有自然的连续性。" : "用可预期的小频率代替忽冷忽热，例如固定时间联系，而不是要求即时回应。",
-      logic: [`读取关系速度标签：${paceA} 与 ${paceB}`, `比较情感强度：${a.personality.emotion} 与 ${b.personality.emotion}`, paceA === paceB ? "速度标签相同，判断为升温节奏同步" : "速度标签不同，判断为确认关系的频率需求不同"],
+      summary: `${userName}的浪漫主动 ${romanceA}、新鲜感 ${noveltyA}，${partnerName}分别为 ${romanceB}、${noveltyB}。${paceA === paceB ? `两人都偏${paceA === "fast" ? "快速靠近" : paceA === "slow" ? "慢热确认" : "自然升温"}，升温不是缺速度，而是需要把下一次见面变具体。` : `${userName}偏${paceA === "fast" ? "快速靠近" : paceA === "slow" ? "慢热确认" : "自然升温"}，${partnerName}偏${paceB === "fast" ? "快速靠近" : paceB === "slow" ? "慢热确认" : "自然升温"}，热度与确认感不会同时到达。`}`,
+      why: `${dynamicReason}${paceA === paceB ? "节奏同频能减少拉扯，但如果双方都等氛围自然发生，关系也可能舒服地停在原地。" : "速度快的人把连续互动理解为确定，速度慢的人把稳定而不被催促理解为安全。"}`,
+      evidence: `关系速度 ${paceA}:${paceB}；浪漫主动 ${romanceA}:${romanceB}；新鲜感 ${noveltyA}:${noveltyB}；情感强度 ${a.personality.emotion}:${b.personality.emotion}`,
+      advice: paceA === paceB
+        ? `${romanceA >= romanceB ? userName : partnerName}负责提出一个有时间和地点的轻邀约，${romanceA >= romanceB ? partnerName : userName}负责补充偏好；结束前约定下一次，不靠“改天”。`
+        : `采用“两次轻互动 + 一次明确邀约”的节奏：先共享日常，再交换一个私人偏好，最后提出具体见面；慢的一方不被催答，快的一方能看到进度。`,
+      logic: [`读取关系速度：${paceA}/${paceB}`, `比较浪漫主动 ${romanceA}:${romanceB} 与新鲜感 ${noveltyA}:${noveltyB}`, primaryDynamic ? `校验${primaryDynamic.title}对双方十神入口：${primaryDynamic.userRole}/${primaryDynamic.partnerRole}` : "无强跨盘结构，升温主要按原局关系速度判断", paceA === paceB ? "速度相同，重点判断谁负责把氛围转为具体行动" : "速度不同，设计分阶段确认而非即时对齐"],
     },
     {
       key: "conflict", label: "冲突从哪里开始",
@@ -781,9 +1117,9 @@ export function analyzeRelationship(a: UserProfile, b: UserProfile, relationType
     },
     {
       key: "attachment", label: "安全感如何建立",
-      summary: a.socialProfile.attachment_style === b.socialProfile.attachment_style ? `${userName}和${partnerName}都偏${a.socialProfile.attachment_style === "secure" ? "安全" : a.socialProfile.attachment_style === "anxious" ? "焦虑" : "回避"}型，容易理解彼此的安全感语言。` : `${userName}偏${a.socialProfile.attachment_style}，${partnerName}偏${b.socialProfile.attachment_style}，两个人确认关系状态的方式不同。`,
+      summary: a.socialProfile.attachment_style === b.socialProfile.attachment_style ? `${userName}和${partnerName}都偏${attachmentName(a.socialProfile.attachment_style)}，容易理解彼此的安全感语言。` : `${userName}偏${attachmentName(a.socialProfile.attachment_style)}，${partnerName}偏${attachmentName(b.socialProfile.attachment_style)}，两个人确认关系状态的方式不同。`,
       why: a.socialProfile.attachment_style === b.socialProfile.attachment_style ? "两个人对回应、空间和承诺的期待相近。" : `${userName}需要的确认方式与${partnerName}提供安全感的方式不完全相同，必须提前说清楚。`,
-      evidence: `依恋倾向 ${a.socialProfile.attachment_style} : ${b.socialProfile.attachment_style}；印星权重 ${aGod.resource.count} : ${bGod.resource.count}`,
+      evidence: `依恋倾向 ${attachmentName(a.socialProfile.attachment_style)} : ${attachmentName(b.socialProfile.attachment_style)}；印星权重 ${aGod.resource.count} : ${bGod.resource.count}`,
       advice: "提前约定忙碌、沉默和需要空间时怎么告知，减少把暂时退开解释成关系降温。",
       logic: [`识别依恋类型：${a.socialProfile.attachment_style} 与 ${b.socialProfile.attachment_style}`, `读取印星权重：${aGod.resource.count} 与 ${bGod.resource.count}`, a.socialProfile.attachment_style === b.socialProfile.attachment_style ? "类型相同，安全感语言相近" : "类型不同，标记回应确认与独处消化之间的错位"],
     },
@@ -799,33 +1135,18 @@ export function analyzeRelationship(a: UserProfile, b: UserProfile, relationType
       key: "repair", label: "吵架后怎么修复",
       summary: Math.min(a.personality.stability, b.personality.stability) >= 60 ? `${a.personality.stability >= b.personality.stability ? userName : partnerName}更可能先冷静下来，把对话重新拉回问题本身。` : `${userName}和${partnerName}在压力下都容易先进入防御，立即讲道理效果有限。`,
       why: Math.min(a.personality.stability, b.personality.stability) >= 60 ? "关系里存在一个稳定锚点，修复关键是让较稳定的人先说需求而不是裁判对错。" : "两个人都需要先从情绪状态退出，再讨论事实，否则容易互相放大。",
-      evidence: `稳定度 ${a.personality.stability} : ${b.personality.stability}；压力韧性 ${a.deepAnalysis[9].score} : ${b.deepAnalysis[9].score}`,
+      evidence: `稳定度 ${a.personality.stability} : ${b.personality.stability}；压力韧性 ${deepScore(a, "resilience")} : ${deepScore(b, "resilience")}`,
       advice: "先暂停情绪升级，再约定恢复对话的具体时间。修复必须包含理解、责任和下一次怎么做。",
       logic: [`读取${userName}与${partnerName}的稳定方式`, `比较两人的压力恢复节奏`, Math.min(a.personality.stability, b.personality.stability) >= 60 ? `${userName}与${partnerName}具备回到问题本身的能力` : `${userName}与${partnerName}都需要先暂停降温`],
     },
   ];
-  const extGap = diff("extroversion");
-  const bothSlow = a.socialProfile.relationship_speed === "slow" || b.socialProfile.relationship_speed === "slow";
-  const socialConversion = {
-    atmosphere: match.score >= 80
-      ? bothSlow ? "你们属于刚开始有点互相试探，但熟起来很容易上头的类型。" : "你们是那种一聊就容易接上，越互动越有感觉的组合。"
-      : extGap >= 20 ? "一开始可能觉得不太搭，但越接触越容易被对方吸引。" : "表面看着平淡，但越聊越容易变熟。",
-    icebreakers: relationType === "同事"
-      ? ["你平时做事是先想清楚，还是先开干？", "如果一起做项目，你最怕队友哪一点？"]
-      : relationType === "朋友"
-        ? ["你会不会属于那种刚认识很安静，熟了以后特别疯的人？", "最近有什么东西是你逢人就想推荐的？", "如果现在出门散步，你会选热闹的地方还是安静的地方？"]
-        : ["我感觉你应该是那种不太爱先主动的人？", "如果我们聊天，你会先观察还是直接开怼？", "你会不会属于慢热，但熟了以后反差很大的类型？"],
-    trigger: extGap >= 20
-      ? "需要一次有点玩笑性质的对话破冰。"
-      : bothSlow ? "需要一个共同兴趣或最近生活切入。" : "需要对方先表达一点真实情绪。",
-  };
-  const branchDynamics = analyzeCrossBranchDynamics(a, b);
   return {
-    score: match.score,
+    score: relationshipScore,
     relationType,
-    headline: match.score >= 80 ? "高互补，也需要认真接住彼此" : match.score >= 65 ? "有吸引力的差异，值得慢慢验证" : "节奏并不天然一致，但仍有可经营空间",
+    headline: relationshipScore >= 80 ? "高互补，也需要认真接住彼此" : relationshipScore >= 65 ? "有吸引力的差异，值得慢慢验证" : "节奏并不天然一致，但仍有可经营空间",
+    scoreSummary: `${relationType}场景采用加权评分：${scoreBreakdown.map((item) => `${item.label}${item.weight}%`).join("、")}。分数只衡量互动成本与互补空间，不判断关系成败。`,
+    scoreBreakdown,
     cards,
-    socialConversion,
     branchDynamics,
   };
 }
