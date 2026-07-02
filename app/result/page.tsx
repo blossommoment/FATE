@@ -562,6 +562,28 @@ export async function ResultContent({
         </form>
 
         {relationship && partnerProfile && <div className="relationship-result">
+          <div className="match-hero">
+            <div className="match-hero-score">
+              <div className="duo-avatars"><i>{profile.bazi.dayPillar[0]}</i><i>{partnerProfile.bazi.dayPillar[0]}</i></div>
+              <span>{relationship.relationType}关系匹配</span>
+              <strong>{relationship.score}<small>/100</small></strong>
+            </div>
+            <div className="match-hero-verdict">
+              <small>关系判词</small>
+              <h3>{relationship.guide.verdict.title}</h3>
+              <p className="verdict-quip">{relationship.guide.verdict.quip}</p>
+              <p>{relationship.guide.verdict.tagline}</p>
+              <small className="hero-basis">判据：{relationship.guide.verdict.basis}</small>
+            </div>
+          </div>
+          <div className="match-keypoints">
+            <article><i>合</i><div><span>最合的地方</span><h4>{relationship.scoreBreakdown.slice().sort((x, y) => y.score - x.score)[0].label} · {relationship.scoreBreakdown.slice().sort((x, y) => y.score - x.score)[0].score} 分</h4><p>{relationship.scoreBreakdown.slice().sort((x, y) => y.score - x.score)[0].summary}</p></div></article>
+            <article><i>磨</i><div><span>最要留意</span><h4>{relationship.guide.hotspots[0].scene}</h4><p>{relationship.guide.hotspots[0].playbook}</p></div></article>
+            <article><i>先</i><div><span>破局之人</span><h4>主动权宜在{relationship.guide.initiator.name}</h4><p>{relationship.guide.initiator.firstMove}</p></div></article>
+          </div>
+          <details className="match-fold">
+            <summary><div><span>底层数据</span><h3>双人四柱命盘</h3></div><i>▾</i></summary>
+            <div className="fold-body">
           <section className="duo-bazi-comparison">
             <header>
               <div><span>双人四柱命盘</span><h3>先看清两个人，再谈这段关系</h3></div>
@@ -584,13 +606,8 @@ export async function ResultContent({
               </article>)}
             </div>
           </section>
-          <div className="relationship-score">
-            <div className="duo-avatars"><i>{profile.bazi.dayPillar[0]}</i><i>{partnerProfile.bazi.dayPillar[0]}</i></div>
-            <span>{relationship.relationType}关系匹配</span>
-            <strong>{relationship.score}<small>/100</small></strong>
-            <h3>{relationship.headline}</h3>
-            <p>{relationship.scoreSummary}</p>
-          </div>
+            </div>
+          </details>
           <section className="duo-radar-panel">
             <header><div><span>双人六维关系图</span><h3>你们在哪些地方相似，哪里互补</h3></div><div className="duo-legend"><i />你 <b />对方</div></header>
             <div className="duo-radar-chart">
@@ -634,14 +651,15 @@ export async function ResultContent({
                   <i className="dimension-bar"><b style={{ width: `${scoreItem.score}%` }} /></i>
                   <p>{cardItem.summary}</p>
                   <div className="interaction-advice"><b>相处建议</b>{cardItem.advice}</div>
-                  <div className="score-basis">{scoreItem.basis.map((basis) => <span key={basis}>{basis}</span>)}</div>
                   <Link className="logic-link" href={`/?${baseQuery}&view=match${partnerQuery}&detail=${cardItem.key}#match-card-${cardItem.key}`}>查看双方推理 <span>→</span></Link>
                 </article>;
               })}
             </div>
           </section>
+          <details className="match-fold">
+            <summary><div><span>结构详情 · 六合六冲三合三会</span><h3>合盘特殊结构：两张命盘放在一起，新发生了什么</h3></div><i>▾</i></summary>
+            <div className="fold-body">
           <section className="duo-branch-script">
-            <header><div><span>合盘特殊结构</span><h3>两张命盘放在一起，新发生了什么</h3></div><small>六合 · 六冲 · 三合 · 三会</small></header>
             {relationship.branchDynamics.length ? <div>
               {relationship.branchDynamics.map((dynamic, index) => <article key={`${dynamic.title}-${index}`} className={`duo-dynamic-${dynamic.type}`}>
                 <div className="dynamic-mark"><span>{dynamic.type}</span><strong>{dynamic.branches.join(" · ")}</strong></div>
@@ -656,19 +674,13 @@ export async function ResultContent({
               </article>)}
             </div> : <p className="duo-dynamic-empty">两张命盘之间没有形成明显的六合、六冲、三合、三会或天干相克，互动重点更多落在双方十神与行为维度。</p>}
           </section>
+            </div>
+          </details>
           <section className="duo-guide">
             <header>
               <div><span>相处指南</span><h3>这段关系的经营之道</h3></div>
               <small>所有结论均由双方命盘结构推导 · 细节可用底部 AI 助手追问</small>
             </header>
-            <article className="guide-verdict">
-              <div className="verdict-seal"><small>关系判词</small><strong>{relationship.guide.verdict.title}</strong></div>
-              <div>
-                <p className="verdict-quip">{relationship.guide.verdict.quip}</p>
-                <p>{relationship.guide.verdict.tagline}</p>
-                <small>判据：{relationship.guide.verdict.basis}</small>
-              </div>
-            </article>
             <p className="guide-philosophy">{relationship.guide.philosophy}</p>
             <div className="guide-behaviors">
               <h4>关系样态判读<small>五项行为断语 · 均附命盘依据</small></h4>
@@ -685,27 +697,29 @@ export async function ResultContent({
                 <aside><b>首步</b>{relationship.guide.initiator.firstMove}</aside>
               </div>
             </article>
-            <div className="guide-translations">
-              <h4>双方性情释读<small>结构定性 · 行为倾向 · 相处要领</small></h4>
-              <div className="guide-translation-grid">
+            <details className="guide-fold">
+              <summary>双方性情释读<small>结构定性 · 行为倾向 · 相处要领</small><i>▾</i></summary>
+              <div className="fold-body guide-translation-grid">
                 {relationship.guide.dispositions.map((item, index) => <article key={`${item.person}-${index}`}>
                   <header><b>{item.person}</b><span>{item.trait}</span></header>
                   <p><strong>结构释义</strong>{item.reading}</p>
                   <p className="guide-response"><strong>相处要领</strong>{item.approach}</p>
                 </article>)}
               </div>
-            </div>
-            <div className="guide-hotspots">
-              <h4>易生摩擦的三种情境<small>按双方结构差值降序排列</small></h4>
-              {relationship.guide.hotspots.map((item, index) => <article key={item.scene}>
-                <span>0{index + 1}</span>
-                <div>
-                  <h5>{item.scene}</h5>
-                  <p>{item.risk}</p>
-                  <aside><b>解法</b>{item.playbook}</aside>
-                </div>
-              </article>)}
-            </div>
+            </details>
+            <details className="guide-fold">
+              <summary>易生摩擦的三种情境<small>按双方结构差值降序排列</small><i>▾</i></summary>
+              <div className="fold-body guide-hotspots">
+                {relationship.guide.hotspots.map((item, index) => <article key={item.scene}>
+                  <span>0{index + 1}</span>
+                  <div>
+                    <h5>{item.scene}</h5>
+                    <p>{item.risk}</p>
+                    <aside><b>解法</b>{item.playbook}</aside>
+                  </div>
+                </article>)}
+              </div>
+            </details>
             <p className="guide-longrun">{relationship.guide.longRun}</p>
             <Link className="guide-ai" href={`/?${baseQuery}&view=match${partnerQuery}&ask=${encodeURIComponent("综合所有维度点评我们这段关系，并给出三条最重要的相处建议")}#view-match`}>
               让 AI 结合以上全部信号，写一份你们的关系点评 <span>→</span>

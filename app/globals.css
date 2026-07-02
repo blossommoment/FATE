@@ -966,3 +966,46 @@ main:not(.result-page) .entry form input { font-size:23px; }
   .guide-behaviors article>span { width:auto; padding:5px 12px; align-self:flex-start; }
 }
 .verdict-quip { font:italic 13px/1.85 Georgia,"Songti SC",serif!important; color:#4c5a55!important; padding-bottom:6px; border-bottom:1px dashed #dde5e0; }
+
+/* ───────── 关系剧本信息分层：英雄卡 / 要点速览 / 折叠区 ───────── */
+.match-hero { grid-column:1/-1; display:grid; grid-template-columns:.6fr 1.4fr; gap:30px; padding:32px 36px; border-radius:25px; color:white; background:linear-gradient(145deg,#286c5d,#5b5686 70%,#b96877); }
+.match-hero-score>span { display:block; color:#cde1dc; font-size:10px; letter-spacing:.1em; }
+.match-hero-score>strong { display:block; margin:12px 0 0; font:300 88px/1 DM Mono,monospace; }
+.match-hero-score>strong small { font-size:14px; color:#cbd9d6; margin-left:4px; }
+.match-hero .duo-avatars { margin-bottom:28px; }
+.match-hero-verdict>small { font:9px DM Mono,monospace; letter-spacing:.16em; color:#d8e4e0; }
+.match-hero-verdict h3 { margin:10px 0 14px; font:400 42px/1 Georgia,"Songti SC",serif; letter-spacing:.1em; }
+.match-hero-verdict .verdict-quip { font:italic 13px/1.85 Georgia,"Songti SC",serif!important; color:#f0e3d5!important; border-bottom:1px dashed #ffffff2e!important; padding-bottom:10px; margin:0 0 10px; }
+.match-hero-verdict p { margin:0 0 10px; font-size:12px; line-height:1.8; color:#d9e2df; }
+.match-hero-verdict .hero-basis { color:#a9bcb6; letter-spacing:.03em; font-size:9px; }
+.match-keypoints { grid-column:1/-1; display:grid; grid-template-columns:repeat(3,1fr); gap:11px; }
+.match-keypoints article { display:flex; gap:13px; align-items:flex-start; padding:18px 20px; border:1px solid #fff; border-radius:20px; background:linear-gradient(145deg,#f9fcf9,#f8f0f3); }
+.match-keypoints i { flex-shrink:0; width:38px; height:38px; border-radius:50%; display:grid; place-items:center; font:16px Georgia,"Songti SC",serif; font-style:normal; color:#fff; background:linear-gradient(135deg,#337e6b,#596fa9); }
+.match-keypoints span { display:block; font:9px DM Mono,monospace; letter-spacing:.12em; color:#aa6173; margin-bottom:4px; }
+.match-keypoints h4 { margin:0 0 5px; font-size:14px; color:#39433e; }
+.match-keypoints p { margin:0; font-size:10px; line-height:1.65; color:#7c8983; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.match-fold { grid-column:1/-1; border:1px solid #fff; border-radius:25px; background:linear-gradient(145deg,#f9fcf9,#f8f0f3); overflow:hidden; }
+.match-fold>summary { list-style:none; cursor:pointer; display:flex; justify-content:space-between; align-items:center; padding:20px 25px; }
+.match-fold>summary::-webkit-details-marker { display:none; }
+.match-fold>summary span { color:#aa6173; font-size:9px; letter-spacing:.12em; display:block; margin-bottom:6px; }
+.match-fold>summary h3 { margin:0; font-size:17px; color:#39433e; }
+.match-fold>summary i { font-style:normal; color:#8a9690; font-size:13px; transition:.25s; }
+.match-fold[open]>summary i { transform:rotate(180deg); }
+.match-fold>.fold-body { padding:0 25px 25px; }
+.match-fold .duo-bazi-comparison,.match-fold .duo-branch-script { grid-column:auto; border:0; background:none; padding:0; box-shadow:none; }
+.guide-fold { margin-top:20px; border-radius:16px; background:white; box-shadow:0 7px 22px #52675e0c; overflow:hidden; }
+.guide-fold>summary { list-style:none; cursor:pointer; display:flex; align-items:center; padding:16px 18px; font-size:14px; font-weight:600; color:#3f4a45; }
+.guide-fold>summary::-webkit-details-marker { display:none; }
+.guide-fold>summary small { margin-left:10px; font-size:9px; font-weight:400; color:#98a29d; flex:1; }
+.guide-fold>summary i { font-style:normal; color:#8a9690; font-size:12px; transition:.25s; }
+.guide-fold[open]>summary i { transform:rotate(180deg); }
+.guide-fold>.fold-body { padding:0 14px 14px; }
+.guide-fold .guide-translation-grid article { box-shadow:none; border:1px solid #eef1ec; }
+.guide-fold .guide-hotspots article { box-shadow:none; border:1px solid #eef1ec; }
+.guide-fold.guide-fold .guide-hotspots { margin-top:0; }
+@media (max-width:900px) {
+  .match-hero { grid-template-columns:1fr; padding:24px 20px; gap:18px; }
+  .match-hero-score>strong { font-size:64px; }
+  .match-hero-verdict h3 { font-size:32px; }
+  .match-keypoints { grid-template-columns:1fr; }
+}
