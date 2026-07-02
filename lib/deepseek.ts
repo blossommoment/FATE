@@ -5,6 +5,7 @@ export async function askDeepSeek(
   contextTitle: string,
   contextSummary: string,
   evidence: string[],
+  detailed = false,
 ) {
   const apiKey = process.env.DEEPSEEK_API_KEY;
   const baseUrl = (process.env.DEEPSEEK_BASE_URL ?? "https://api.deepseek.com").replace(/\/$/, "");
@@ -24,7 +25,7 @@ export async function askDeepSeek(
       body: JSON.stringify({
         model,
         ...(isSiliconFlow ? { enable_thinking: false } : { thinking: { type: "disabled" } }),
-        max_tokens: 600,
+        max_tokens: detailed ? 1000 : 600,
         messages: [
           {
             role: "system",
@@ -32,7 +33,9 @@ export async function askDeepSeek(
 当前卡片：${contextTitle}
 结论：${contextSummary}
 可引用依据：${evidence.join("；")}
-回答要求：中文、口语化、具体、120字以内；先回答问题，再指出一条可在现实中验证的方式。`,
+回答要求：${detailed
+    ? "中文、口语化、具体，可以分点；先给一句总评，再给三条最重要的相处建议，每条建议里包含一句可以直接照着说的话术；引用依据里的数字增强说服力；380字以内。"
+    : "中文、口语化、具体、120字以内；先回答问题，再指出一条可在现实中验证的方式。"}`,
           },
           { role: "user", content: question },
         ],

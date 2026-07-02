@@ -225,4 +225,11 @@ export type RelationshipAnalysis = {
     scenarioImpact: string;
     advice: string;
   }[];
+  guide: {
+    philosophy: string;
+    initiator: { name: string; why: string; firstMove: string };
+    translations: { person: string; signal: string; meaning: string; response: string }[];
+    hotspots: { scene: string; risk: string; playbook: string }[];
+    longRun: string;
+  };
 };

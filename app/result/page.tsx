@@ -68,13 +68,24 @@ export async function ResultContent({
   } : selectedInteraction ? {
     title: selectedInteraction.label, summary: selectedInteraction.summary, evidence: [selectedInteraction.summary, selectedInteraction.advice],
     suggestions: ["为什么会这样互动？", "冲突时具体怎么做？", "双方谁更需要安全感？"],
+  } : view === "match" && relationship && partnerProfile ? {
+    title: `${birth.name ?? "我"}与${partnerBirth?.name ?? "TA"}的${relationship.relationType}合盘`,
+    summary: `总分 ${relationship.score}：${relationship.headline}。${relationship.guide.philosophy}`,
+    evidence: [
+      ...relationship.scoreBreakdown.map((item) => `${item.label} ${item.score} 分（权重 ${item.weight}%）`),
+      `双方依恋：${socialLabels[profile.socialProfile.attachment_style]} × ${socialLabels[partnerProfile.socialProfile.attachment_style]}`,
+      `主轴十神：${profile.dominantPersona.god} × ${partnerProfile.dominantPersona.god}`,
+      ...(relationship.branchDynamics[0] ? [`最强跨盘结构：${relationship.branchDynamics[0].title}（${relationship.branchDynamics[0].scoreImpact > 0 ? "+" : ""}${relationship.branchDynamics[0].scoreImpact} 分）`] : []),
+      `建议先主动的一方：${relationship.guide.initiator.name}`,
+    ],
+    suggestions: ["综合点评我们这段关系", "我们最大的雷区是什么？", "第一次吵架该怎么处理？"],
   } : {
     title: view === "square" ? "同频广场" : view === "match" ? "双人匹配" : view === "deep" ? "十神深度分析" : "八字概览",
     summary: profile.summary,
     evidence: [`日主 ${profile.bazi.dayPillar[0]}`, `主导身份 ${profile.archetype}`, `十神主导 ${profile.tenGodAnalysis.slice().sort((a, b) => b.count - a.count)[0].members}`],
     suggestions: ["七杀是什么？", "为什么我的进取心高？", "为什么我容易没有新鲜感？"],
   };
-  const assistantAnswer = assistantQuestion ? await askDeepSeek(assistantQuestion, assistantContext.title, assistantContext.summary, assistantContext.evidence) : undefined;
+  const assistantAnswer = assistantQuestion ? await askDeepSeek(assistantQuestion, assistantContext.title, assistantContext.summary, assistantContext.evidence, view === "match" && !!relationship && !selectedInteraction) : undefined;
   const assistantHref = `/?${baseQuery}&view=${view}${partnerQuery}${detail ? `&detail=${detail}` : ""}`;
   const returnAnchor = selectedDeep ? `deep-card-${selectedDeep.key}` : selectedInteraction ? `match-card-${selectedInteraction.key}` : `view-${view}`;
   const assistantFields: Record<string, string> = {
@@ -642,6 +653,46 @@ export async function ResultContent({
                 </div>
               </article>)}
             </div> : <p className="duo-dynamic-empty">两张命盘之间没有形成明显的六合、六冲、三合、三会或天干相克，互动重点更多落在双方十神与行为维度。</p>}
+          </section>
+          <section className="duo-guide">
+            <header>
+              <div><span>相处指南</span><h3>怎么把这段关系过好</h3></div>
+              <small>由双方命盘结构直接推导 · 想追问细节可用底部 AI 助手</small>
+            </header>
+            <p className="guide-philosophy">{relationship.guide.philosophy}</p>
+            <article className="guide-initiator">
+              <i>先</i>
+              <div>
+                <h4>这段关系需要 {relationship.guide.initiator.name} 先动</h4>
+                <p>{relationship.guide.initiator.why}</p>
+                <aside><b>第一步</b>{relationship.guide.initiator.firstMove}</aside>
+              </div>
+            </article>
+            <div className="guide-translations">
+              <h4>对方行为翻译表<small>看懂信号，再决定怎么接</small></h4>
+              <div className="guide-translation-grid">
+                {relationship.guide.translations.map((item, index) => <article key={`${item.person}-${index}`}>
+                  <header><b>{item.person}</b><span>{item.signal}</span></header>
+                  <p><strong>其实是</strong>{item.meaning}</p>
+                  <p className="guide-response"><strong>你可以</strong>{item.response}</p>
+                </article>)}
+              </div>
+            </div>
+            <div className="guide-hotspots">
+              <h4>三个最可能起摩擦的场景<small>按你们的差值从大到小排列</small></h4>
+              {relationship.guide.hotspots.map((item, index) => <article key={item.scene}>
+                <span>0{index + 1}</span>
+                <div>
+                  <h5>{item.scene}</h5>
+                  <p>{item.risk}</p>
+                  <aside><b>拆法</b>{item.playbook}</aside>
+                </div>
+              </article>)}
+            </div>
+            <p className="guide-longrun">{relationship.guide.longRun}</p>
+            <Link className="guide-ai" href={`/?${baseQuery}&view=match${partnerQuery}&ask=${encodeURIComponent("综合所有维度点评我们这段关系，并给出三条最重要的相处建议")}#view-match`}>
+              让 AI 结合以上全部信号，写一份你们的关系点评 <span>→</span>
+            </Link>
           </section>
           <div className="interaction-grid">
             {relationship.cards.map((card, index) => <article id={`match-card-${card.key}`} key={card.key}>

@@ -1195,6 +1195,103 @@ export function analyzeRelationship(a: UserProfile, b: UserProfile, relationType
       logic: [`读取${userName}与${partnerName}的稳定方式`, `比较两人的压力恢复节奏`, Math.min(a.personality.stability, b.personality.stability) >= 60 ? `${userName}与${partnerName}具备回到问题本身的能力` : `${userName}与${partnerName}都需要先暂停降温`],
     },
   ];
+  const initiativeA = a.traitAnalysis[6].score;
+  const initiativeB = b.traitAnalysis[6].score;
+  const initiatorIsUser = initiativeA + romanceA * .6 >= initiativeB + romanceB * .6;
+  const initiatorName = initiatorIsUser ? userName : partnerName;
+  const responderName = initiatorIsUser ? partnerName : userName;
+  const responderPace = initiatorIsUser ? paceB : paceA;
+  const initiatorProfile = initiatorIsUser ? a : b;
+  const paceLabel = (pace: SocialProfile["relationship_speed"]) => ({ slow: "慢热确认", medium: "自然推进", fast: "快速靠近" } as const)[pace];
+  const translationFor = (profile: UserProfile, name: string) => {
+    const style = profile.socialProfile.attachment_style;
+    const conflictScore = deepScore(profile, "conflict_expression");
+    const autonomyScore = deepScore(profile, "autonomy");
+    const expressScore = traitScore(profile, "expressiveness");
+    const items: RelationshipAnalysis["guide"]["translations"] = [];
+    if (style === "avoidant" || autonomyScore >= 65) items.push({
+      person: name, signal: "突然变安静，或说想一个人待着",
+      meaning: `这不是降温。${name}的自主结构（比劫/偏印偏强，空间需求 ${autonomyScore}）习惯先在内部消化情绪，独处是恢复控制感的方式，不是惩罚你。`,
+      response: `别连环追问"你怎么了"。说一句"需要空间就去，我们周四晚上再聊"，然后真的等到周四——说到做到这件事，比任何安慰都能让${name}放下防御。`,
+    });
+    if (style === "anxious") items.push({
+      person: name, signal: "消息突然变密、反复确认你的状态",
+      meaning: `${name}不是在控制你，是在找安全感的刻度。印星与情感结构偏强的人，需要"被稳定回应"来确认关系还在原位；你的沉默在${name}那里会被自动补全成最坏剧本。`,
+      response: `给一个带时间的承诺——"我九点忙完就找你"——比十句解释都有效，然后准时出现。忙碌之前先说，永远好过失联之后再补。`,
+    });
+    if (style === "secure") items.push({
+      person: name, signal: "看起来什么都好说、很少提要求",
+      meaning: `安全型不等于没有需求，只是${name}不会主动开价。长期不被过问的稳定，最后会变成"我在这段关系里是不是只负责懂事"。`,
+      response: `定期主动问一句"最近有什么我没注意到的委屈"。别把${name}的稳定当成免维护——免维护的下一站是无声的撤退。`,
+    });
+    if (conflictScore >= 65) items.push({
+      person: name, signal: "话说得很冲，直接点出你的问题",
+      meaning: `伤官式表达（冲突表达 ${conflictScore}）：内容多半是真的，攻击性只是包装。${name}愿意对你说真话，恰恰因为在乎——对不在乎的人，${name}只会礼貌。`,
+      response: `接问题，不接语气。先说"这点你说得对"，把事实层收下；语气的问题等双方降温后再单独谈，当场纠正语气只会让真话以后不再出现。`,
+    });
+    else if (conflictScore <= 40) items.push({
+      person: name, signal: `说"没事""都行""随便"`,
+      meaning: `${name}的不满是延迟出现的（冲突表达 ${conflictScore}），当下的"没事"多半是"还没想好怎么说"或"不确定说了值不值"。`,
+      response: `隔一天再问一次同样的问题，第二次的答案才是真的。以及永远别在${name}说"没事"的当口逼问——那只会把延迟变成永久沉默。`,
+    });
+    if (expressScore <= 45 && items.length < 2) items.push({
+      person: name, signal: "很少说想你、喜欢你这类直接表达",
+      meaning: `${name}的表达通道偏行动（表达意愿 ${expressScore}）：接送、记住偏好、把你的问题当自己的事办掉——这些就是${name}的情话。`,
+      response: `学会把行动读成语言，同时明确告诉${name}"我偶尔也需要听到直接的表达"——需求要说，不说等于没有。`,
+    });
+    return items.slice(0, 2);
+  };
+  const gapCandidates = [
+    {
+      value: Math.abs(({ slow: 0, medium: 1, fast: 2 })[paceA] - ({ slow: 0, medium: 1, fast: 2 })[paceB]) * 30,
+      scene: "推进速度错位",
+      risk: `${userName}偏${paceLabel(paceA)}，${partnerName}偏${paceLabel(paceB)}。快的一方把连续互动当成"我们在确定"，慢的一方把不被催促当成"我们很安全"——两个人都觉得进展顺利，直到快的一方突然问"我们到底算什么"。`,
+      playbook: `用"两次轻互动 + 一次明确邀约"的节奏：快的一方负责发起但不追问定义，慢的一方负责在每次互动结束前给出下一次的时间。进度感有了，逼问就不需要了。`,
+    },
+    {
+      value: diff("control"),
+      scene: "规则与自由的拉锯",
+      risk: `边界控制 ${a.personality.control}:${b.personality.control}。一方需要明确的规则和回应来获得安全感，另一方被规定得越死越想逃——追问定义的人在找安全，回避规定的人在保自由，两边都不是恶意。`,
+      playbook: `把"必须"清单压缩到三条以内（比如：过夜要提前说、冷战不过夜、重要日子必须在场），三条之外全部放行。规则少而铁，好过多而软。`,
+    },
+    {
+      value: Math.abs(deepScore(a, "autonomy") - deepScore(b, "autonomy")),
+      scene: "空间需求不同频",
+      risk: `空间需求 ${deepScore(a, "autonomy")}:${deepScore(b, "autonomy")}。需求高的一方退开充电时，需求低的一方读到的是"被推开"；追上去要解释，对方却退得更远——典型的依恋追逃循环。`,
+      playbook: `提前约定"退开协议"：需要独处时说一声"我去充电，X点回来"，另一方在这期间不发"你还好吗"。退开有预告、回来有时间，追逃循环就断了。`,
+    },
+    {
+      value: Math.abs(noveltyA - noveltyB),
+      scene: "新鲜感与稳定感的配比",
+      risk: `新鲜感需求 ${noveltyA}:${noveltyB}。一方觉得"老地方老节目"是安心，另一方觉得是停滞；提出新花样的人被泼冷水两次之后，会把探索欲带到关系外面去满足。`,
+      playbook: `固定与新鲜二八开：百分之八十的日常保持惯例喂饱稳定方，每月一次由新鲜感高的一方全权安排一个新体验，另一方只有一个义务——不否决。`,
+    },
+    {
+      value: diff("emotion"),
+      scene: "情绪音量不一致",
+      risk: `情感强度 ${a.personality.emotion}:${b.personality.emotion}。音量高的一方需要情绪被接住，音量低的一方习惯先讲道理——"你冷静点"和"你根本不在乎"会在同一场争吵里各说各话。`,
+      playbook: `约定"先接后解"顺序：情绪来的时候，另一方先说"我知道你现在很难受"（接住），十分钟后再谈怎么办（解决）。顺序对了，同样的话就不刺了。`,
+    },
+  ].sort((left, right) => right.value - left.value);
+  const guide: RelationshipAnalysis["guide"] = {
+    philosophy: relationshipScore >= 80
+      ? `${relationshipScore} 分意味着你们的默认相处方式摩擦很小——但低成本关系最大的风险，是把默契当成免维护。这份指南告诉你们哪里不能偷懒。`
+      : relationshipScore >= 65
+        ? `${relationshipScore} 分属于"有差异的吸引"：扣掉的分数全部扣在磨合成本上，而不是可能性上。下面每一条都对应一个具体成本和它的绕行方案。`
+        : `先把话说清楚：${relationshipScore} 分不是"不合适"的判决。这个分数衡量的是两套默认相处方式之间的摩擦成本——如果你们已经互有好感，真实的相处永远比模型重要，这份报告是使用说明书，不是预言。成本高只意味着更需要照着说明书操作，所以下面的内容也写得更具体。`,
+    initiator: {
+      name: initiatorName,
+      why: `${initiatorName}的关系主动性 ${initiatorIsUser ? initiativeA : initiativeB}、浪漫主动 ${initiatorIsUser ? romanceA : romanceB}，综合高于${responderName}；${initiatorProfile.dominantPersona.god}主轴的人由自己发起时最自然，被动等待反而容易积累"凭什么总是我"的委屈——所以主动权干脆明确交给${initiatorName}，委屈感用分工解决而不是用忍耐解决。`,
+      firstMove: responderPace === "slow"
+        ? `${initiatorName}发起一次有具体时间地点、时长可控的轻邀约（一杯咖啡，不是一整天），发出后不追问、不加码。${responderName}是慢热结构，第一步的全部目标是"让下一次自然发生"，不是推进关系。`
+        : `${initiatorName}直接定下一次具体的见面（时间、地点、做什么一次说全）。${responderName}的节奏不慢，模糊的"改天约"才是最大的消耗——具体，就是这段关系里最有效的浪漫。`,
+    },
+    translations: [...translationFor(b, partnerName), ...translationFor(a, userName)],
+    hotspots: gapCandidates.slice(0, 3).map((item) => ({ scene: item.scene, risk: item.risk, playbook: item.playbook })),
+    longRun: Math.min(noveltyA, noveltyB) >= 55
+      ? `长期主线：你们两个人的新鲜感需求都不低，这段关系的保鲜方式不是互相盯紧，而是一起把日子过出更新——共同的计划、新的场景、阶段性的目标。停滞才是你们唯一真正的敌人。`
+      : `长期主线：你们中至少一方靠熟悉感积累安全。仪式感（固定的日子、重复的小习惯）对这段关系不是老套，是地基——先把地基打稳，再谈偶尔的惊喜。`,
+  };
   return {
     score: relationshipScore,
     relationType,
@@ -1203,5 +1300,6 @@ export function analyzeRelationship(a: UserProfile, b: UserProfile, relationType
     scoreBreakdown,
     cards,
     branchDynamics,
+    guide,
   };
 }
