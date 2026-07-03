@@ -46,7 +46,7 @@ export async function POST(request: Request) {
         body: JSON.stringify({
           model,
           ...(isSiliconFlow ? { enable_thinking: false } : { thinking: { type: "disabled" } }),
-          temperature: 0.4,
+          temperature: 0.45,
           max_tokens: 2800, // 五章成册全文，给足余量防 JSON 截断
           response_format: { type: "json_object" },
           messages: [

@@ -29,7 +29,7 @@ export default function DuoReport({ a, b, relationType, pairId }: { a: BirthInpu
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
   const [unlocked] = useState(!PAYWALL_ENABLED);
-  const cacheKey = `fate-duo-report-v1-${pairId}`;
+  const cacheKey = `fate-duo-report-v2-${pairId}`;
 
   useEffect(() => {
     try {

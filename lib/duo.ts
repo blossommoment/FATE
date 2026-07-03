@@ -247,8 +247,8 @@ export function buildDuoFacts(a: UserProfile, b: UserProfile, analysis: Relation
     duoTags: buildDuoTags(a, b),
     comparisons: buildDuoComparisons(a, b),
     behaviors: analysis.guide.behaviors,
-    frictions: analysis.guide.hotspots.map(({ scene, risk }) => ({ scene, risk })),
-    initiator: analysis.guide.initiator.name,
+    frictions: analysis.guide.hotspots.map(({ scene, risk, playbook }) => ({ scene, risk, playbook })),
+    initiator: { name: analysis.guide.initiator.name, firstMove: analysis.guide.initiator.firstMove },
     contract: {
       rule: "只许转述与组织清单中的事实；正文与建议禁数字禁命理术语（时运章可提年龄段与年份）；以两人名字互称，写「你们」的具体场景，禁止拼贴两份个人报告；建议必须是两个人一起能做的一件事；总分与任何评分数字不得出现。",
       output: "成册五章：封面判词 + origin/daily/friction/longrun/season 各一章（评述+建议），品牌口径「报告内容基于 FATE 模型 2.0 得出」。",
@@ -264,7 +264,8 @@ export type DuoDigestPayload = {
   pages: { origin: DuoPageText; daily: DuoPageText; friction: DuoPageText; longrun: DuoPageText; season: DuoPageText };
 };
 
-const DUO_STYLE_EXAMPLE = "你们的开场不是烟花，是对焦。一个习惯先观察再靠近，把每条信号都过一遍雷达；一个信任给得快，已经把对方写进了周末计划。这不是温差，是两种出厂设置刚好互相踩中了开关——慢的那位提供确定感，快的那位提供推进力。真正的吸引藏在第三次见面之后：当快的开始愿意等，慢的开始愿意提前一点点，这段关系就成立了。";
+const DUO_STYLE_ORIGIN = "你们的开场不是烟花，是对焦。一个习惯先观察再靠近，把每条信号都过一遍雷达；一个信任给得快，已经把对方写进了周末计划。这不是温差，是两种出厂设置刚好互相踩中了开关——慢的那位提供确定感，快的那位提供推进力。真正的吸引藏在第三次见面之后：当快的开始愿意等，慢的开始愿意提前一点点，这段关系就成立了。";
+const DUO_STYLE_FRICTION = "你们的吵架从来不是同一场吵架。一个的版本是：话都说到这儿了，为什么不回应；另一个的版本是：正因为要回应，才需要先退出去想。于是一个越追越急，一个越退越远——追的人觉得对方冷，退的人觉得对方在逼。其实你们要的是同一件事：确认这段关系稳不稳。只是一个用「现在就谈」来确认，一个用「让我想想」来确认。把这句话记住，一半的战争会自己消失。";
 
 export function buildDuoPrompt(facts: DuoFacts): { system: string; user: string } {
   return {
@@ -278,7 +279,13 @@ export function buildDuoPrompt(facts: DuoFacts): { system: string; user: string 
       "3. 禁止命理术语与吉凶断言；禁止「注定/命中」。",
       `4. 以名字称呼两人（${facts.persons[0].name}、${facts.persons[1].name}），写「你们」的具体场景（谁先发消息、饭桌氛围、冷战谁破冰）；禁止各写一段拼成两份个人报告。`,
       "5. 每章 advice 必须是两个人一起能做的一件具体的事。",
-      `风格样例（缘起章）：${DUO_STYLE_EXAMPLE}`,
+      "写作要求（付费报告，读者要的是被看穿的感觉）：",
+      "a. 每章至少一个具体生活场景——微信里谁先发消息、饭桌上的氛围、周末怎么定、吵架现场各自会说什么。把 duoTags 与 comparisons 的差异翻译成画面，禁止抽象关系学套话。",
+      "b. 清单里的 behaviors、frictions（含 playbook）、initiator.firstMove 是现成素材库：改写成场景化人话（其中的数字一律丢弃，禁止照抄进正文）。",
+      "c. 每章要有一句值得截图转发的精辟短句。",
+      "d. headline 参考 verdict.quip 的幽默感重写，不要照抄 verdict.title。",
+      `风格样例一（缘起章）：${DUO_STYLE_ORIGIN}`,
+      `风格样例二（摩擦章）：${DUO_STYLE_FRICTION}`,
     ].join("\n"),
     user: `双人事实清单：\n${JSON.stringify(facts, null, 0)}`,
   };
