@@ -395,7 +395,7 @@ export async function ResultContent({
       <section className="report result-report" id="deep-report">
         {!deepActive && <>
         <div className="report-head">
-          <div><div className="section-number">01 — 十神关系画像</div><h2>从十神出发，理解你<br />如何进入一段关系。</h2></div>
+          <div><h2>东方人格建模，<br />看见你的出厂设置。</h2></div>
           <div className="signature"><small>日主</small><strong>{profile.bazi.dayPillar}</strong><span>{profile.spine.strength.level === "中和" ? "中和之局 · 岁运定潮汐" : `${profile.spine.strength.level}之局 · 喜${profile.spine.favorable.join("、") || "随岁运"}`}</span></div>
         </div>
         <section className="fate-book fate-book-intro">
