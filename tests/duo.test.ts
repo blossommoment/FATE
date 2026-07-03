@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { analyzeBirth, analyzeRelationship } from "../lib/fate";
 import { JARGON_RE } from "../lib/digest";
-import { DUO_TAG_EXPLAIN, buildDuoComparisons, buildDuoFacts, buildDuoTags } from "../lib/duo";
+import {
+  DUO_TAG_EXPLAIN, buildDuoComparisons, buildDuoFacts, buildDuoFallback,
+  buildDuoPrompt, buildDuoTags, validateDuoPayload,
+} from "../lib/duo";
 import type { BirthInput } from "../lib/types";
 
 // 双人深度解读 B1 黄金用例：五域双人标签（组合规则触发）与对比数据，
@@ -60,6 +63,45 @@ describe("对比数据表征", () => {
     expect(c.season.a.length).toBeGreaterThanOrEqual(4);
     expect(c.season.a.some((s) => s.current)).toBe(true);
     expect(c.season.b.some((s) => s.current)).toBe(true);
+  });
+});
+
+describe("叙述层（B2）：五章 prompt、校验器、兜底", () => {
+  const a = analyzeBirth(owner);
+  const b = analyzeBirth(alice);
+  const facts = buildDuoFacts(a, b, analyzeRelationship(a, b, "恋爱"));
+
+  it("提示词：FATE 模型口径、五章结构、名字互称、禁数字禁术语", () => {
+    const { system, user } = buildDuoPrompt(facts);
+    expect(system).toContain("FATE 模型 2.0");
+    expect(system).toContain("season");
+    expect(system).toContain("禁止出现任何数字");
+    expect(system).toContain("阿主");
+    expect(system).toContain("小雨");
+    expect(user).toContain("双人事实清单");
+  });
+
+  it("兜底成册：确定性、五章齐全、正文零黑话零数字（时运章放行）、自身过校验", () => {
+    const fb = buildDuoFallback(facts);
+    expect(fb).toEqual(buildDuoFallback(buildDuoFacts(a, b, analyzeRelationship(a, b, "恋爱"))));
+    (["origin", "daily", "friction", "longrun", "season"] as const).forEach((key) => {
+      expect(fb.pages[key].essay.length, `${key} 章过短`).toBeGreaterThanOrEqual(90);
+      expect(fb.pages[key].advice.length).toBeGreaterThanOrEqual(15);
+      expect(JARGON_RE.test(fb.pages[key].essay + fb.pages[key].advice), `${key} 章含黑话`).toBe(false);
+      if (key !== "season") expect(/[0-9]/.test(fb.pages[key].essay + fb.pages[key].advice), `${key} 章含数字`).toBe(false);
+      expect(fb.pages[key].essay.includes("阿主") || fb.pages[key].essay.includes("小雨") || fb.pages[key].essay.includes("你们"), `${key} 章缺称呼`).toBe(true);
+    });
+    expect(validateDuoPayload(fb)).not.toBeNull();
+  });
+
+  it("校验器：拒绝正文数字、拒绝黑话、拒绝缺章", () => {
+    const good = buildDuoFallback(facts);
+    const withDigit = { ...good, pages: { ...good.pages, origin: { ...good.pages.origin, essay: `${good.pages.origin.essay}你们的默契度是87。` } } };
+    expect(validateDuoPayload(withDigit)).toBeNull();
+    const withJargon = { ...good, pages: { ...good.pages, daily: { ...good.pages.daily, essay: `${good.pages.daily.essay}因为你们的日主相合。` } } };
+    expect(validateDuoPayload(withJargon)).toBeNull();
+    expect(validateDuoPayload({ headline: good.headline, pages: { origin: good.pages.origin } })).toBeNull();
+    expect(validateDuoPayload("nope")).toBeNull();
   });
 });
 

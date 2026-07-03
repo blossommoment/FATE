@@ -255,3 +255,96 @@ export function buildDuoFacts(a: UserProfile, b: UserProfile, analysis: Relation
     },
   };
 }
+
+// ── 叙述层：五章 prompt、校验器、确定性兜底（机制与个人版同构）────
+
+export type DuoPageText = { essay: string; advice: string };
+export type DuoDigestPayload = {
+  headline: string; // 关系一句话判词，≤15字
+  pages: { origin: DuoPageText; daily: DuoPageText; friction: DuoPageText; longrun: DuoPageText; season: DuoPageText };
+};
+
+const DUO_STYLE_EXAMPLE = "你们的开场不是烟花，是对焦。一个习惯先观察再靠近，把每条信号都过一遍雷达；一个信任给得快，已经把对方写进了周末计划。这不是温差，是两种出厂设置刚好互相踩中了开关——慢的那位提供确定感，快的那位提供推进力。真正的吸引藏在第三次见面之后：当快的开始愿意等，慢的开始愿意提前一点点，这段关系就成立了。";
+
+export function buildDuoPrompt(facts: DuoFacts): { system: string; user: string } {
+  return {
+    system: [
+      "你是 FATE 双人深度解读报告的撰稿人。输入是 FATE 模型 2.0 已算好的双人事实清单（JSON），你负责写成五章报告正文。",
+      "输出严格为 JSON（不要 markdown 代码块）：",
+      `{"headline":"关系一句话判词，15字以内","pages":{"origin":{"essay":"缘起章：你们为什么互相吸引，180~240字","advice":"两个人一起能做的一件事，40~70字"},"daily":{"essay":"相处章：日常样态，180~240字","advice":"同上"},"friction":{"essay":"摩擦章：最容易在哪起冲突、怎么拆，180~240字","advice":"同上"},"longrun":{"essay":"长线章：这段关系怎么经营，160~220字","advice":"同上"},"season":{"essay":"时运章：两人各自的时段与共同节奏，160~220字，可提年龄段与年份","advice":"同上"}}}`,
+      "铁律：",
+      "1. 事实只能来自清单；每章围绕 duoTags 对应域的标签展开，并回扣 spine 主线。",
+      "2. 正文与建议【禁止出现任何数字与指标名】（数据已由图表呈现；仅 season 章可写年龄段与年份）。",
+      "3. 禁止命理术语与吉凶断言；禁止「注定/命中」。",
+      `4. 以名字称呼两人（${facts.persons[0].name}、${facts.persons[1].name}），写「你们」的具体场景（谁先发消息、饭桌氛围、冷战谁破冰）；禁止各写一段拼成两份个人报告。`,
+      "5. 每章 advice 必须是两个人一起能做的一件具体的事。",
+      `风格样例（缘起章）：${DUO_STYLE_EXAMPLE}`,
+    ].join("\n"),
+    user: `双人事实清单：\n${JSON.stringify(facts, null, 0)}`,
+  };
+}
+
+const DUO_DIGIT_RE = /[0-9０-９]/;
+const DUO_JARGON_RE = /食神|伤官|比肩|劫财|正印|偏印|正官|七杀|正财|偏财|日主|喜用|忌神|身弱|身强|从弱|从强|禄|刃|藏干|十神|用神/;
+
+export function validateDuoPayload(raw: unknown): DuoDigestPayload | null {
+  if (!raw || typeof raw !== "object") return null;
+  const d = raw as Partial<DuoDigestPayload>;
+  if (typeof d.headline !== "string" || d.headline.length === 0 || d.headline.length > 24) return null;
+  const pages = d.pages;
+  if (!pages) return null;
+  const keys = ["origin", "daily", "friction", "longrun", "season"] as const;
+  for (const key of keys) {
+    const page = pages[key];
+    if (!page || typeof page.essay !== "string" || typeof page.advice !== "string") return null;
+    if (page.essay.length < 90 || page.advice.length < 15) return null;
+    if (key !== "season" && DUO_DIGIT_RE.test(page.essay + page.advice)) return null;
+  }
+  const everything = [d.headline, ...keys.flatMap((k) => [pages[k]!.essay, pages[k]!.advice])].join("");
+  if (DUO_JARGON_RE.test(everything)) return null;
+  return d as DuoDigestPayload;
+}
+
+// 确定性兜底：五章完整成品（正文零数字零黑话；时运章允许年龄段）
+export function buildDuoFallback(facts: DuoFacts): DuoDigestPayload {
+  const [pa, pb] = facts.persons;
+  const t = facts.duoTags;
+  const ex = (tag: string) => DUO_TAG_EXPLAIN[tag] ?? "";
+  const names = (domain: DuoDomain) => t[domain].map((h) => h.tag).join("、");
+  const first = (domain: DuoDomain) => t[domain][0]?.tag ?? "";
+  const curA = facts.comparisons.season.a.find((s) => s.current);
+  const curB = facts.comparisons.season.b.find((s) => s.current);
+  const seasonAdviceMap: Record<string, string> = {
+    双补给期: "把想了很久的共同计划排上日程——旅行、搬家、新阶段，这段时间敢想就敢做。",
+    一人扛周期: "顺风的一方多扛事、多兜底；逆风的一方负责把状态照顾好——分工说破，就不是牺牲。",
+    双蓄力期: "一起把日子过小：固定的散步路线、固定的做饭日——蓄力期的感情靠低成本的重复喂养。",
+    逆风同行: "每周留一个不谈难处的晚上，只做让两个人都省电的事。",
+    时来运转组: "把大决定推迟到下一段一起做，现在只做准备清单。",
+    补给期将至: "列一张「等窗口打开就做」的清单，贴在两个人都看得见的地方。",
+  };
+  return {
+    headline: facts.verdict.title,
+    pages: {
+      origin: {
+        essay: `${pa.name}和${pb.name}的开场写着「${names("origin")}」。${ex(first("origin"))}——吸引不是错觉，是两种结构刚好互相踩中了开关。${facts.spine.thesis}，这条主线从你们第一次说话就埋下了：一方提供的，恰好是另一方缺的那种确定感或推进力。后面所有的故事，都是这个开关被反复按下的回声。`,
+        advice: "复盘一次「你们怎么开始的」：各自说出最初被吸引的一个瞬间——答案往往和现在闹别扭的原因是同一件事。",
+      },
+      daily: {
+        essay: `日常里的你们是「${names("daily")}」。${ex(first("daily"))}。谁先发消息、谁定周末、谁记得纪念日，这些小事在你们这里有天然的分工——分工本身不是问题，把分工读成「谁更爱谁」才是问题。把彼此的默认设置当成出厂配置而不是态度，日子会顺很多。`,
+        advice: "各自写下三件「希望对方主动做」的小事交换——把猜谜游戏变成使用说明。",
+      },
+      friction: {
+        essay: `你们的摩擦画像是「${names("friction")}」。${ex(first("friction"))}。分歧真正的成本从来不在吵，而在两个人处理分歧的时钟不同步：一个需要当场说清，一个需要先退一步；一个在等回应，一个在等冷静。先把各自的时钟摆到桌面上，比争谁对谁错省得多。`,
+        advice: "约一个「暂停暗号」：任何一方说出它，战斗冻结、第二天早饭后再谈——冻结不是逃避，是给时钟对表的时间。",
+      },
+      longrun: {
+        essay: `往长了看，你们是「${names("longrun")}」。${ex(first("longrun"))}。长线的关键不是保鲜激情，是把已经顺手的相处方式变成制度：固定的仪式、共同的项目、说好的边界。感情的复利来自重复，而你们已经有了值得重复的东西。`,
+        advice: "每季度安排一件只属于你们俩的「第一次」，提前写进两个人的日历。",
+      },
+      season: {
+        essay: `时运上，${pa.name}正走 ${curA?.range ?? "当前"} 的${curA?.label ?? "平"}段，${pb.name}是 ${curB?.range ?? "当前"} 的${curB?.label ?? "平"}段——你们是「${names("season")}」。${ex(first("season"))}。周期不是宿命，是天气预报：知道谁在顺风谁在逆风，担待就有了方向，等待就有了期限。`,
+        advice: seasonAdviceMap[first("season")] ?? "把两个人的节奏摊开对表：谁该冲、谁该稳，说清楚就不拧巴。",
+      },
+    },
+  };
+}
