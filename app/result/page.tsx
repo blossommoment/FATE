@@ -395,22 +395,10 @@ export async function ResultContent({
       <section className="report result-report" id="deep-report">
         {!deepActive && <>
         <div className="report-head">
-          <div><h2>东方人格建模，<br />看见你的出厂设置。</h2></div>
+          <div><h2>东方人格底层建模</h2></div>
           <div className="signature"><small>日主</small><strong>{profile.bazi.dayPillar}</strong><span>{profile.spine.strength.level === "中和" ? "中和之局 · 岁运定潮汐" : `${profile.spine.strength.level}之局 · 喜${profile.spine.favorable.join("、") || "随岁运"}`}</span></div>
         </div>
-        <section className="fate-book fate-book-intro">
-          <span className="fb-mono">FATE° · 深度解读报告</span>
-          <h3>四章，读懂你自己。</h3>
-          <div className="fb-toc-preview">
-            <span className="fb-c-love"><b>壹</b>感情</span>
-            <span className="fb-c-career"><b>贰</b>事业</span>
-            <span className="fb-c-social"><b>叁</b>人际</span>
-            <span className="fb-c-season"><b>肆</b>时运</span>
-          </div>
-          <p>感情、事业、人际、时运各一章——你的标签、数据表征、与一段只属于你的评述与建议。生成一次，永久可看，可分享。</p>
-          <Link className="fb-cta" href={`/report?${baseQuery}`}>打开我的深度解读 ↗</Link>
-          <div className="fb-note">报告内容基于 FATE 模型 2.0 得出。</div>
-        </section>
+
         <section className="dominant-persona">
           <div className="persona-god"><span>主轴 · {profile.dominantPersona.weight}分 · {profile.dominantBasis}</span><strong>{profile.dominantPersona.god}</strong><small>{profile.dominantPersona.name}</small></div>
           <div className={`persona-god secondary${profile.tertiaryPersona ? " dual" : ""}`}><span>{profile.tertiaryPersona ? `双副轴 · ${profile.secondaryPersona.weight}/${profile.tertiaryPersona.weight}分` : `副轴 · ${profile.secondaryPersona.weight}分`}</span><strong>{profile.secondaryPersona.god}{profile.tertiaryPersona ? `·${profile.tertiaryPersona.god}` : ""}</strong><small>{profile.secondaryPersona.name}{profile.tertiaryPersona ? ` × ${profile.tertiaryPersona.name}` : ""}</small></div>
@@ -436,6 +424,19 @@ export async function ResultContent({
               return <span key={item.key} style={{ left: `${50 + Math.cos(angle) * 39}%`, top: `${50 + Math.sin(angle) * 39}%` }}>{item.label}<b>{item.score}</b></span>;
             })}
           </div>
+        </section>
+        <section className="fate-book fate-book-intro">
+          <span className="fb-mono">FATE° · 深度解读报告</span>
+          <h3>四章，读懂你自己。</h3>
+          <div className="fb-toc-preview">
+            <span className="fb-c-love"><b>壹</b>感情</span>
+            <span className="fb-c-career"><b>贰</b>事业</span>
+            <span className="fb-c-social"><b>叁</b>人际</span>
+            <span className="fb-c-season"><b>肆</b>时运</span>
+          </div>
+          <p>感情、事业、人际、时运各一章——你的标签、数据表征、与一段只属于你的评述与建议。生成一次，永久可看，可分享。</p>
+          <Link className="fb-cta" href={`/report?${baseQuery}`}>打开我的深度解读 ↗</Link>
+          <div className="fb-note">报告内容基于 FATE 模型 2.0 得出。</div>
         </section>
         <div className="module-directory">
           <header><div><span>DEEP CHAPTERS</span><h3>深度目录 · {["零","一","二","三","四","五","六","七","八","九"][deepModules.length]}章</h3></div><small>四类关系维度 + 专项观察 · 逐章展开</small></header>
