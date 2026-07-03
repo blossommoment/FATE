@@ -333,8 +333,8 @@ export async function ResultContent({
           </article>})}
         </div>
         <div className="overview-insights">
-          <article><i>日</i><div><span>日主气质</span><h3>{profile.bazi.dayPillar[0]}日主 · {profile.archetype}</h3><p>{profile.deepAnalysis[2].summary}</p></div></article>
-          <article><i>令</i><div><span>月令主轴</span><h3>{profile.bazi.pillars[1].zhi}月 · {profile.bazi.pillars[1].hiddenTenGods[0]}</h3><p>月令本气权重最高，是这张命盘最稳定、最容易反复出现的行为底色。</p></div></article>
+          <article><i>日</i><div><span>日主气质</span><h3>{profile.bazi.dayPillar[0]}日主 · {profile.archetype}</h3><p>{profile.spine.thesis}。{profile.spine.coreTension}。</p></div></article>
+          <article><i>令</i><div><span>月令主轴</span><h3>{profile.bazi.pillars[1].zhi}月 · {profile.bazi.pillars[1].hiddenTenGods[0]}</h3><p>{profile.spine.monthAxis}</p></div></article>
           <article><i>缘</i><div><span>关系底色</span><h3>{profile.identityTags.join(" · ")}</h3><p>{profile.summary}</p></div></article>
         </div>
         {elementRadarPanel}
@@ -354,12 +354,12 @@ export async function ResultContent({
                 <div className="luck-node"><i /><span>{period.isCurrent ? "当下" : `第 0${period.index} 运`}</span></div>
                 <div className="luck-glyph"><strong>{period.ganZhi[0]}</strong><strong>{period.ganZhi[1]}</strong></div>
                 <div className="luck-years">{period.startYear}<i />{period.endYear}</div>
-                <div className="luck-age">{period.startAge}—{period.endAge} 岁</div>
+                <div className="luck-age">{period.startAge}—{period.endAge} 岁{period.verdict ? ` · ${period.verdict.label}` : ""}</div>
               </article>;
             })}
           </div>
           <section className="annual-flow" id="annual-flow">
-            <header><div><span>流年索引</span><h3>选择年份，查看当年五行样式</h3></div><small>仅标注干支与元素，不作吉凶推断</small></header>
+            <header><div><span>流年索引</span><h3>选择年份，查看当年五行样式</h3></div><small>以喜忌为标尺标注补给与消耗，不作具体事件断言</small></header>
             <div className="annual-year-strip">
               {annualYears.map((year) => {
                 const ganZhi = annualGanZhi(year);
@@ -369,7 +369,7 @@ export async function ResultContent({
             </div>
             <article className={`annual-detail annual-${annualTone(selectedAnnual[0])}`}>
               <div className="annual-seal"><small>{safeFlowYear}</small><strong>{selectedAnnual[0]}<b>{selectedAnnual[1]}</b></strong></div>
-              <div><span>当年元素标记</span><h3>{selectedAnnual}流年</h3><p>流年天干{selectedAnnual[0]}为{annualFlow.stemElement}，对你的{profile.bazi.dayPillar[0]}日主属于{annualFlow.stemRole}——这一年{annualFlow.stemTheme}相关的主题更容易走到台前。</p></div>
+              <div><span>当年元素标记</span><h3>{selectedAnnual}流年</h3><p>流年天干{selectedAnnual[0]}为{annualFlow.stemElement}，对你的{profile.bazi.dayPillar[0]}日主属于{annualFlow.stemRole}——这一年{annualFlow.stemTheme}相关的主题更容易走到台前。{annualFlow.verdict.text}</p></div>
               <div className="annual-element-pills"><span className={`tone-${annualTone(selectedAnnual[0])}`}>天干 · {annualElementNames[annualTone(selectedAnnual[0]) as keyof typeof annualElementNames]}</span><span className={`tone-${annualTone(selectedAnnual[1])}`}>地支 · {annualElementNames[annualTone(selectedAnnual[1]) as keyof typeof annualElementNames]}</span></div>
             </article>
             {annualFlow.specials.length > 0 && <div className="annual-specials">

@@ -197,7 +197,7 @@ const GEN_NEXT: Record<keyof Elements, keyof Elements> = { wood: "fire", fire: "
 const OVERCOME_NEXT: Record<keyof Elements, keyof Elements> = { wood: "earth", earth: "water", water: "fire", fire: "metal", metal: "wood" };
 
 // 报告主线：整份深度分析的「论点」，各章节须回扣（REQ_ENERGY_REPORT_V2 §3.1）
-export function buildSpine(energy: EnergyResult): Spine {
+export function buildSpine(energy: EnergyResult): Omit<Spine, "monthAxis"> {
   const dm = energy.dayMaster;
   const el = dm.element;
   const yinEl = (Object.keys(GEN_NEXT) as (keyof Elements)[]).find((k) => GEN_NEXT[k] === el)!;
@@ -233,6 +233,63 @@ export function buildSpine(energy: EnergyResult): Spine {
     unfavorable,
     coreTension,
   };
+}
+
+// 岁运喜忌标尺：干支两字对日主是补给还是消耗；中和盘按拍板#13输出潮汐语
+export function ganZhiVerdict(energy: EnergyResult, ganZhi: string): { tone: "boost" | "drain" | "mixed" | "neutral"; label: string; text: string } {
+  const dm = energy.dayMaster;
+  const els: (keyof Elements)[] = [stemElements[stems.indexOf(ganZhi[0])], branchElements[branches.indexOf(ganZhi[1])]];
+  const names = els.map((e) => ELEMENT_CN[e]);
+  if (dm.level === "中和") {
+    const yinEl = (Object.keys(GEN_NEXT) as (keyof Elements)[]).find((k) => GEN_NEXT[k] === dm.element)!;
+    const allySet = new Set<keyof Elements>([dm.element, yinEl]);
+    const allies = els.filter((e) => allySet.has(e)).length;
+    if (allies === 2) return { tone: "boost", label: "偏强期", text: `${ganZhi}带${names.join("、")}，两字皆助身——这是你的偏强段：适合启动、表达、把想法变成动作。` };
+    if (allies === 0) return { tone: "drain", label: "偏弱期", text: `${ganZhi}带${names.join("、")}，两字皆泄耗——这是你的偏弱段：宜深耕蓄力，少接超载的事。` };
+    return { tone: "mixed", label: "潮平", text: `${ganZhi}助泄各半，潮汐不显——节奏由具体事情决定，顺手的多做，费劲的缓行。` };
+  }
+  const fav = new Set(dm.favorable);
+  const unf = new Set(dm.unfavorable);
+  const favCount = els.filter((e) => fav.has(e)).length;
+  const unfCount = els.filter((e) => unf.has(e)).length;
+  if (favCount > unfCount) return { tone: "boost", label: "补给", text: `${ganZhi}带${names.join("、")}，喜用当值——补给段：外界给你的多于拿走的，扩张与争取占天时。` };
+  if (unfCount > favCount) return { tone: "drain", label: "消耗", text: `${ganZhi}带${names.join("、")}，忌神当值——消耗段：拿走的多于给的，优先守成、蓄力与做减法。` };
+  if (favCount > 0) return { tone: "mixed", label: "互见", text: `${ganZhi}喜忌互见——一手补给一手消耗，成色取决于你把重心押在哪一边。` };
+  return { tone: "neutral", label: "平段", text: `${ganZhi}对你不添不减——这一段的主题由合冲结构与现实安排决定。` };
+}
+
+// 月令主轴：月令本气十神组 + 日主强弱，生成个体化的当令解读
+function buildMonthAxis(bazi: Bazi, energy: EnergyResult): string {
+  const zhi = bazi.pillars[1].zhi;
+  const god = bazi.pillars[1].hiddenTenGods[0] ?? "本气";
+  const weak = energy.dayMaster.level === "身弱" || energy.dayMaster.level === "从弱";
+  const group = ["正官", "七杀"].includes(god) ? "authority"
+    : ["正印", "偏印"].includes(god) ? "resource"
+      : ["正财", "偏财"].includes(god) ? "wealth"
+        : ["食神", "伤官"].includes(god) ? "output" : "peer";
+  const texts: Record<string, [string, string]> = {
+    authority: [
+      `${zhi}月${god}当令——规则与外部要求是这张盘的常驻背景音，你的功课不是硬扛，而是给压力找转化的出口。`,
+      `${zhi}月${god}当令——规则与责任是你的主场，扛事与掌舵是这张盘反复出现的角色。`,
+    ],
+    resource: [
+      `${zhi}月${god}当令——吸收、理解与被支持是你的底色，先天带一座靠山，课题是把吸收变成输出。`,
+      `${zhi}月${god}当令——学习与消化是你的主旋律，养分充足，记得留出输出的闸口。`,
+    ],
+    wealth: [
+      `${zhi}月${god}当令——现实与资源感贯穿全盘，它对你意味着负重多于机会，节奏感比野心更重要。`,
+      `${zhi}月${god}当令——现实与资源感贯穿全盘，你有把事情落到实处的先天节拍。`,
+    ],
+    output: [
+      `${zhi}月${god}当令——表达与创造当令，但输出即消耗，你的才华需要配一条补给线。`,
+      `${zhi}月${god}当令——表达与创造当令，想法有天然的出口，这张盘的高光多在「说出来、做出来」。`,
+    ],
+    peer: [
+      `${zhi}月${god}当令——同伴与自我立场当令，得令而立，你的底气来自「我和我的同类」。`,
+      `${zhi}月${god}当令——同伴与自我立场当令，独立与并肩是这张盘最稳定的姿态。`,
+    ],
+  };
+  return texts[group][weak ? 0 : 1];
 }
 
 export function analyzeBirth(birth: BirthInput): UserProfile {
@@ -791,7 +848,16 @@ export function analyzeBirth(birth: BirthInput): UserProfile {
       ? "anxious"
       : rawDeep("autonomy") >= 62 && rawDeep("trust_speed") <= 52 ? "avoidant" : "secure",
   };
-  const archetype = `${elementName}系${persona.name}`;
+  // 强弱感知命名（2026-07-03）：同一主轴十神，身强是持刀者、身弱是承受方，
+  // 名字不能两用；前缀由「最强五行系」改为强弱档位（身弱盘最强五行是对手而非气质）
+  const weakPersonaNames: Record<string, string> = {
+    七杀: "承压应变型", 正官: "守序谨慎型", 伤官: "敏锐易感型", 食神: "安逸自适型",
+    正印: "倚靠滋养型", 偏印: "敏思内守型", 正财: "务实担重型", 偏财: "机会奔忙型",
+    比肩: "同伴借力型", 劫财: "并肩共担型",
+  };
+  const isWeakSide = energy.dayMaster.level === "身弱" || energy.dayMaster.level === "从弱";
+  const personaDisplayName = isWeakSide ? weakPersonaNames[dominantGodName] ?? persona.name : persona.name;
+  const archetype = `${energy.dayMaster.level}${personaDisplayName}`;
   const identityTags = [
     enrichedSocial.relationship_speed === "slow" ? "慢热关系" : enrichedSocial.relationship_speed === "fast" ? "快速靠近" : "自然升温",
     personality.stability >= 68 ? "情绪稳定" : personality.emotion >= 68 ? "感受细腻" : "理性感性平衡",
@@ -865,7 +931,7 @@ export function analyzeBirth(birth: BirthInput): UserProfile {
     birth,
     bazi,
     energy,
-    spine: buildSpine(energy),
+    spine: { ...buildSpine(energy), monthAxis: buildMonthAxis(bazi, energy) },
     zodiac,
     personality,
     socialProfile: enrichedSocial,
@@ -880,11 +946,18 @@ export function analyzeBirth(birth: BirthInput): UserProfile {
     secondaryPersona,
     tertiaryPersona,
     combinedPersona,
-    luckCycles,
+    luckCycles: {
+      ...luckCycles,
+      periods: luckCycles.periods.map((period) => ({ ...period, verdict: ganZhiVerdict(energy, period.ganZhi) })),
+    },
     specialPoints,
     deepAnalysis,
     specialtyAnalysis,
-    summary: `你的五行以${elementName}为主要能量，日主为${bazi.dayPillar[0]}。${zodiacName}为这组底色加入了新的表达方式：你有${({ low: "较低", medium: "适中", high: "较高" } as const)[enrichedSocial.communication_need]}的沟通需求，关系通常以${({ slow: "慢热", medium: "自然", fast: "快速" } as const)[enrichedSocial.relationship_speed]}的节奏展开，并呈现${({ secure: "安全型", anxious: "焦虑型", avoidant: "回避型" } as const)[enrichedSocial.attachment_style]}依恋倾向。`,
+    summary: `${(energy.dayMaster.level === "身弱" || energy.dayMaster.level === "从弱")
+      ? `盘面能量以${elementName}为大头，但那是你所处的环境而非你的底色——你的底色是${bazi.dayPillar[0]}${ELEMENT_CN[stemElements[stems.indexOf(bazi.dayPillar[0])]]}，${energy.dayMaster.level === "从弱" ? "顺势而活" : "弱而有源"}`
+      : energy.dayMaster.level === "中和"
+        ? `你的五行能量大致均衡，日主${bazi.dayPillar[0]}${ELEMENT_CN[stemElements[stems.indexOf(bazi.dayPillar[0])]]}随岁运涨落`
+        : `你的五行以${elementName}为主要能量，日主${bazi.dayPillar[0]}${ELEMENT_CN[stemElements[stems.indexOf(bazi.dayPillar[0])]]}气足可任`}。${zodiacName}为这组底色加入了新的表达方式：你有${({ low: "较低", medium: "适中", high: "较高" } as const)[enrichedSocial.communication_need]}的沟通需求，关系通常以${({ slow: "慢热", medium: "自然", fast: "快速" } as const)[enrichedSocial.relationship_speed]}的节奏展开，并呈现${({ secure: "安全型", anxious: "焦虑型", avoidant: "回避型" } as const)[enrichedSocial.attachment_style]}依恋倾向。`,
   };
 }
 
@@ -986,6 +1059,7 @@ export type AnnualFlow = {
   stemTheme: string;
   specials: { name: string; summary: string }[];
   interactions: { type: "冲" | "六合" | "半合" | "同气"; title: string; summary: string }[];
+  verdict: { tone: "boost" | "drain" | "mixed" | "neutral"; label: string; text: string };
 };
 
 // 流年干支与原局四柱的结构关系：只描述哪一柱的主题被触发，不作吉凶判断。
@@ -1060,7 +1134,7 @@ export function analyzeAnnualFlow(profile: UserProfile, ganZhi: string): AnnualF
       summary: `你的原局已有${others.join("、")}，流年${branch}补齐${group.join("")}三合${element}局。${element}所代表的主题（对你属${elementRoleForDayMaster(dayStem, element)}）这一年会成为高频主场，相关的人与事更容易主动找上门。`,
     });
   });
-  return { stemElement, stemRole, stemTheme: roleThemes[stemRole], specials, interactions };
+  return { stemElement, stemRole, stemTheme: roleThemes[stemRole], specials, interactions, verdict: ganZhiVerdict(profile.energy, ganZhi) };
 }
 
 function elementRoleForDayMaster(dayStem: string, targetElement: string) {

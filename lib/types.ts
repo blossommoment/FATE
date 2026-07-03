@@ -6,6 +6,7 @@ export type Spine = {
   favorable: string[];
   unfavorable: string[];
   coreTension: string;
+  monthAxis: string;
 };
 
 export type BirthInput = {
@@ -146,6 +147,7 @@ export type UserProfile = {
       startAge: number;
       endAge: number;
       isCurrent: boolean;
+      verdict?: { tone: "boost" | "drain" | "mixed" | "neutral"; label: string; text: string };
     }[];
   };
   specialPoints: {
