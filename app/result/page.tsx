@@ -204,7 +204,7 @@ export async function ResultContent({
   const elementRadius = (value: number) => 24 + 88 * Math.min(value / 45, 1);
   const elementValues = elementRadar.map((item, index) => polygonPoint(index, 5, elementRadius(item.value))).join(" ");
   const elementRadarPanel = <section className="element-card element-radar-card overview-element-radar">
-    <div className="element-radar-copy"><small>五行能量图谱</small><h3>月令优先的结构权重</h3><p>月支藏干占核心权重，其次读取时支、日支、年支与三处透干。图形展示加权占比，不再把八个字等量计数。</p><div className="element-weight-note"><span>月支 35</span><span>时支 20</span><span>日支 15</span><span>年支 15</span><span>透干 15</span></div></div>
+    <div className="element-radar-copy"><small>五行能量图谱</small><h3>随月令旺衰的能量推演</h3><p>以月令定五行旺衰，再计通根透干与合冲刑害对每个字的增减。图形展示这套推演后的真实占比，不把八个字等量计数。</p><div className="element-weight-note"><span>月令旺衰</span><span>通根透干</span><span>合会成局</span><span>冲刑折损</span></div></div>
     <div className="element-radar">
       <svg viewBox="0 0 320 320" role="img" aria-label="五行能量雷达图，不显示具体数字">
         <defs><linearGradient id="elementRadarFill" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#58a878" /><stop offset=".28" stopColor="#e66e5e" /><stop offset=".52" stopColor="#d6a64f" /><stop offset=".76" stopColor="#86a3ad" /><stop offset="1" stopColor="#5b83bd" /></linearGradient></defs>

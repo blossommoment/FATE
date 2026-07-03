@@ -1,8 +1,9 @@
 import type {
   Bazi, BirthInput, Elements, MatchResult, Personality, SocialProfile,
   UserProfile, Zodiac,
-  RelationshipAnalysis,
+  RelationshipAnalysis, Spine,
 } from "./types";
+import { computeEnergy, computeEnergyFromPillars, type EnergyResult } from "./energy";
 import { Lunar, Solar } from "lunar-javascript";
 import { ChildLimit, DefaultChildLimitProvider, Gender as TymeGender, SolarTime } from "tyme4ts";
 
@@ -117,22 +118,8 @@ export function calculateBazi(birth: BirthInput): Bazi {
     ["日柱", chart.getDayHideGan(), chart.getDayShiShenZhi(), "日主", chart.getDayNaYin(), chart.getDayDiShi()],
     ["时柱", chart.getTimeHideGan(), chart.getTimeShiShenZhi(), chart.getTimeShiShenGan(), chart.getTimeNaYin(), chart.getTimeDiShi()],
   ] as [string, string[], string[], string, string, string][];
-  const branchWeights = [[8, 5, 2], [20, 10, 5], [8, 5, 2], [10, 6, 4]];
-  const stemWeights = [5, 5, 0, 5];
-  const weightedElements: Elements = { wood: 0, fire: 0, earth: 0, metal: 0, water: 0 };
-  details.forEach(([, hiddenStems], pillarIndex) => {
-    const visibleStem = values[pillarIndex][0];
-    const visibleKey = stemElements[stems.indexOf(visibleStem)];
-    if (visibleKey) weightedElements[visibleKey] += stemWeights[pillarIndex];
-    hiddenStems.forEach((stem, hiddenIndex) => {
-      const key = stemElements[stems.indexOf(stem)];
-      if (key) weightedElements[key] += branchWeights[pillarIndex][hiddenIndex] ?? 0;
-    });
-  });
-  const weightedTotal = Object.values(weightedElements).reduce((sum, value) => sum + value, 0) || 1;
-  const elementStrength = Object.fromEntries(
-    Object.entries(weightedElements).map(([key, value]) => [key, Math.round(value / weightedTotal * 1000) / 10]),
-  ) as Elements;
+  // 五行力量由 v2 能量引擎计算（旺相休囚死+合冲刑害+通根），替换旧静态权重表
+  const elementStrength = computeEnergy(values.map((s) => ({ gan: s[0], zhi: s[1] }))).elementPower;
 
   return {
     yearPillar: values[0],
@@ -165,12 +152,13 @@ export function calculateZodiac(birth: BirthInput): Zodiac {
   return signs[month % 12][0];
 }
 
-export function buildPersonality(elements: Elements, zodiac: Zodiac): Personality {
+// 入参为 v2 能量百分比（合计 100）；系数由旧版计数制换算而来（1 字 ≈ 12.5%，coef/12.5）
+export function buildPersonality(elementPower: Elements, zodiac: Zodiac): Personality {
   const p = {
-    extroversion: 42 + elements.fire * 9 + elements.wood * 3 - elements.water * 2,
-    stability: 45 + elements.earth * 8 + elements.metal * 5 - elements.water * 5,
-    control: 38 + elements.metal * 10 + elements.earth * 2 - elements.wood * 2,
-    emotion: 40 + elements.water * 9 + elements.fire * 5,
+    extroversion: 42 + elementPower.fire * 0.72 + elementPower.wood * 0.24 - elementPower.water * 0.16,
+    stability: 45 + elementPower.earth * 0.64 + elementPower.metal * 0.4 - elementPower.water * 0.4,
+    control: 38 + elementPower.metal * 0.8 + elementPower.earth * 0.16 - elementPower.wood * 0.16,
+    emotion: 40 + elementPower.water * 0.72 + elementPower.fire * 0.4,
   };
   const fire = ["Aries", "Leo", "Sagittarius"];
   const water = ["Cancer", "Scorpio", "Pisces"];
@@ -204,11 +192,55 @@ export function buildSocialProfile(p: Personality): SocialProfile {
   };
 }
 
+const ELEMENT_CN: Record<keyof Elements, string> = { wood: "木", fire: "火", earth: "土", metal: "金", water: "水" };
+const GEN_NEXT: Record<keyof Elements, keyof Elements> = { wood: "fire", fire: "earth", earth: "metal", metal: "water", water: "wood" };
+const OVERCOME_NEXT: Record<keyof Elements, keyof Elements> = { wood: "earth", earth: "water", water: "fire", fire: "metal", metal: "wood" };
+
+// 报告主线：整份深度分析的「论点」，各章节须回扣（REQ_ENERGY_REPORT_V2 §3.1）
+export function buildSpine(energy: EnergyResult): Spine {
+  const dm = energy.dayMaster;
+  const el = dm.element;
+  const yinEl = (Object.keys(GEN_NEXT) as (keyof Elements)[]).find((k) => GEN_NEXT[k] === el)!;
+  const guanEl = (Object.keys(OVERCOME_NEXT) as (keyof Elements)[]).find((k) => OVERCOME_NEXT[k] === el)!;
+  const bijie = energy.raw[el];
+  const yin = energy.raw[yinEl];
+  const guan = energy.raw[guanEl];
+  const outflow = energy.raw[GEN_NEXT[el]] + energy.raw[OVERCOME_NEXT[el]];
+  const favorable = dm.favorable.map((k) => ELEMENT_CN[k]);
+  const unfavorable = dm.unfavorable.map((k) => ELEMENT_CN[k]);
+  const chong = energy.structures.find((s) => s.type === "六冲" && !s.effect.includes("不作折损"));
+
+  let coreTension: string;
+  if (dm.level === "从弱") coreTension = "自身力薄而大势已成——张力不在对抗，在是否敢于彻底顺势";
+  else if (dm.level === "从强") coreTension = "气势一边倒——盛极难容异物，逆势之物皆成扰动";
+  else if (yin > 2 * bijie) coreTension = "印重身轻——输入远大于输出，吸收多而出口窄";
+  else if (dm.level !== "身强" && guan > bijie + yin) coreTension = "杀重身轻——外压常在，先找泄压口再谈进取";
+  else if (dm.level === "身强" && outflow < bijie * 0.5) coreTension = "气足而出口少——能量无处安放时容易转成内耗";
+  else if (chong) coreTension = `${chong.detail}——根基带震动，稳定要靠自建`;
+  else coreTension = "五行大致流通，原局张力不显，起伏主要来自岁运";
+
+  const thesisByLevel: Record<string, string> = {
+    从弱: `顺势而活之局：不与大势对抗，融入${favorable.slice(0, 2).join("、")}的世界反而成事`,
+    从强: `一气专旺之局：顺其气则昌，喜${favorable.join("、")}，最忌逆势搅局`,
+    身强: `身强气足之局：扛得住事，关键在把力气用出去——出口在${favorable.join("、")}`,
+    身弱: `身弱有源之局：先接住自己再谈输出，${favorable.join("、")}是补给线`,
+    中和: "中和流通之局：原局不定胜负，岁运定潮汐——顺水与逆水交替行舟",
+  };
+  return {
+    thesis: thesisByLevel[dm.level],
+    strength: { level: dm.level, score: dm.score, confidence: dm.confidence },
+    favorable,
+    unfavorable,
+    coreTension,
+  };
+}
+
 export function analyzeBirth(birth: BirthInput): UserProfile {
   const bazi = calculateBazi(birth);
+  const energy = computeEnergyFromPillars(bazi.pillars);
   const luckCycles = calculateLuckCycles(birth);
   const zodiac = calculateZodiac(birth);
-  const personality = buildPersonality(bazi.elements, zodiac);
+  const personality = buildPersonality(energy.elementPower, zodiac);
   const socialProfile = buildSocialProfile(personality);
   const strongest = (Object.entries(bazi.elements) as [keyof Elements, number][]).sort((a, b) => b[1] - a[1])[0][0];
   const elementName = ({ wood: "木", fire: "火", earth: "土", metal: "金", water: "水" } as const)[strongest];
@@ -832,6 +864,8 @@ export function analyzeBirth(birth: BirthInput): UserProfile {
     id: `${birth.year}${String(birth.month).padStart(2, "0")}${String(birth.day).padStart(2, "0")}${String(birth.hour).padStart(2, "0")}${String(birth.minute ?? 0).padStart(2, "0")}`,
     birth,
     bazi,
+    energy,
+    spine: buildSpine(energy),
     zodiac,
     personality,
     socialProfile: enrichedSocial,

@@ -1,3 +1,13 @@
+import type { EnergyResult } from "./energy";
+
+export type Spine = {
+  thesis: string;
+  strength: { level: string; score: number; confidence: string };
+  favorable: string[];
+  unfavorable: string[];
+  coreTension: string;
+};
+
 export type BirthInput = {
   year: number;
   month: number;
@@ -64,6 +74,8 @@ export type UserProfile = {
   id: string;
   birth: BirthInput;
   bazi: Bazi;
+  energy: EnergyResult;
+  spine: Spine;
   zodiac: Zodiac;
   personality: Personality;
   socialProfile: SocialProfile;
