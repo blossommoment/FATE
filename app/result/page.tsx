@@ -630,7 +630,7 @@ export async function ResultContent({
           const dscore = (target: typeof profile, key: string) => target.deepAnalysis.find((item) => item.key === key)?.score ?? 50;
           const bestDim = relationship.scoreBreakdown.slice().sort((x, y) => y.score - x.score)[0];
           const moduleMeta = [
-            { key: "dimensions", no: "壹", title: "关系总览", subtitle: "总分、六维与剧本", teaser: `${bestDim.label} ${bestDim.score} 分领跑六维` },
+            { key: "dimensions", no: "壹", title: "关系总览", subtitle: "总分、六维与剧本", teaser: relationship.spine.thesis },
             { key: "nature", no: "贰", title: "两人底色", subtitle: "各自的性情与出厂设置", teaser: relationship.guide.dispositions[0]?.trait ?? "结构安稳，各有分寸" },
             { key: "structure", no: "叁", title: "八字化学反应", subtitle: "两张命盘如何咬合", teaser: relationship.branchDynamics[0]?.title ?? "无强合冲，互动由行为层主导" },
             { key: "manner", no: "肆", title: "相处样态", subtitle: "日常里的你们：谁主动、谁吃醋", teaser: relationship.guide.behaviors[1]?.conclusion ?? relationship.guide.behaviors[0].conclusion },

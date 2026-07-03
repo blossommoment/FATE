@@ -216,6 +216,12 @@ export type RelationshipAnalysis = {
   relationType: string;
   headline: string;
   scoreSummary: string;
+  spine: {
+    thesis: string;
+    primaryResource: { key: string; label: string; why: string };
+    primaryTension: { key: string; label: string; why: string };
+    elementSynergy: { tone: "mutual" | "oneway" | "costly" | "neutral"; sides: string[] };
+  };
   scoreBreakdown: {
     key: string;
     label: string;

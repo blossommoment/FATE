@@ -1712,10 +1712,50 @@ export function analyzeRelationship(a: UserProfile, b: UserProfile, relationType
     relationType,
     headline: relationshipScore >= 80 ? "高互补，也需要认真接住彼此" : relationshipScore >= 65 ? "有吸引力的差异，值得慢慢验证" : "节奏并不天然一致，但仍有可经营空间",
     scoreSummary: `${relationType}场景采用加权评分：${scoreBreakdown.map((item) => `${item.label}${item.weight}%`).join("、")}。分数只衡量互动成本与互补空间，不判断关系成败。`,
+    spine: buildRelationshipSpine(a, b, scoreBreakdown, branchDynamics, relationType),
     scoreBreakdown,
     cards,
     branchDynamics,
     guide,
+  };
+}
+
+// 合盘主线：一个主要资源 + 一个主要矛盾，整份报告的论点（REQ §3.1）；
+// 五行喜忌互补为 v2 新增——对方最旺的五行落在我的喜/忌上，即「同处回血还是耗电」
+export function buildRelationshipSpine(
+  a: UserProfile,
+  b: UserProfile,
+  breakdown: RelationshipAnalysis["scoreBreakdown"],
+  dynamics: RelationshipAnalysis["branchDynamics"],
+  relationType: string,
+): RelationshipAnalysis["spine"] {
+  const sorted = [...breakdown].sort((x, y) => y.score - x.score);
+  const resource = sorted[0];
+  const tension = sorted[sorted.length - 1];
+  const strongestDynamic = [...dynamics].sort((x, y) => Math.abs(y.scoreImpact) - Math.abs(x.scoreImpact))[0];
+  const aName = a.birth.name ?? "你";
+  const bName = b.birth.name ?? "TA";
+
+  const topElement = (p: UserProfile) => (Object.entries(p.energy.elementPower) as [keyof Elements, number][]).sort((x, y) => y[1] - x[1])[0][0];
+  const synergyFor = (self: UserProfile, other: UserProfile, selfName: string, otherName: string) => {
+    const dm = self.energy.dayMaster;
+    const top = topElement(other);
+    if (dm.level === "中和") return { tone: "neutral" as const, text: `${selfName}属中和之局，喜忌随岁运流转，五行互补在${selfName}一侧不构成常数。` };
+    if (dm.favorable.includes(top)) return { tone: "boost" as const, text: `${otherName}最旺的${ELEMENT_CN[top]}恰是${selfName}的喜用——相处本身对${selfName}是补给。` };
+    if (dm.unfavorable.includes(top)) return { tone: "drain" as const, text: `${otherName}最旺的${ELEMENT_CN[top]}是${selfName}的忌神——不是不合，是相处偏耗电，${selfName}需要独处回血的间隔。` };
+    return { tone: "neutral" as const, text: `${otherName}的主气${ELEMENT_CN[top]}对${selfName}不添不减。` };
+  };
+  const synergyA = synergyFor(a, b, aName, bName);
+  const synergyB = synergyFor(b, a, bName, aName);
+  const tone = synergyA.tone === "boost" && synergyB.tone === "boost" ? "mutual"
+    : synergyA.tone === "boost" || synergyB.tone === "boost" ? "oneway"
+      : synergyA.tone === "drain" || synergyB.tone === "drain" ? "costly" : "neutral";
+
+  return {
+    thesis: `一段由「${resource.label}」驱动、被「${tension.label}」考验的${relationType}`,
+    primaryResource: { key: resource.key, label: resource.label, why: `六维最高（${resource.score} 分）：${resource.summary}` },
+    primaryTension: { key: tension.key, label: tension.label, why: `六维最低（${tension.score} 分）：${tension.summary}${strongestDynamic && strongestDynamic.scoreImpact < 0 ? `命盘结构上「${strongestDynamic.title}」加重此题。` : ""}` },
+    elementSynergy: { tone, sides: [synergyA.text, synergyB.text] },
   };
 }
 
@@ -1746,6 +1786,7 @@ export function buildRelationshipFacts(a: UserProfile, b: UserProfile, analysis:
   return {
     relationType: analysis.relationType,
     score: analysis.score,
+    spine: analysis.spine,
     verdict: analysis.guide.verdict,
     persons: [person(a), person(b)],
     dimensions: analysis.scoreBreakdown.map(({ key, label, score, weight, summary }) => ({ key, label, score, weight, summary })),
@@ -1753,7 +1794,21 @@ export function buildRelationshipFacts(a: UserProfile, b: UserProfile, analysis:
     behaviors: analysis.guide.behaviors,
     dispositions: analysis.guide.dispositions,
     frictions: analysis.guide.hotspots,
+    initiator: analysis.guide.initiator,
     longRun: analysis.guide.longRun,
+    // 事实所有权契约（REQ §3.2/3.3）：每条事实只在主场章节完整展开，
+    // 他章仅可短引名称；各章内容须回扣 spine 主线
+    contract: {
+      ownership: {
+        spine: "壹·关系总览", dimensions: "壹·关系总览", verdict: "壹·关系总览（柒仅回顾标题）",
+        persons: "贰·两人底色", dispositions: "贰·两人底色",
+        structures: "叁·八字化学反应", elementSynergy: "叁·八字化学反应",
+        behaviors: "肆·相处样态",
+        frictions: "伍·摩擦与化解",
+        initiator: "陆·长线经营", longRun: "陆·长线经营",
+      },
+      rule: "事实只在主场章节完整展开（结论+依据+数字）；其他章节只可短引名称，不得复述数字与依据；每章开头须回扣 spine 主线。",
+    },
   };
 }
 

@@ -19,6 +19,12 @@
 {
   "relationType": "恋爱",
   "score": 68,
+  "spine": {                       // 2026-07-03 新增：整份报告的论点，各章须回扣
+    "thesis": "一段由「表达译码」驱动、被「主导权协商」考验的恋爱",
+    "primaryResource": { "key": "expression", "label": "表达译码", "why": "六维最高（82 分）：…" },
+    "primaryTension": { "key": "power", "label": "主导权协商", "why": "六维最低（54 分）：…命盘结构上「子午冲」加重此题。" },
+    "elementSynergy": { "tone": "oneway", "sides": ["TA最旺的水恰是你的喜用——相处本身对你是补给。", "…"] }
+  },
   "verdict": { "title": "相爱相杀", "quip": "…", "tagline": "…", "basis": "…" },
   "persons": [{
     "name": "小雨", "dayPillar": "癸卯", "archetype": "…", "persona": "…",
@@ -32,15 +38,21 @@
   "behaviors": [{ "label": "醋意浓度", "conclusion": "…", "basis": "…" }],
   "dispositions": [{ "person": "阿泽", "trait": "比劫立身，界限分明", "reading": "…", "approach": "…" }],
   "frictions": [{ "scene": "推进速度错位", "risk": "…", "playbook": "…" }],
-  "longRun": "…"
+  "initiator": { "name": "…", "why": "…", "firstMove": "…" },
+  "longRun": "…",
+  "contract": {                    // 2026-07-03 新增：事实所有权契约
+    "ownership": { "spine": "壹·关系总览", "behaviors": "肆·相处样态", "…": "…" },
+    "rule": "事实只在主场章节完整展开（结论+依据+数字）；其他章节只可短引名称，不得复述数字与依据；每章开头须回扣 spine 主线。"
+  }
 }
 ```
 
-## AI 叙述层的三条铁律（写进 system prompt）
+## AI 叙述层的四条铁律（写进 system prompt）
 
 1. **只许转述，不许创作事实**：所有结论、分数、判词必须出自清单；清单里没有的判断一律不得出现。
-2. **每个结论带依据**：叙述任何一条结论时，引用清单中对应的数字或结构名（如"关系警觉 26:69"），依据放在句末括号或从句中，不打断阅读。
-3. **语气规范**：
+2. **遵守 contract**：按 ownership 分章展开事实，主场之外只许短引；每章开头回扣 spine.thesis。
+3. **每个结论带依据**：叙述任何一条结论时，引用清单中对应的数字或结构名（如"关系警觉 26:69"），依据放在句末括号或从句中，不打断阅读。
+4. **语气规范**：
    - 依恋等心理标签一律用"更倾向 / 更接近"，不说死（"偏焦虑型依恋"，而非"是焦虑型"）；
    - 结论落在**互动情景与双方身份**上（谁先发消息、饭桌氛围、冷战谁先破冰），命盘数据退居佐证；
    - 判词部分允许幽默；建议部分书面克制；全文禁止吉凶断言。
@@ -55,7 +67,7 @@
 
 ```
 POST 你的AI网关
-system: <上面的三条铁律 + 章节模板>
+system: <上面的四条铁律 + 章节模板>
 user:   请基于以下事实清单撰写双人关系报告：\n<JSON.stringify(buildRelationshipFacts(a, b, analysis))>
 ```
 
