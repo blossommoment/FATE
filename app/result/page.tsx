@@ -11,11 +11,6 @@ import PillarLinks from "@/components/PillarLinks";
 import PlotPanel, { PlotTrigger } from "@/components/PlotPanel";
 import { askDeepSeek } from "@/lib/deepseek";
 
-const zodiacLabels: Record<string, string> = {
-  Aries: "白羊座", Taurus: "金牛座", Gemini: "双子座", Cancer: "巨蟹座",
-  Leo: "狮子座", Virgo: "处女座", Libra: "天秤座", Scorpio: "天蝎座",
-  Sagittarius: "射手座", Capricorn: "摩羯座", Aquarius: "水瓶座", Pisces: "双鱼座",
-};
 const labels = { extroversion: "外向表达", stability: "情绪稳定", control: "边界控制", emotion: "情感感知" };
 const elementLabels = { wood: "木", fire: "火", earth: "土", metal: "金", water: "水" };
 const socialLabels: Record<string, string> = {
@@ -311,7 +306,7 @@ export async function ResultContent({
         <div className="identity-card">
           <div className="identity-orb"><span>{profile.bazi.dayPillar[0]}</span><small>日主</small></div>
           <div><div className="section-number">你的关系身份卡 · {profile.bazi.dayPillar[0]}日主</div><h1>{profile.archetype.slice(0, 2)}<br /><em>{profile.archetype.slice(2)}</em></h1>
-            <p>{birth.name ?? "我"} · {birth.calendarType === "lunar" ? "农历" : "公历"} {birth.year} 年 {birth.month} 月 {birth.day} 日 · {String(birth.hour).padStart(2, "0")}:{String(birth.minute ?? 0).padStart(2, "0")} · {birth.gender === "male" ? "男" : "女"} · {zodiacLabels[profile.zodiac]}</p>
+            <p>{birth.name ?? "我"} · {birth.calendarType === "lunar" ? "农历" : "公历"} {birth.year} 年 {birth.month} 月 {birth.day} 日 · {String(birth.hour).padStart(2, "0")}:{String(birth.minute ?? 0).padStart(2, "0")} · {birth.gender === "male" ? "男" : "女"}</p>
             <small className="calendar-conversion">公历 {profile.bazi.solarDate.slice(0, 16)} · {profile.bazi.lunarDate}</small>
           </div>
           <div className="identity-tags">{profile.identityTags.map((tag) => <span key={tag}>{tag}</span>)}</div>
@@ -402,7 +397,7 @@ export async function ResultContent({
         {!deepActive && <>
         <div className="report-head">
           <div><div className="section-number">01 — 十神关系画像</div><h2>从十神出发，理解你<br />如何进入一段关系。</h2></div>
-          <div className="signature"><small>西方星座</small><strong>{zodiacLabels[profile.zodiac]}</strong><span>作为辅助变量参与人格建模</span></div>
+          <div className="signature"><small>日主</small><strong>{profile.bazi.dayPillar}</strong><span>{profile.spine.strength.level === "中和" ? "中和之局 · 岁运定潮汐" : `${profile.spine.strength.level}之局 · 喜${profile.spine.favorable.join("、") || "随岁运"}`}</span></div>
         </div>
         <AiDigest birth={birth} profileId={profile.id} />
         <section className="dominant-persona">

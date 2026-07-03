@@ -5,7 +5,9 @@
 
 import type { Elements, UserProfile } from "./types";
 
-export type PersonaTags = { love: string[]; career: string[]; energy: string[] };
+// 标签命中时同时交出判定指标（依据可视化：图文并茂的「文」由 AI 写、「图」由这些指标画）
+export type TagHit = { tag: string; metrics: { label: string; value: number }[] };
+export type PersonaTags = { love: TagHit[]; career: TagHit[]; energy: TagHit[] };
 export type Recommendation = { name: string; why: string };
 export type Recommendations = {
   vocations: Recommendation[];   // 职业（工作方式）——十神×四维映射，优先展示
@@ -33,84 +35,90 @@ const isWeak = (p: UserProfile) => p.energy.dayMaster.level === "身弱" || p.en
 export function buildPersonaTags(p: UserProfile): PersonaTags {
   const P = p.personality;
   const social = p.socialProfile;
+  const M = (label: string, value: number) => ({ label, value });
 
-  // 感情域：按超出阈值的幅度排序取前 3，不足 2 个时以依恋类型、关系节奏兜底
-  const loveRules: { tag: string; hit: boolean; margin: number }[] = [
-    { tag: "引导型恋人", hit: trait(p, "initiative") >= 60 && P.control >= 60, margin: trait(p, "initiative") + P.control - 120 },
-    { tag: "需要被接住的人", hit: deep(p, "dependency") >= 58 && P.emotion >= 65, margin: deep(p, "dependency") + P.emotion - 123 },
-    { tag: "慢热观察员", hit: deep(p, "trust_speed") <= 45 && deep(p, "vigilance") >= 55, margin: 45 - deep(p, "trust_speed") + deep(p, "vigilance") - 55 },
-    { tag: "独立空间型", hit: deep(p, "autonomy") >= 62 && deep(p, "dependency") <= 45, margin: deep(p, "autonomy") - 62 + 45 - deep(p, "dependency") },
-    { tag: "黏人补给型", hit: deep(p, "dependency") >= 58 && social.communication_need === "high", margin: deep(p, "dependency") - 58 },
-    { tag: "直球选手", hit: deep(p, "conflict_expression") >= 60 && trait(p, "expressiveness") >= 60, margin: deep(p, "conflict_expression") + trait(p, "expressiveness") - 120 },
-    { tag: "情绪翻译官", hit: trait(p, "empathy") >= 65 && trait(p, "expressiveness") >= 55, margin: trait(p, "empathy") - 65 + trait(p, "expressiveness") - 55 },
-    { tag: "浪漫主义者", hit: deep(p, "romance") >= 60 && P.emotion >= 55, margin: deep(p, "romance") - 60 + P.emotion - 55 },
-    { tag: "新鲜感猎人", hit: deep(p, "novelty") >= 65, margin: deep(p, "novelty") - 65 },
-    { tag: "老派长情型", hit: deep(p, "novelty") <= 42 && P.stability >= 60, margin: 42 - deep(p, "novelty") + P.stability - 60 },
-    { tag: "醋意敏感体质", hit: deep(p, "vigilance") >= 62 && P.emotion >= 60, margin: deep(p, "vigilance") - 62 + P.emotion - 60 },
-    { tag: "大心脏恋人", hit: deep(p, "vigilance") <= 42 && P.stability >= 60, margin: 42 - deep(p, "vigilance") + P.stability - 60 },
-    { tag: "被追才有感觉", hit: trait(p, "initiative") <= 42 && deep(p, "romance") >= 50, margin: 42 - trait(p, "initiative") + deep(p, "romance") - 50 },
-    { tag: "嘴硬心软型", hit: deep(p, "conflict_expression") >= 58 && trait(p, "empathy") >= 58, margin: deep(p, "conflict_expression") - 58 + trait(p, "empathy") - 58 },
-    { tag: "安静陪伴型", hit: trait(p, "expressiveness") <= 45 && P.stability >= 55, margin: 45 - trait(p, "expressiveness") + P.stability - 55 },
-    { tag: "仪式感大户", hit: deep(p, "romance") >= 62 && deep(p, "novelty") >= 50, margin: deep(p, "romance") - 62 + deep(p, "novelty") - 50 },
-    { tag: "冷静调解人", hit: P.stability >= 68 && deep(p, "conflict_expression") <= 45, margin: P.stability - 68 + 45 - deep(p, "conflict_expression") },
-    { tag: "恋爱规划师", hit: P.control >= 60 && P.stability >= 60 && deep(p, "romance") <= 50, margin: P.control + P.stability - 120 },
-    { tag: "心动就行动", hit: deep(p, "trust_speed") >= 62 && deep(p, "social_openness") >= 52, margin: deep(p, "trust_speed") - 62 + deep(p, "social_openness") - 52 },
-    { tag: "行动派爱人", hit: trait(p, "expressiveness") <= 48 && trait(p, "initiative") >= 52, margin: 48 - trait(p, "expressiveness") + trait(p, "initiative") - 52 },
+  // 感情域：按超出阈值的幅度排序取前 3，不足 2 个时以依恋类型、关系节奏兜底；
+  // 每条规则同时交出判定指标（m），作为标签卡上的可视化依据
+  const loveRules: { tag: string; hit: boolean; margin: number; m: { label: string; value: number }[] }[] = [
+    { tag: "引导型恋人", hit: trait(p, "initiative") >= 60 && P.control >= 60, margin: trait(p, "initiative") + P.control - 120, m: [M("关系主动性", trait(p, "initiative")), M("边界控制", P.control)] },
+    { tag: "需要被接住的人", hit: deep(p, "dependency") >= 58 && P.emotion >= 65, margin: deep(p, "dependency") + P.emotion - 123, m: [M("情感依赖", deep(p, "dependency")), M("情感感知", P.emotion)] },
+    { tag: "慢热观察员", hit: deep(p, "trust_speed") <= 45 && deep(p, "vigilance") >= 55, margin: 45 - deep(p, "trust_speed") + deep(p, "vigilance") - 55, m: [M("信任建立速度", deep(p, "trust_speed")), M("关系警觉", deep(p, "vigilance"))] },
+    { tag: "独立空间型", hit: deep(p, "autonomy") >= 62 && deep(p, "dependency") <= 45, margin: deep(p, "autonomy") - 62 + 45 - deep(p, "dependency"), m: [M("自主空间", deep(p, "autonomy")), M("情感依赖", deep(p, "dependency"))] },
+    { tag: "黏人补给型", hit: deep(p, "dependency") >= 58 && social.communication_need === "high", margin: deep(p, "dependency") - 58, m: [M("情感依赖", deep(p, "dependency"))] },
+    { tag: "直球选手", hit: deep(p, "conflict_expression") >= 60 && trait(p, "expressiveness") >= 60, margin: deep(p, "conflict_expression") + trait(p, "expressiveness") - 120, m: [M("冲突表达", deep(p, "conflict_expression")), M("表达意愿", trait(p, "expressiveness"))] },
+    { tag: "情绪翻译官", hit: trait(p, "empathy") >= 65 && trait(p, "expressiveness") >= 55, margin: trait(p, "empathy") - 65 + trait(p, "expressiveness") - 55, m: [M("共情能力", trait(p, "empathy")), M("表达意愿", trait(p, "expressiveness"))] },
+    { tag: "浪漫主义者", hit: deep(p, "romance") >= 60 && P.emotion >= 55, margin: deep(p, "romance") - 60 + P.emotion - 55, m: [M("浪漫倾向", deep(p, "romance")), M("情感感知", P.emotion)] },
+    { tag: "新鲜感猎人", hit: deep(p, "novelty") >= 65, margin: deep(p, "novelty") - 65, m: [M("新鲜感需求", deep(p, "novelty"))] },
+    { tag: "老派长情型", hit: deep(p, "novelty") <= 42 && P.stability >= 60, margin: 42 - deep(p, "novelty") + P.stability - 60, m: [M("新鲜感需求", deep(p, "novelty")), M("情绪稳定", P.stability)] },
+    { tag: "醋意敏感体质", hit: deep(p, "vigilance") >= 62 && P.emotion >= 60, margin: deep(p, "vigilance") - 62 + P.emotion - 60, m: [M("关系警觉", deep(p, "vigilance")), M("情感感知", P.emotion)] },
+    { tag: "大心脏恋人", hit: deep(p, "vigilance") <= 42 && P.stability >= 60, margin: 42 - deep(p, "vigilance") + P.stability - 60, m: [M("关系警觉", deep(p, "vigilance")), M("情绪稳定", P.stability)] },
+    { tag: "被追才有感觉", hit: trait(p, "initiative") <= 42 && deep(p, "romance") >= 50, margin: 42 - trait(p, "initiative") + deep(p, "romance") - 50, m: [M("关系主动性", trait(p, "initiative")), M("浪漫倾向", deep(p, "romance"))] },
+    { tag: "嘴硬心软型", hit: deep(p, "conflict_expression") >= 58 && trait(p, "empathy") >= 58, margin: deep(p, "conflict_expression") - 58 + trait(p, "empathy") - 58, m: [M("冲突表达", deep(p, "conflict_expression")), M("共情能力", trait(p, "empathy"))] },
+    { tag: "安静陪伴型", hit: trait(p, "expressiveness") <= 45 && P.stability >= 55, margin: 45 - trait(p, "expressiveness") + P.stability - 55, m: [M("表达意愿", trait(p, "expressiveness")), M("情绪稳定", P.stability)] },
+    { tag: "仪式感大户", hit: deep(p, "romance") >= 62 && deep(p, "novelty") >= 50, margin: deep(p, "romance") - 62 + deep(p, "novelty") - 50, m: [M("浪漫倾向", deep(p, "romance")), M("新鲜感需求", deep(p, "novelty"))] },
+    { tag: "冷静调解人", hit: P.stability >= 68 && deep(p, "conflict_expression") <= 45, margin: P.stability - 68 + 45 - deep(p, "conflict_expression"), m: [M("情绪稳定", P.stability), M("冲突表达", deep(p, "conflict_expression"))] },
+    { tag: "恋爱规划师", hit: P.control >= 60 && P.stability >= 60 && deep(p, "romance") <= 50, margin: P.control + P.stability - 120, m: [M("边界控制", P.control), M("情绪稳定", P.stability)] },
+    { tag: "心动就行动", hit: deep(p, "trust_speed") >= 62 && deep(p, "social_openness") >= 52, margin: deep(p, "trust_speed") - 62 + deep(p, "social_openness") - 52, m: [M("信任建立速度", deep(p, "trust_speed")), M("社交开放度", deep(p, "social_openness"))] },
+    { tag: "行动派爱人", hit: trait(p, "expressiveness") <= 48 && trait(p, "initiative") >= 52, margin: 48 - trait(p, "expressiveness") + trait(p, "initiative") - 52, m: [M("表达意愿", trait(p, "expressiveness")), M("关系主动性", trait(p, "initiative"))] },
   ];
-  const love = loveRules.filter((r) => r.hit).sort((a, b) => b.margin - a.margin).slice(0, 3).map((r) => r.tag);
+  const love: TagHit[] = loveRules.filter((r) => r.hit).sort((a, b) => b.margin - a.margin).slice(0, 3).map((r) => ({ tag: r.tag, metrics: r.m }));
   if (love.length < 2) {
     const fallback = { secure: "稳定供电型", anxious: "需要确认的人", avoidant: "靠近需要耐心" }[social.attachment_style];
-    if (!love.includes(fallback)) love.push(fallback);
+    if (!love.some((h) => h.tag === fallback)) love.push({ tag: fallback, metrics: [M("情感依赖", deep(p, "dependency")), M("情绪稳定", P.stability)] });
   }
   if (love.length < 2) {
     const paceTag = { slow: "慢热观察员", medium: "顺其自然派", fast: "心动就行动" }[social.relationship_speed];
-    if (!love.includes(paceTag)) love.push(paceTag);
+    if (!love.some((h) => h.tag === paceTag)) love.push({ tag: paceTag, metrics: [M("信任建立速度", deep(p, "trust_speed"))] });
   }
 
   // 事业域：主轴十神组定基调（主轴规则 +8 权重保证优先），四维与深维扩展泛化标签
   const group = godGroup(p.dominantPersona.god);
   const god = p.dominantPersona.god;
   const AXIS = 8; // 主轴标签的排序加成
-  const careerRules: { tag: string; hit: boolean; margin: number }[] = [
+  const axisScore = (idx: number) => p.tenGodAnalysis[idx].score;
+  const careerRules: { tag: string; hit: boolean; margin: number; m: { label: string; value: number }[] }[] = [
     // —— 主轴基调 ——
-    { tag: "深耕专家型", hit: group === "resource" || (isWeak(p) && p.tenGodAnalysis[1].score >= Math.max(p.tenGodAnalysis[0].score, p.tenGodAnalysis[2].score)), margin: AXIS + p.tenGodAnalysis[1].score / 5 },
-    { tag: "军师参谋型", hit: group === "resource" && trait(p, "expressiveness") <= 55, margin: AXIS + 55 - trait(p, "expressiveness") },
-    { tag: "创意输出型", hit: group === "output" && !isWeak(p), margin: AXIS + p.tenGodAnalysis[4].score / 5 },
-    { tag: "细水长流的创作者", hit: group === "output" && isWeak(p), margin: AXIS + p.tenGodAnalysis[4].score / 5 },
-    { tag: "抗压执行型", hit: group === "authority" && deep(p, "resilience") >= 70, margin: AXIS + deep(p, "resilience") - 70 },
-    { tag: "规则里的稳手", hit: group === "authority" && deep(p, "resilience") < 70 && P.stability >= 55, margin: AXIS + P.stability - 55 },
-    { tag: "资源整合型", hit: group === "wealth" && P.extroversion >= 55, margin: AXIS + P.extroversion - 55 },
-    { tag: "务实操盘手", hit: group === "wealth" && P.extroversion < 55, margin: AXIS + 55 - P.extroversion },
-    { tag: "并肩作战型", hit: group === "peer", margin: AXIS + p.tenGodAnalysis[3].score / 5 }, // 比劫靠同伴成事、不服层级——不是单打独斗（2026-07-03 拍板修正）
-    { tag: "破局开创型", hit: god === "伤官" && !isWeak(p), margin: AXIS + deep(p, "conflict_expression") - 50 },
-    { tag: "机会嗅觉型", hit: god === "偏财" && deep(p, "novelty") >= 55, margin: AXIS + deep(p, "novelty") - 55 },
-    { tag: "靠谱交付型", hit: (god === "正财" || god === "正官") && P.stability >= 60, margin: AXIS + P.stability - 60 },
-    { tag: "稳步爬梯型", hit: group === "authority" && P.stability >= 65, margin: AXIS / 2 + P.stability - 65 },
+    { tag: "深耕专家型", hit: group === "resource" || (isWeak(p) && axisScore(1) >= Math.max(axisScore(0), axisScore(2))), margin: AXIS + axisScore(1) / 5, m: [M("主轴·吸收理解", axisScore(1))] },
+    { tag: "军师参谋型", hit: group === "resource" && trait(p, "expressiveness") <= 55, margin: AXIS + 55 - trait(p, "expressiveness"), m: [M("主轴·吸收理解", axisScore(1)), M("表达意愿", trait(p, "expressiveness"))] },
+    { tag: "创意输出型", hit: group === "output" && !isWeak(p), margin: AXIS + axisScore(4) / 5, m: [M("主轴·表达创造", axisScore(4))] },
+    { tag: "细水长流的创作者", hit: group === "output" && isWeak(p), margin: AXIS + axisScore(4) / 5, m: [M("主轴·表达创造", axisScore(4))] },
+    { tag: "抗压执行型", hit: group === "authority" && deep(p, "resilience") >= 70, margin: AXIS + deep(p, "resilience") - 70, m: [M("主轴·秩序执行", axisScore(0)), M("压力韧性", deep(p, "resilience"))] },
+    { tag: "规则里的稳手", hit: group === "authority" && deep(p, "resilience") < 70 && P.stability >= 55, margin: AXIS + P.stability - 55, m: [M("主轴·秩序执行", axisScore(0)), M("情绪稳定", P.stability)] },
+    { tag: "资源整合型", hit: group === "wealth" && P.extroversion >= 55, margin: AXIS + P.extroversion - 55, m: [M("主轴·现实资源", axisScore(2)), M("外向表达", P.extroversion)] },
+    { tag: "务实操盘手", hit: group === "wealth" && P.extroversion < 55, margin: AXIS + 55 - P.extroversion, m: [M("主轴·现实资源", axisScore(2)), M("外向表达", P.extroversion)] },
+    { tag: "并肩作战型", hit: group === "peer", margin: AXIS + axisScore(3) / 5, m: [M("主轴·同伴自主", axisScore(3))] }, // 比劫靠同伴成事、不服层级——不是单打独斗（2026-07-03 拍板修正）
+    { tag: "破局开创型", hit: god === "伤官" && !isWeak(p), margin: AXIS + deep(p, "conflict_expression") - 50, m: [M("主轴·表达创造", axisScore(4)), M("冲突表达", deep(p, "conflict_expression"))] },
+    { tag: "机会嗅觉型", hit: god === "偏财" && deep(p, "novelty") >= 55, margin: AXIS + deep(p, "novelty") - 55, m: [M("主轴·现实资源", axisScore(2)), M("新鲜感需求", deep(p, "novelty"))] },
+    { tag: "靠谱交付型", hit: (god === "正财" || god === "正官") && P.stability >= 60, margin: AXIS + P.stability - 60, m: [M("情绪稳定", P.stability)] },
+    { tag: "稳步爬梯型", hit: group === "authority" && P.stability >= 65, margin: AXIS / 2 + P.stability - 65, m: [M("主轴·秩序执行", axisScore(0)), M("情绪稳定", P.stability)] },
     // —— 泛化风格（不依赖主轴，任何盘都可能命中）——
-    { tag: "自由个体型", hit: deep(p, "autonomy") >= 62 && social.communication_need === "low" && (group === "output" || god === "偏印"), margin: deep(p, "autonomy") - 62 },
-    { tag: "台前发光体", hit: P.extroversion >= 65 && trait(p, "expressiveness") >= 60, margin: P.extroversion - 65 + trait(p, "expressiveness") - 60 },
-    { tag: "幕后操盘手", hit: P.extroversion <= 45 && P.control >= 60, margin: 45 - P.extroversion + P.control - 60 },
-    { tag: "救火队长", hit: deep(p, "resilience") >= 75 && trait(p, "adaptability") >= 55, margin: deep(p, "resilience") - 75 + trait(p, "adaptability") - 55 },
-    { tag: "多线程选手", hit: trait(p, "adaptability") >= 65 && deep(p, "novelty") >= 55, margin: trait(p, "adaptability") - 65 + deep(p, "novelty") - 55 },
-    { tag: "单线程深潜员", hit: deep(p, "autonomy") >= 60 && deep(p, "novelty") <= 45, margin: deep(p, "autonomy") - 60 + 45 - deep(p, "novelty") },
-    { tag: "长期主义者", hit: deep(p, "novelty") <= 42 && P.stability >= 62, margin: 42 - deep(p, "novelty") + P.stability - 62 },
+    { tag: "自由个体型", hit: deep(p, "autonomy") >= 62 && social.communication_need === "low" && (group === "output" || god === "偏印"), margin: deep(p, "autonomy") - 62, m: [M("自主空间", deep(p, "autonomy"))] },
+    { tag: "台前发光体", hit: P.extroversion >= 65 && trait(p, "expressiveness") >= 60, margin: P.extroversion - 65 + trait(p, "expressiveness") - 60, m: [M("外向表达", P.extroversion), M("表达意愿", trait(p, "expressiveness"))] },
+    { tag: "幕后操盘手", hit: P.extroversion <= 45 && P.control >= 60, margin: 45 - P.extroversion + P.control - 60, m: [M("外向表达", P.extroversion), M("边界控制", P.control)] },
+    { tag: "救火队长", hit: deep(p, "resilience") >= 75 && trait(p, "adaptability") >= 55, margin: deep(p, "resilience") - 75 + trait(p, "adaptability") - 55, m: [M("压力韧性", deep(p, "resilience")), M("关系适应力", trait(p, "adaptability"))] },
+    { tag: "多线程选手", hit: trait(p, "adaptability") >= 65 && deep(p, "novelty") >= 55, margin: trait(p, "adaptability") - 65 + deep(p, "novelty") - 55, m: [M("关系适应力", trait(p, "adaptability")), M("新鲜感需求", deep(p, "novelty"))] },
+    { tag: "单线程深潜员", hit: deep(p, "autonomy") >= 60 && deep(p, "novelty") <= 45, margin: deep(p, "autonomy") - 60 + 45 - deep(p, "novelty"), m: [M("自主空间", deep(p, "autonomy")), M("新鲜感需求", deep(p, "novelty"))] },
+    { tag: "长期主义者", hit: deep(p, "novelty") <= 42 && P.stability >= 62, margin: 42 - deep(p, "novelty") + P.stability - 62, m: [M("新鲜感需求", deep(p, "novelty")), M("情绪稳定", P.stability)] },
   ];
-  const career = careerRules.filter((r) => r.hit).sort((a, b) => b.margin - a.margin).slice(0, 3).map((r) => r.tag);
+  const GROUP_IDX: Record<GodGroup, number> = { authority: 0, resource: 1, wealth: 2, peer: 3, output: 4 };
+  const career: TagHit[] = careerRules.filter((r) => r.hit).sort((a, b) => b.margin - a.margin).slice(0, 3).map((r) => ({ tag: r.tag, metrics: r.m }));
   if (career.length < 2) {
     const groupDefault: Record<GodGroup, string> = {
       output: "创意输出型", resource: "深耕专家型", wealth: "务实操盘手", authority: "规则里的稳手", peer: "并肩作战型",
     };
-    if (!career.includes(groupDefault[group])) career.push(groupDefault[group]);
+    if (!career.some((h) => h.tag === groupDefault[group])) {
+      career.push({ tag: groupDefault[group], metrics: [M("主轴强度", axisScore(GROUP_IDX[group]))] });
+    }
   }
 
   // 能量域
-  const energyTags: string[] = [];
-  if (social.communication_need === "low" || (deep(p, "autonomy") >= 60 && P.extroversion < 50)) energyTags.push("独处回血");
-  if (P.extroversion >= 65) energyTags.push("人群充电");
-  if (deep(p, "resilience") >= 70) energyTags.push("压力转化者");
-  if (deep(p, "vigilance") >= 60 || P.stability < 45) energyTags.push("节奏敏感体质");
-  if (P.stability >= 70 && !energyTags.includes("独处回血")) energyTags.push("稳定供电型");
-  if (energyTags.length < 2) energyTags.push(isWeak(p) ? "省电模式选手" : "长续航体质");
+  const energyTags: TagHit[] = [];
+  if (social.communication_need === "low" || (deep(p, "autonomy") >= 60 && P.extroversion < 50)) energyTags.push({ tag: "独处回血", metrics: [M("自主空间", deep(p, "autonomy")), M("外向表达", P.extroversion)] });
+  if (P.extroversion >= 65) energyTags.push({ tag: "人群充电", metrics: [M("外向表达", P.extroversion)] });
+  if (deep(p, "resilience") >= 70) energyTags.push({ tag: "压力转化者", metrics: [M("压力韧性", deep(p, "resilience"))] });
+  if (deep(p, "vigilance") >= 60 || P.stability < 45) energyTags.push({ tag: "节奏敏感体质", metrics: [M("关系警觉", deep(p, "vigilance")), M("情绪稳定", P.stability)] });
+  if (P.stability >= 70 && !energyTags.some((h) => h.tag === "独处回血")) energyTags.push({ tag: "稳定供电型", metrics: [M("情绪稳定", P.stability)] });
+  if (energyTags.length < 2) energyTags.push({ tag: isWeak(p) ? "省电模式选手" : "长续航体质", metrics: [M("能量基线", Math.round(p.energy.dayMaster.score))] });
 
   return { love, career: career.slice(0, 3), energy: energyTags.slice(0, 3) };
 }
@@ -288,8 +296,9 @@ export function buildDigestPrompt(facts: ReturnType<typeof buildPersonalFacts>):
       "你是 Fate 的「AI 读你」撰稿人。输入是一份由规则引擎算好的个人事实清单（JSON），你的工作是把它组织成普通人爱读的人话，不是算命。",
       `硬性契约：${facts.contract.rule}`,
       "输出严格为 JSON（不要 markdown 代码块），结构：",
-      `{"headline":"一句话人设，15字以内","tagReads":[{"tag":"标签名（只能用清单 tags 里给出的）","note":"这个人身上这条标签的具体样子，25字内"}],"advice":{"vocation":"职业建议，只能从清单 recommendations.vocations 里挑，60字内","industry":"行业建议，同上限定 industries，50字内","environment":"环境建议，基于 environments，50字内","love":"感情里的你：喜欢什么样的相处、什么最耗你，70字内","phase":"当下时段策略，基于 currentPhase，50字内"},"summary":"80~120字总结，落在接下来怎么活"}`,
-      "语气：具体、有画面、不端着；括号里可以引用清单数字当依据；禁止吉凶断言，禁止「注定/命中」类词。",
+      `{"headline":"一句话人设，15字以内","tagReads":[{"tag":"标签名","note":"这个人身上这条标签的具体样子，30字内，要具体到场景不要泛泛"}],"advice":{"vocation":"职业建议，只能从清单 recommendations.vocations 里挑，100字内，说清为什么顺手","industry":"行业建议，限定 industries，80字内","environment":"环境建议，基于 environments，80字内","love":"感情里的你：喜欢什么样的相处、什么最耗你、最该跟对方说清楚的一件事，100字内","phase":"当下时段策略，基于 currentPhase，60字内"},"summary":"100~160字总结，落在接下来怎么活"}`,
+      "tagReads 必须覆盖清单 tags 里 love/career/energy 的每一个标签，一个不落；标签名只能用清单给出的，不得自创。",
+      "每条 note 和建议都可引用清单里的具体分数增强说服力（放在括号里）；语气具体、有画面、不端着；禁止吉凶断言，禁止「注定/命中」类词。",
     ].join("\n"),
     user: `事实清单：\n${JSON.stringify(facts, null, 0)}`,
   };
@@ -301,11 +310,14 @@ export function validateDigestPayload(raw: unknown, facts: ReturnType<typeof bui
   const d = raw as Partial<DigestPayload>;
   if (typeof d.headline !== "string" || d.headline.length === 0 || d.headline.length > 24) return null;
   if (!Array.isArray(d.tagReads) || d.tagReads.length < 3) return null;
-  const allTags = new Set([...facts.tags.love, ...facts.tags.career, ...facts.tags.energy]);
+  const allTags = new Set([...facts.tags.love, ...facts.tags.career, ...facts.tags.energy].map((h) => h.tag));
   for (const item of d.tagReads) {
     if (!item || typeof item.tag !== "string" || typeof item.note !== "string") return null;
     if (!allTags.has(item.tag)) return null; // 标签不得自创
   }
+  // 逐条覆盖：清单里的每个标签都必须有解读
+  const covered = new Set(d.tagReads.map((t) => t.tag));
+  for (const tag of allTags) if (!covered.has(tag)) return null;
   const a = d.advice;
   if (!a || [a.vocation, a.industry, a.environment, a.love, a.phase].some((s) => typeof s !== "string" || s.length === 0)) return null;
   if (typeof d.summary !== "string" || d.summary.length < 40) return null;
@@ -319,22 +331,27 @@ export function validateDigestPayload(raw: unknown, facts: ReturnType<typeof bui
 export function buildFallbackDigest(facts: ReturnType<typeof buildPersonalFacts>): DigestPayload {
   const t = facts.tags;
   const r = facts.recommendations;
-  const allTags = [...t.love, ...t.career, ...t.energy];
+  const allTags = [...t.love, ...t.career, ...t.energy].map((h) => h.tag);
+  const careerTag = t.career[0]?.tag ?? t.energy[0]?.tag ?? "按自己的节奏做事";
+  const loveTag = t.love[0]?.tag ?? "顺其自然派";
+  const energyTag = t.energy[0]?.tag ?? "长续航体质";
   return {
-    headline: `${t.career[0] ?? t.energy[0]} · ${t.love[0]}`,
+    headline: `${careerTag} · ${loveTag}`,
     tagReads: allTags.map((tag) => ({ tag, note: TAG_EXPLAIN[tag] ?? "" })),
     advice: {
       vocation: `更顺手的方向：${r.vocations.slice(0, 3).map((v) => v.name).join("、")}。${r.vocations[0]?.why ?? ""}。`,
       industry: `行业优先看：${r.industries.slice(0, 3).map((v) => v.name).join("、")}。`,
       environment: r.environments.join("；"),
-      love: `你在感情里是${t.love.join("、")}——${TAG_EXPLAIN[t.love[0]] ?? ""}。找能尊重这个节奏的人，别硬改出厂设置。`,
+      love: `你在感情里是${t.love.map((h) => h.tag).join("、")}——${TAG_EXPLAIN[loveTag] ?? ""}。找能尊重这个节奏的人，别硬改出厂设置。`,
       phase: r.currentPhase,
     },
-    summary: `${t.career[0] ?? "按自己的节奏做事"}是你的正职人设，${t.energy[0]}是你的能量说明书。${r.currentPhase}把力气花在${r.vocations[0]?.name ?? "顺手的事"}上，感情里保持${t.love[0]}的本色——顺着结构走，比对抗它省电。`,
+    summary: `${careerTag}是你的正职人设，${energyTag}是你的能量说明书。${r.currentPhase}把力气花在${r.vocations[0]?.name ?? "顺手的事"}上，感情里保持${loveTag}的本色——顺着结构走，比对抗它省电。`,
   };
 }
 
 // ── 个人事实清单：AI 叙述层的唯一输入 ────────────────────────────
+
+export type PersonalFacts = ReturnType<typeof buildPersonalFacts>;
 
 export function buildPersonalFacts(p: UserProfile) {
   const dm = p.energy.dayMaster;

@@ -1227,3 +1227,17 @@ main:not(.result-page) .entry form input { font-size:23px; }
 .ai-digest .digest-locked .digest-blur { filter:blur(7px); pointer-events:none; user-select:none; }
 .ai-digest .digest-unlock { position:absolute; inset:0; display:grid; place-items:center; }
 @media (max-width:760px) { .ai-digest { padding:20px 18px; } .ai-digest .digest-advice { grid-template-columns:1fr; } }
+
+/* AI 读你 · 依据可视化（标签卡 + 指标条 + 证据签） */
+.ai-digest .digest-tagcards { display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:10px; margin-bottom:18px; }
+.ai-digest .digest-tagcard { padding:15px 17px 13px; border-radius:16px; background:#fff; box-shadow:0 6px 18px #52675e0c; }
+.ai-digest .digest-tagcard small { font:8px "DM Mono",monospace; letter-spacing:.14em; color:#aa6173; }
+.ai-digest .digest-tagcard h4 { margin:5px 0 4px; font:400 16px Georgia,"Songti SC",serif; color:#2f3934; }
+.ai-digest .digest-tagcard p { margin:0 0 10px; font-size:10.5px; line-height:1.7; color:#6d6b66; min-height:28px; }
+.ai-digest .digest-bars>div { display:grid; grid-template-columns:64px 1fr 22px; align-items:center; gap:7px; margin-top:5px; }
+.ai-digest .digest-bars span { font-size:9px; color:#98a29d; }
+.ai-digest .digest-bars i { display:block; height:3px; border-radius:2px; background:#edeae3; overflow:hidden; }
+.ai-digest .digest-bars b { display:block; height:3px; border-radius:2px; background:linear-gradient(90deg,#286c5d,#5b5686); }
+.ai-digest .digest-bars em { font:9px "DM Mono",monospace; font-style:normal; color:#6d6b66; text-align:right; }
+.ai-digest .digest-ev { display:flex; flex-wrap:wrap; gap:6px; margin-top:9px; }
+.ai-digest .digest-ev b { font:400 9px "DM Mono",monospace; letter-spacing:.04em; color:#5c6b64; background:#f0efe9; border-radius:999px; padding:4px 9px; }

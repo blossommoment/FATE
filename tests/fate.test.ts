@@ -75,7 +75,7 @@ describe("golden cases", () => {
 
   it("match score is stable", () => {
     const result = matchProfiles(analyzeBirth(alice), analyzeBirth(bob));
-    expect(result.score).toMatchInlineSnapshot(`66`);
+    expect(result.score).toMatchInlineSnapshot(`67`);
     expect(result.score).toBeGreaterThanOrEqual(0);
     expect(result.score).toBeLessThanOrEqual(100);
   });

@@ -18,11 +18,6 @@ const labels = {
 };
 
 const elementLabels = { wood: "木", fire: "火", earth: "土", metal: "金", water: "水" };
-const zodiacLabels: Record<string, string> = {
-  Aries: "白羊座", Taurus: "金牛座", Gemini: "双子座", Cancer: "巨蟹座",
-  Leo: "狮子座", Virgo: "处女座", Libra: "天秤座", Scorpio: "天蝎座",
-  Sagittarius: "射手座", Capricorn: "摩羯座", Aquarius: "水瓶座", Pisces: "双鱼座",
-};
 const socialLabels: Record<string, string> = {
   low: "低", medium: "中等", high: "高", slow: "慢热", fast: "快速",
   secure: "安全型", anxious: "焦虑型", avoidant: "回避型",
@@ -136,7 +131,7 @@ export default function Landing({ embeddedResult = false }: { embeddedResult?: b
         <section className="report" id="report">
           <div className="report-head">
             <div><div className="section-number">02 — 你的关系画像</div><h2>四个维度，<br />看见真实的你。</h2></div>
-            <div className="signature"><small>西方星座</small><strong>{zodiacLabels[profile.zodiac]}</strong><span>年柱 {profile.bazi.yearPillar} · 月柱 {profile.bazi.monthPillar} · 日柱 {profile.bazi.dayPillar} · 时柱 {profile.bazi.hourPillar}</span></div>
+            <div className="signature"><small>日主</small><strong>{profile.bazi.dayPillar}</strong><span>年柱 {profile.bazi.yearPillar} · 月柱 {profile.bazi.monthPillar} · 日柱 {profile.bazi.dayPillar} · 时柱 {profile.bazi.hourPillar}</span></div>
           </div>
 
           <div className="metrics">

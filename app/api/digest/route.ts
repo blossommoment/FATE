@@ -22,7 +22,7 @@ export async function POST(request: Request) {
   const fallback = buildFallbackDigest(facts);
 
   const apiKey = process.env.DEEPSEEK_API_KEY;
-  if (!apiKey) return NextResponse.json({ source: "fallback", profileId: profile.id, digest: fallback });
+  if (!apiKey) return NextResponse.json({ source: "fallback", profileId: profile.id, digest: fallback, facts });
 
   const baseUrl = (process.env.DEEPSEEK_BASE_URL ?? "https://api.deepseek.com").replace(/\/$/, "");
   const model = process.env.DEEPSEEK_MODEL ?? "deepseek-v4-flash";
@@ -55,10 +55,10 @@ export async function POST(request: Request) {
       const content = data.choices?.[0]?.message?.content?.trim() ?? "";
       const parsed = JSON.parse(content.replace(/^```json\s*|```$/g, ""));
       const valid = validateDigestPayload(parsed, facts);
-      if (valid) return NextResponse.json({ source: "ai", profileId: profile.id, digest: valid });
+      if (valid) return NextResponse.json({ source: "ai", profileId: profile.id, digest: valid, facts });
     } catch {
       // 网络/超时/解析失败：进入下一次尝试或落兜底
     }
   }
-  return NextResponse.json({ source: "fallback", profileId: profile.id, digest: fallback });
+  return NextResponse.json({ source: "fallback", profileId: profile.id, digest: fallback, facts });
 }

@@ -152,22 +152,15 @@ export function calculateZodiac(birth: BirthInput): Zodiac {
   return signs[month % 12][0];
 }
 
-// 入参为 v2 能量百分比（合计 100）；系数由旧版计数制换算而来（1 字 ≈ 12.5%，coef/12.5）
-export function buildPersonality(elementPower: Elements, zodiac: Zodiac): Personality {
+// 入参为 v2 能量百分比（合计 100）；系数由旧版计数制换算而来（1 字 ≈ 12.5%，coef/12.5）。
+// 2026-07-03 拍板：西方星座全线移除（展示与计算）——不可查账的暗变量与依据契约冲突
+export function buildPersonality(elementPower: Elements): Personality {
   const p = {
     extroversion: 42 + elementPower.fire * 0.72 + elementPower.wood * 0.24 - elementPower.water * 0.16,
     stability: 45 + elementPower.earth * 0.64 + elementPower.metal * 0.4 - elementPower.water * 0.4,
     control: 38 + elementPower.metal * 0.8 + elementPower.earth * 0.16 - elementPower.wood * 0.16,
     emotion: 40 + elementPower.water * 0.72 + elementPower.fire * 0.4,
   };
-  const fire = ["Aries", "Leo", "Sagittarius"];
-  const water = ["Cancer", "Scorpio", "Pisces"];
-  const air = ["Gemini", "Libra", "Aquarius"];
-  const earth = ["Taurus", "Virgo", "Capricorn"];
-  if (fire.includes(zodiac)) p.extroversion += 10;
-  if (water.includes(zodiac)) p.emotion += 10;
-  if (air.includes(zodiac)) p.extroversion += 10; // social tendency maps to observable extroversion
-  if (earth.includes(zodiac)) p.stability += 10;
   return {
     extroversion: clamp(p.extroversion),
     stability: clamp(p.stability),
@@ -297,15 +290,10 @@ export function analyzeBirth(birth: BirthInput): UserProfile {
   const energy = computeEnergyFromPillars(bazi.pillars);
   const luckCycles = calculateLuckCycles(birth);
   const zodiac = calculateZodiac(birth);
-  const personality = buildPersonality(energy.elementPower, zodiac);
+  const personality = buildPersonality(energy.elementPower);
   const socialProfile = buildSocialProfile(personality);
   const strongest = (Object.entries(bazi.elements) as [keyof Elements, number][]).sort((a, b) => b[1] - a[1])[0][0];
   const elementName = ({ wood: "木", fire: "火", earth: "土", metal: "金", water: "水" } as const)[strongest];
-  const zodiacName = ({
-    Aries: "白羊座", Taurus: "金牛座", Gemini: "双子座", Cancer: "巨蟹座",
-    Leo: "狮子座", Virgo: "处女座", Libra: "天秤座", Scorpio: "天蝎座",
-    Sagittarius: "射手座", Capricorn: "摩羯座", Aquarius: "水瓶座", Pisces: "双鱼座",
-  } as const)[zodiac];
   const godNames = ["正官", "七杀", "正印", "偏印", "正财", "偏财", "比肩", "劫财", "食神", "伤官"] as const;
   const godCounts = Object.fromEntries(godNames.map((name) => [name, 0])) as Record<typeof godNames[number], number>;
   const branchWeights = [
@@ -343,12 +331,9 @@ export function analyzeBirth(birth: BirthInput): UserProfile {
     const count = group.gods.reduce((sum, god) => sum + godCounts[god as keyof typeof godCounts], 0);
     return { ...group, score: clamp(totalGodWeight ? count / totalGodWeight * 100 : 0), count: Math.round(count * 100) / 100 };
   });
-  const zodiacGroup = ["Aries", "Leo", "Sagittarius"].includes(zodiac) ? "火象"
-    : ["Cancer", "Scorpio", "Pisces"].includes(zodiac) ? "水象"
-      : ["Gemini", "Libra", "Aquarius"].includes(zodiac) ? "风象" : "土象";
-  const expressiveness = clamp(34 + bazi.elements.wood * 10 + bazi.elements.fire * 5 + (zodiacGroup === "风象" ? 10 : 0));
+  const expressiveness = clamp(34 + bazi.elements.wood * 10 + bazi.elements.fire * 5);
   const empathy = clamp(30 + bazi.elements.water * 10 + personality.emotion * .28);
-  const initiative = clamp(34 + bazi.elements.fire * 10 + bazi.elements.metal * 4 + (zodiacGroup === "火象" ? 10 : 0));
+  const initiative = clamp(34 + bazi.elements.fire * 10 + bazi.elements.metal * 4);
   const adaptability = clamp(50 + bazi.elements.water * 6 + bazi.elements.wood * 4 - personality.control * .12);
   const relationScores = {
     extroversion: clamp(personality.extroversion * .4 + tenGodAnalysis[4].score * .4 + tenGodAnalysis[2].score * .2),
@@ -957,7 +942,7 @@ export function analyzeBirth(birth: BirthInput): UserProfile {
       ? `盘面能量以${elementName}为大头，但那是你所处的环境而非你的底色——你的底色是${bazi.dayPillar[0]}${ELEMENT_CN[stemElements[stems.indexOf(bazi.dayPillar[0])]]}，${energy.dayMaster.level === "从弱" ? "顺势而活" : "弱而有源"}`
       : energy.dayMaster.level === "中和"
         ? `你的五行能量大致均衡，日主${bazi.dayPillar[0]}${ELEMENT_CN[stemElements[stems.indexOf(bazi.dayPillar[0])]]}随岁运涨落`
-        : `你的五行以${elementName}为主要能量，日主${bazi.dayPillar[0]}${ELEMENT_CN[stemElements[stems.indexOf(bazi.dayPillar[0])]]}气足可任`}。${zodiacName}为这组底色加入了新的表达方式：你有${({ low: "较低", medium: "适中", high: "较高" } as const)[enrichedSocial.communication_need]}的沟通需求，关系通常以${({ slow: "慢热", medium: "自然", fast: "快速" } as const)[enrichedSocial.relationship_speed]}的节奏展开，并呈现${({ secure: "安全型", anxious: "焦虑型", avoidant: "回避型" } as const)[enrichedSocial.attachment_style]}依恋倾向。`,
+        : `你的五行以${elementName}为主要能量，日主${bazi.dayPillar[0]}${ELEMENT_CN[stemElements[stems.indexOf(bazi.dayPillar[0])]]}气足可任`}。落到相处里：你有${({ low: "较低", medium: "适中", high: "较高" } as const)[enrichedSocial.communication_need]}的沟通需求，关系通常以${({ slow: "慢热", medium: "自然", fast: "快速" } as const)[enrichedSocial.relationship_speed]}的节奏展开，并呈现${({ secure: "安全型", anxious: "焦虑型", avoidant: "回避型" } as const)[enrichedSocial.attachment_style]}依恋倾向。`,
   };
 }
 

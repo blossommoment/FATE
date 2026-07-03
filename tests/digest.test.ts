@@ -20,22 +20,24 @@ describe("人话标签", () => {
     expect(buildPersonaTags(p)).toEqual(buildPersonaTags(analyzeBirth(alice)));
   });
 
-  it("三域各至少 2 个标签，标签本身零命理黑话", () => {
+  it("三域各至少 2 个标签，标签零黑话，且每个标签都带判定指标（依据可视化）", () => {
     for (const birth of [alice, owner]) {
       const tags = buildPersonaTags(analyzeBirth(birth));
       expect(tags.love.length).toBeGreaterThanOrEqual(2);
       expect(tags.career.length).toBeGreaterThanOrEqual(1);
       expect(tags.energy.length).toBeGreaterThanOrEqual(2);
-      [...tags.love, ...tags.career, ...tags.energy].forEach((tag) => {
-        expect(JARGON.test(tag), `标签「${tag}」含命理黑话`).toBe(false);
+      [...tags.love, ...tags.career, ...tags.energy].forEach((hit) => {
+        expect(JARGON.test(hit.tag), `标签「${hit.tag}」含命理黑话`).toBe(false);
+        expect(hit.metrics.length, `标签「${hit.tag}」缺判定指标`).toBeGreaterThanOrEqual(1);
+        hit.metrics.forEach((m) => expect(typeof m.value).toBe("number"));
       });
     }
   });
 
   it("锚点盘（2003-08-09 16时男）：官杀主轴高韧性 → 抗压执行型", () => {
     const tags = buildPersonaTags(analyzeBirth(owner));
-    expect(tags.career).toContain("抗压执行型");
-    expect(tags.energy).toContain("压力转化者");
+    expect(tags.career.map((h) => h.tag)).toContain("抗压执行型");
+    expect(tags.energy.map((h) => h.tag)).toContain("压力转化者");
   });
 });
 
@@ -89,10 +91,16 @@ describe("AI 叙述层（A2）：提示词契约、校验器、兜底", () => {
   it("标签解释表覆盖全库：任何可能出现的标签都有人话解释", () => {
     for (const birth of [alice, owner]) {
       const tags = buildPersonaTags(analyzeBirth(birth));
-      [...tags.love, ...tags.career, ...tags.energy].forEach((tag) => {
-        expect(TAG_EXPLAIN[tag], `标签「${tag}」缺解释`).toBeTruthy();
+      [...tags.love, ...tags.career, ...tags.energy].forEach((hit) => {
+        expect(TAG_EXPLAIN[hit.tag], `标签「${hit.tag}」缺解释`).toBeTruthy();
       });
     }
+  });
+
+  it("兜底 tagReads 覆盖全部标签（校验器的逐条覆盖要求）", () => {
+    const fb = buildFallbackDigest(facts);
+    const all = [...facts.tags.love, ...facts.tags.career, ...facts.tags.energy].map((h) => h.tag);
+    all.forEach((tag) => expect(fb.tagReads.some((t) => t.tag === tag)).toBe(true));
   });
 });
 
