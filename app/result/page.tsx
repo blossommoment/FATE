@@ -711,8 +711,8 @@ export async function ResultContent({
           <div className="match-hero">
             <div className="match-hero-score">
               <div className="duo-avatars"><i>{profile.bazi.dayPillar[0]}</i><i>{partnerProfile.bazi.dayPillar[0]}</i></div>
-              <span>{relationship.relationType}关系匹配</span>
-              <strong>{relationship.score}<small>/100</small></strong>
+              <span>双人关系报告</span>
+              <strong>{relationship.relationType}</strong>
             </div>
             <div className="match-hero-verdict">
               <small>关系判词</small>
@@ -727,8 +727,22 @@ export async function ResultContent({
             <article><i>磨</i><div><span>最要留意</span><h4>{relationship.guide.hotspots[0].scene}</h4><p>{relationship.guide.hotspots[0].playbook}</p></div></article>
             <article><i>先</i><div><span>破局之人</span><h4>先动的人：{relationship.guide.initiator.name}</h4><p>{relationship.guide.initiator.firstMove}</p></div></article>
           </div>
+          <section className="fate-book fate-book-intro">
+            <span className="fb-mono">FATE° · 双人深度解读报告</span>
+            <h3>五章，读懂你们。</h3>
+            <div className="fb-toc-preview">
+              <span className="fb-c-origin"><b>壹</b>缘起</span>
+              <span className="fb-c-daily"><b>贰</b>相处</span>
+              <span className="fb-c-friction"><b>叁</b>摩擦</span>
+              <span className="fb-c-longrun"><b>肆</b>长线</span>
+              <span className="fb-c-season"><b>伍</b>时运</span>
+            </div>
+            <p>缘起、相处、摩擦、长线、时运各一章——你们的双人标签、对比图表、与只属于你们的评述与建议。生成一次，永久可看，可分享。</p>
+            <Link className="fb-cta" href={`/report/duo?${baseQuery}${partnerQuery}`}>打开你们的深度解读 ↗</Link>
+            <div className="fb-note">报告内容基于 FATE 模型 2.0 得出。</div>
+          </section>
           <div className="module-directory">
-            <header><div><span>REPORT CHAPTERS</span><h3>报告目录 · 六章</h3></div><small>逐章展开，每一章都可单独转发</small></header>
+            <header><div><span>REPORT CHAPTERS</span><h3>报告目录 · {["零","一","二","三","四","五","六","七","八","九"][moduleMeta.length]}章</h3></div><small>逐章展开，每一章都可单独转发</small></header>
             <div className="module-grid">
               {moduleMeta.map((item, index) => <Link key={item.key} href={`${moduleBase}&module=${item.key}#match-report`}>
                 <i>{item.no}</i>

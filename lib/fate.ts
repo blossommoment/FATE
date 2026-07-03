@@ -1536,7 +1536,7 @@ export function analyzeRelationship(a: UserProfile, b: UserProfile, relationType
     const stats = profile === a ? aGod : bGod;
     const items: RelationshipAnalysis["guide"]["dispositions"] = [];
     if (style === "avoidant" || autonomyScore >= 65) items.push({
-      person: name, trait: "比劫立身，界限分明",
+      person: name, trait: "边界清晰的自立派",
       reading: `${name}比劫与偏印结构偏重（自主空间需求 ${autonomyScore}），亲密并不改变其独处回血的底层设定。沉默多半是在消化，不是疏远；退开是充电，不是离场。`,
       approach: vary(`disp-avoidant-${name}`, [
         `相处时建议给出明确的等待期，而不是连续追问。对这类人，克制比热情更能积累信任。`,
@@ -1545,7 +1545,7 @@ export function analyzeRelationship(a: UserProfile, b: UserProfile, relationType
       ]),
     });
     if (style === "anxious") items.push({
-      person: name, trait: "印水相涵，心思绵密",
+      person: name, trait: "想得深的安静派",
       reading: `${name}印星与情感结构偏旺（情感强度 ${profile.personality.emotion}，印星权重 ${stats.resource.count}），对回应的连续性高度敏感，信息空白会被自动补全为负面剧本。`,
       approach: vary(`disp-anxious-${name}`, [
         `固定的联系节奏胜过长篇解释；提前预告忙碌、说到就准点出现，是对这类结构最实际的安抚。`,
@@ -1554,7 +1554,7 @@ export function analyzeRelationship(a: UserProfile, b: UserProfile, relationType
       ]),
     });
     if (style === "secure") items.push({
-      person: name, trait: "土厚金清，安而不争",
+      person: name, trait: "稳而不争的定心丸",
       reading: `${name}结构安稳（情绪稳定 ${profile.personality.stability}，印星权重 ${stats.resource.count}），少有主动索取，习惯自我消化。但安全型不是没有需求，只是不为需求吵闹。`,
       approach: vary(`disp-secure-${name}`, [
         `建议定期主动问问TA没说出口的部分，别把稳定当成免维护——免维护的下一站，是无声的撤退。`,
@@ -1563,7 +1563,7 @@ export function analyzeRelationship(a: UserProfile, b: UserProfile, relationType
       ]),
     });
     if (conflictScore >= 65) items.push({
-      person: name, trait: "伤官吐秀，锋从口出",
+      person: name, trait: "说话带锋的直球手",
       reading: `${name}伤官偏旺（冲突表达 ${conflictScore}，伤官权重 ${profile.tenGodCounts["伤官"]}），言辞锐度与在乎程度成正比——对无关之人，${name}向来只有客气。`,
       approach: vary(`disp-sharp-${name}`, [
         `冲突中建议先接住事实层，再谈表达方式。锋利被当场纠正的次数越多，以后的真话就越少。`,
@@ -1572,7 +1572,7 @@ export function analyzeRelationship(a: UserProfile, b: UserProfile, relationType
       ]),
     });
     else if (conflictScore <= 40) items.push({
-      person: name, trait: "食神温润，讷于言争",
+      person: name, trait: "温和的慢表达者",
       reading: `${name}冲突表达收敛（${conflictScore}，食神权重 ${profile.tenGodCounts["食神"]}），不满往往延迟出现；当下的"没事"多半是还没想好怎么说，不是真的没事。`,
       approach: vary(`disp-mild-${name}`, [
         `重要议题建议留出二次确认的余地：隔天再提一次，往往才能得到真实的答案。`,
@@ -1581,7 +1581,7 @@ export function analyzeRelationship(a: UserProfile, b: UserProfile, relationType
       ]),
     });
     if (expressScore <= 45 && items.length < 2) items.push({
-      person: name, trait: "财官务实，情在事中",
+      person: name, trait: "把爱做进事里的务实派",
       reading: `${name}语言表达偏敛（表达意愿 ${expressScore}，财星权重 ${stats.wealth.count}），情感输出以行动为主——接送、记挂、替你把事办了，都是TA的表达。`,
       approach: vary(`disp-doer-${name}`, [
         `把TA的行动计入情感账目，同时明确提出对语言表达的最低需求；需求不说出口，等于没有。`,

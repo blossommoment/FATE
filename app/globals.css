@@ -1270,3 +1270,19 @@ a.fb-cta { display:inline-block; text-decoration:none; color:#fff; }
 .share-btn { border:1px solid #1d211f; background:#fffdf9; color:#1d211f; cursor:pointer; padding:8px 18px; border-radius:999px; font-size:11px; letter-spacing:.08em; transition:.2s; }
 .share-btn:hover { background:#1d211f; color:#fff; }
 .report-error { font-size:13px; color:#a45c6e; }
+/* 双人成册：五章色系 + 双色对比条 */
+.fb-c-origin { color:#a45c6e; } .fb-c-daily { color:#2c5f53; } .fb-c-friction { color:#575282; }
+.fb-c-longrun { color:#4a6b8a; } .fb-c-season { color:#a3803a; }
+.fb-p-origin h2 small, .fb-p-origin .fb-stamp, .fb-p-origin .fb-essay::first-letter { color:#a45c6e; }
+.fb-p-daily h2 small, .fb-p-daily .fb-stamp, .fb-p-daily .fb-essay::first-letter { color:#2c5f53; }
+.fb-p-friction h2 small, .fb-p-friction .fb-stamp, .fb-p-friction .fb-essay::first-letter { color:#575282; }
+.fb-p-longrun h2 small, .fb-p-longrun .fb-stamp, .fb-p-longrun .fb-essay::first-letter { color:#4a6b8a; }
+.fb-p-season h2 small, .fb-p-season .fb-stamp, .fb-p-season .fb-essay::first-letter { color:#a3803a; }
+.fb-duo-legend { display:flex; gap:16px; margin-bottom:11px; font-size:9px; color:#6d6b66; }
+.fb-duo-legend i { width:12px; height:5px; border-radius:2px; display:inline-block; margin-right:5px; vertical-align:1px; }
+.fb-fill-a { background:#2c5f53; } .fb-fill-b { background:#a45c6e; }
+.fb-duo-metric { display:grid; grid-template-columns:88px 1fr 64px; gap:10px; align-items:center; margin-bottom:12px; }
+.fb-duo-metric label { font-size:10.5px; color:#4a544f; }
+.fb-duo-metric .fb-pair { display:grid; gap:4px; }
+.fb-gap-chip { font:9px "DM Mono",ui-monospace,monospace; font-style:normal; color:#5c6b64; background:#f0efe9; border-radius:999px; padding:4px 6px; text-align:center; }
+.fb-duo-season h5 { margin:10px 0 7px; font:400 12px Georgia,"Songti SC",serif; color:#39433e; }
