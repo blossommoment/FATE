@@ -1201,43 +1201,65 @@ main:not(.result-page) .entry form input { font-size:23px; }
 .plot-link { border:0; cursor:pointer; padding:10px 18px; border-radius:20px; color:white; background:#315e57; font:11px DM Mono,monospace; letter-spacing:.12em; }
 @media (max-width:760px) { .plot-panel { bottom:86px; padding:20px 18px 22px; } .plot-panel input[type="number"],.plot-panel input[type="text"] { font-size:24px; } }
 
-/* ── AI 读你（REQ_AI_DIGEST A3）：编辑风浅底卡，无深色无发光 ── */
-.ai-digest { grid-column:1/-1; margin-bottom:26px; padding:26px 28px; border:1px solid #fff; border-radius:25px; background:linear-gradient(150deg,#f6f4fb,#f2f7f3); }
-.ai-digest>header { display:flex; align-items:end; justify-content:space-between; margin-bottom:8px; }
-.ai-digest>header span { font:9px "DM Mono",monospace; letter-spacing:.16em; color:#6b5f8f; }
-.ai-digest>header small { font-size:8px; color:#8a9690; }
-.ai-digest .digest-intro h3 { margin:8px 0 9px; font:400 22px Georgia,"Songti SC",serif; color:#39433e; }
-.ai-digest .digest-intro p { margin:0 0 18px; max-width:520px; font-size:11.5px; color:#6d6b66; line-height:1.9; }
-.ai-digest .digest-cta { border:0; cursor:pointer; padding:13px 28px; border-radius:999px; background:#315e57; color:#fff; font:12px Manrope,Arial,sans-serif; letter-spacing:.06em; transition:.2s; }
-.ai-digest .digest-cta:hover { transform:translateY(-1px); }
-.ai-digest .digest-cta:disabled { opacity:.55; cursor:wait; transform:none; }
-.ai-digest .digest-note { margin-top:10px; font-size:9px; color:#98a29d; }
-.ai-digest .digest-headline { margin:12px 0 14px; font:400 26px Georgia,"Songti SC",serif; color:#2f3934; }
-.ai-digest .digest-tags { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:18px; }
-.ai-digest .digest-tags span { padding:8px 14px; border-radius:999px; background:#fff; font-size:11px; color:#39433e; box-shadow:0 5px 16px #52675e0f; }
-.ai-digest .digest-tags span b { font-weight:400; color:#98a29d; margin-left:7px; font-size:10px; }
-.ai-digest .digest-advice { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
-.ai-digest .digest-advice article { display:flex; gap:13px; align-items:flex-start; padding:16px 18px; border-radius:16px; background:#fff; box-shadow:0 6px 18px #52675e0c; }
-.ai-digest .digest-advice article:last-child { grid-column:1/-1; }
-.ai-digest .digest-advice i { flex-shrink:0; width:34px; height:34px; border-radius:11px; display:grid; place-items:center; font:400 15px Georgia,"Songti SC",serif; font-style:normal; color:#fff; background:linear-gradient(135deg,#286c5d,#5b5686); }
-.ai-digest .digest-advice span { display:block; font:8px "DM Mono",monospace; letter-spacing:.12em; color:#98a29d; margin-bottom:5px; }
-.ai-digest .digest-advice p { margin:0; font-size:11.5px; line-height:1.85; color:#4a544f; }
-.ai-digest .digest-summary { margin:0; padding:17px 21px; border-left:2px solid #286c5d; background:#ffffffba; border-radius:0 14px 14px 0; font-size:12.5px; line-height:2; color:#39433e; }
-.ai-digest .digest-locked { position:relative; }
-.ai-digest .digest-locked .digest-blur { filter:blur(7px); pointer-events:none; user-select:none; }
-.ai-digest .digest-unlock { position:absolute; inset:0; display:grid; place-items:center; }
-@media (max-width:760px) { .ai-digest { padding:20px 18px; } .ai-digest .digest-advice { grid-template-columns:1fr; } }
-
-/* AI 读你 · 依据可视化（标签卡 + 指标条 + 证据签） */
-.ai-digest .digest-tagcards { display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:10px; margin-bottom:18px; }
-.ai-digest .digest-tagcard { padding:15px 17px 13px; border-radius:16px; background:#fff; box-shadow:0 6px 18px #52675e0c; }
-.ai-digest .digest-tagcard small { font:8px "DM Mono",monospace; letter-spacing:.14em; color:#aa6173; }
-.ai-digest .digest-tagcard h4 { margin:5px 0 4px; font:400 16px Georgia,"Songti SC",serif; color:#2f3934; }
-.ai-digest .digest-tagcard p { margin:0 0 10px; font-size:10.5px; line-height:1.7; color:#6d6b66; min-height:28px; }
-.ai-digest .digest-bars>div { display:grid; grid-template-columns:64px 1fr 22px; align-items:center; gap:7px; margin-top:5px; }
-.ai-digest .digest-bars span { font-size:9px; color:#98a29d; }
-.ai-digest .digest-bars i { display:block; height:3px; border-radius:2px; background:#edeae3; overflow:hidden; }
-.ai-digest .digest-bars b { display:block; height:3px; border-radius:2px; background:linear-gradient(90deg,#286c5d,#5b5686); }
-.ai-digest .digest-bars em { font:9px "DM Mono",monospace; font-style:normal; color:#6d6b66; text-align:right; }
-.ai-digest .digest-ev { display:flex; flex-wrap:wrap; gap:6px; margin-top:9px; }
-.ai-digest .digest-ev b { font:400 9px "DM Mono",monospace; letter-spacing:.04em; color:#5c6b64; background:#f0efe9; border-radius:999px; padding:4px 9px; }
+/* ── FATE° 深度解读报告 · 成册四章（2026-07-03 设计定稿）── */
+.fate-book { grid-column:1/-1; margin-bottom:26px; padding:6px 24px 24px; border:1px solid #fff; border-radius:25px; background:#fbf9f4;
+  --fb-love:#a45c6e; --fb-work:#2c5f53; --fb-social:#575282; --fb-season:#a3803a; }
+.fate-book .fb-mono { font-family:"DM Mono",ui-monospace,monospace; letter-spacing:.14em; font-size:9px; color:#8a9690; }
+.fate-book-intro { padding:26px 28px; }
+.fate-book-intro h3 { margin:10px 0 12px; font:400 24px Georgia,"Songti SC",serif; color:#2f3934; }
+.fate-book-intro p { margin:0 0 18px; max-width:520px; font-size:11.5px; color:#6d6b66; line-height:1.9; }
+.fb-toc-preview { display:flex; gap:8px; margin-bottom:14px; }
+.fb-toc-preview span { padding:8px 14px; border:1px solid currentColor; border-radius:8px; font-size:11px; background:#fffdf9; }
+.fb-toc-preview b { font:400 13px Georgia,"Songti SC",serif; margin-right:5px; }
+.fb-c-love { color:var(--fb-love,#a45c6e); } .fb-c-career { color:var(--fb-work,#2c5f53); }
+.fb-c-social { color:var(--fb-social,#575282); } .fb-c-season { color:var(--fb-season,#a3803a); }
+.fb-cta { border:0; cursor:pointer; padding:13px 28px; border-radius:999px; background:#1d211f; color:#fff; font:12px Manrope,Arial,sans-serif; letter-spacing:.06em; transition:.2s; }
+.fb-cta:hover { transform:translateY(-1px); }
+.fb-cta:disabled { opacity:.55; cursor:wait; transform:none; }
+.fate-book .fb-note { margin-top:12px; font-size:9px; color:#98a29d; line-height:1.8; }
+.fb-pagenav { position:sticky; top:8px; z-index:5; display:flex; gap:6px; padding:14px 0 10px; background:linear-gradient(#fbf9f4 82%,transparent); }
+.fb-pagenav a { flex:1; text-align:center; padding:8px 0; border:1px solid currentColor; border-radius:999px; text-decoration:none; font-size:10px; letter-spacing:.1em; background:#fffdf9; }
+.fb-pagenav b { font:400 12px Georgia,"Songti SC",serif; font-weight:400; margin-right:3px; }
+.fb-cover { padding:30px 0 26px; border-bottom:1px solid #1d211f; }
+.fb-cover h1 { margin:14px 0 4px; font:400 30px/1.4 Georgia,"Songti SC",serif; color:#222a26; letter-spacing:.02em; text-wrap:balance; }
+.fb-meta { display:flex; gap:18px; margin-top:20px; padding-top:13px; border-top:1px solid #dcd8cd; }
+.fb-meta div { flex:1; }
+.fb-meta small { display:block; color:#8a9690; font-size:9px; letter-spacing:.12em; margin-bottom:4px; }
+.fb-meta strong { font:400 14px Georgia,"Songti SC",serif; color:#2f3934; }
+.fb-page { padding:36px 0 26px; border-bottom:1px solid #dcd8cd; }
+.fb-page:last-of-type { border-bottom:0; }
+.fb-page header { display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:18px; }
+.fb-page h2 { margin:0; font:400 25px/1.2 Georgia,"Songti SC",serif; color:#222a26; }
+.fb-page h2 small { display:block; font-family:"DM Mono",ui-monospace,monospace; font-size:8.5px; letter-spacing:.22em; margin-bottom:7px; }
+.fb-no { font:400 52px/1 Georgia,"Songti SC",serif; opacity:.14; }
+.fb-p-love h2 small, .fb-p-love .fb-stamp, .fb-p-love .fb-essay::first-letter { color:var(--fb-love); }
+.fb-p-career h2 small, .fb-p-career .fb-stamp, .fb-p-career .fb-essay::first-letter { color:var(--fb-work); }
+.fb-p-social h2 small, .fb-p-social .fb-stamp, .fb-p-social .fb-essay::first-letter { color:var(--fb-social); }
+.fb-p-season h2 small, .fb-p-season .fb-stamp, .fb-p-season .fb-essay::first-letter { color:var(--fb-season); }
+.fb-p-love .fb-fill { background:var(--fb-love); } .fb-p-career .fb-fill { background:var(--fb-work); }
+.fb-p-social .fb-fill { background:var(--fb-social); } .fb-p-season .fb-fill { background:var(--fb-season); }
+.fb-stamps { display:flex; gap:9px; flex-wrap:wrap; margin-bottom:18px; }
+.fb-stamp { border:1.5px solid currentColor; border-radius:8px; padding:9px 12px 7px; background:#fffdf9; }
+.fb-stamp b { display:block; font:400 15px Georgia,"Songti SC",serif; letter-spacing:.06em; }
+.fb-stamp span { display:block; margin-top:3px; font-size:9px; color:#8a9690; }
+.fb-data { background:#fffdf9; border:1px solid #e4e0d5; border-radius:14px; padding:17px 17px 12px; margin-bottom:18px; }
+.fb-data .fb-mono { display:block; margin-bottom:12px; }
+.fb-metric { display:grid; grid-template-columns:88px 1fr 30px; gap:10px; align-items:center; margin-bottom:11px; }
+.fb-metric label { font-size:10.5px; color:#4a544f; }
+.fb-metric.fb-current label { color:#222a26; font-weight:600; }
+.fb-track { position:relative; height:5px; background:#eceadf; border-radius:3px; }
+.fb-fill { position:absolute; inset:0 auto 0 0; border-radius:3px; }
+.fb-tick { position:absolute; top:-4px; bottom:-4px; width:1px; background:#1d211f; opacity:.35; }
+.fb-tick::after { content:attr(data-t); position:absolute; top:-11px; left:-8px; font-size:7.5px; color:#8a9690; font-family:"DM Mono",ui-monospace,monospace; }
+.fb-metric em { font-style:normal; font-family:"DM Mono",ui-monospace,monospace; font-size:11px; text-align:right; font-variant-numeric:tabular-nums; color:#4a544f; }
+.fb-essay-tag { font-size:9px; color:#8a9690; letter-spacing:.14em; margin-bottom:8px; }
+.fb-essay { font:400 14px/2.15 Georgia,"Songti SC",serif; letter-spacing:.01em; margin:0 0 14px; text-align:justify; color:#2f3934; }
+.fb-essay::first-letter { font-size:32px; float:left; line-height:1; padding:6px 8px 0 0; }
+.fb-aside { display:grid; gap:0; }
+.fb-aside div { display:flex; gap:10px; align-items:baseline; padding:10px 0; border-top:1px dashed #dcd8cd; }
+.fb-aside small { flex-shrink:0; width:58px; color:#8a9690; font-size:9px; letter-spacing:.12em; }
+.fb-aside p { margin:0; font-size:11.5px; line-height:1.85; color:#3c4540; }
+.fb-locked { position:relative; }
+.fb-locked .fb-blur { filter:blur(7px); pointer-events:none; user-select:none; }
+.fb-unlock { position:absolute; inset:0; display:grid; place-items:center; }
+@media (max-width:760px) { .fate-book { padding:6px 16px 20px; } .fate-book-intro { padding:22px 18px; } }

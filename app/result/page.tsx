@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { CSSProperties } from "react";
 import { analyzeAnnualFlow, analyzeBirth, analyzeRelationship, matchProfiles, monthGanZhi, validateBirth } from "@/lib/fate";
 import type { BirthInput } from "@/lib/types";
-import AiDigest from "@/components/AiDigest";
+import FateReport from "@/components/FateReport";
 import ChatAssistant from "@/components/ChatAssistant";
 import InviteShare from "@/components/InviteShare";
 import ShareCard from "@/components/ShareCard";
@@ -399,7 +399,7 @@ export async function ResultContent({
           <div><div className="section-number">01 — 十神关系画像</div><h2>从十神出发，理解你<br />如何进入一段关系。</h2></div>
           <div className="signature"><small>日主</small><strong>{profile.bazi.dayPillar}</strong><span>{profile.spine.strength.level === "中和" ? "中和之局 · 岁运定潮汐" : `${profile.spine.strength.level}之局 · 喜${profile.spine.favorable.join("、") || "随岁运"}`}</span></div>
         </div>
-        <AiDigest birth={birth} profileId={profile.id} />
+        <FateReport birth={birth} profileId={profile.id} />
         <section className="dominant-persona">
           <div className="persona-god"><span>主轴 · {profile.dominantPersona.weight}分 · {profile.dominantBasis}</span><strong>{profile.dominantPersona.god}</strong><small>{profile.dominantPersona.name}</small></div>
           <div className={`persona-god secondary${profile.tertiaryPersona ? " dual" : ""}`}><span>{profile.tertiaryPersona ? `双副轴 · ${profile.secondaryPersona.weight}/${profile.tertiaryPersona.weight}分` : `副轴 · ${profile.secondaryPersona.weight}分`}</span><strong>{profile.secondaryPersona.god}{profile.tertiaryPersona ? `·${profile.tertiaryPersona.god}` : ""}</strong><small>{profile.secondaryPersona.name}{profile.tertiaryPersona ? ` × ${profile.tertiaryPersona.name}` : ""}</small></div>
