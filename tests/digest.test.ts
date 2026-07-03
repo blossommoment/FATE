@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { analyzeBirth } from "../lib/fate";
-import { buildPersonaTags, buildPersonalFacts, buildRecommendations } from "../lib/digest";
+import {
+  JARGON_RE, TAG_EXPLAIN, buildDigestPrompt, buildFallbackDigest,
+  buildPersonaTags, buildPersonalFacts, buildRecommendations, validateDigestPayload,
+} from "../lib/digest";
 import type { BirthInput } from "../lib/types";
 
 // AI 读你 · A1 黄金用例：标签与推荐是规则表映射，必须确定且零命理黑话。
@@ -9,7 +12,7 @@ import type { BirthInput } from "../lib/types";
 const alice: BirthInput = { year: 1998, month: 8, day: 24, hour: 14, minute: 0, name: "Alice", gender: "female", calendarType: "solar" };
 const owner: BirthInput = { year: 2003, month: 8, day: 9, hour: 16, minute: 0, name: "阿主", gender: "male", calendarType: "solar" };
 
-const JARGON = /食神|伤官|比肩|劫财|正印|偏印|正官|七杀|正财|偏财|日主|喜用|忌神|身弱|身强|从弱|从强|禄|刃/;
+const JARGON = JARGON_RE;
 
 describe("人话标签", () => {
   it("确定性：同盘同标签", () => {
@@ -51,6 +54,45 @@ describe("推荐候选池", () => {
   it("当下时段策略引用大运补耗判定", () => {
     const rec = buildRecommendations(analyzeBirth(owner));
     expect(rec.currentPhase).toMatch(/段|流年/);
+  });
+});
+
+describe("AI 叙述层（A2）：提示词契约、校验器、兜底", () => {
+  const facts = buildPersonalFacts(analyzeBirth(owner));
+
+  it("提示词包含硬性契约与输出结构", () => {
+    const { system, user } = buildDigestPrompt(facts);
+    expect(system).toContain("禁用命理术语");
+    expect(system).toContain("headline");
+    expect(user).toContain("事实清单");
+  });
+
+  it("兜底成品：确定性、结构完整、正文零黑话、每个标签都有解释", () => {
+    const fb = buildFallbackDigest(facts);
+    expect(fb).toEqual(buildFallbackDigest(buildPersonalFacts(analyzeBirth(owner))));
+    expect(fb.headline.length).toBeGreaterThan(0);
+    expect(fb.tagReads.every((t) => t.note.length > 0)).toBe(true);
+    const everything = [fb.headline, fb.summary, ...Object.values(fb.advice), ...fb.tagReads.map((t) => t.note)].join("");
+    // 契约：术语只许进括号依据——括号外正文零黑话
+    expect(JARGON.test(everything.replace(/（[^）]*）|\([^)]*\)/g, ""))).toBe(false);
+    expect(validateDigestPayload(fb, facts)).not.toBeNull(); // 兜底自身必须过校验
+  });
+
+  it("校验器：拒绝自创标签、拒绝黑话正文、拒绝缺字段", () => {
+    const good = buildFallbackDigest(facts);
+    expect(validateDigestPayload({ ...good, tagReads: [{ tag: "天选打工人", note: "x" }, ...good.tagReads] }, facts)).toBeNull();
+    expect(validateDigestPayload({ ...good, summary: `${good.summary}你的七杀很旺。` }, facts)).toBeNull();
+    expect(validateDigestPayload({ ...good, advice: { ...good.advice, phase: "" } }, facts)).toBeNull();
+    expect(validateDigestPayload("not an object", facts)).toBeNull();
+  });
+
+  it("标签解释表覆盖全库：任何可能出现的标签都有人话解释", () => {
+    for (const birth of [alice, owner]) {
+      const tags = buildPersonaTags(analyzeBirth(birth));
+      [...tags.love, ...tags.career, ...tags.energy].forEach((tag) => {
+        expect(TAG_EXPLAIN[tag], `标签「${tag}」缺解释`).toBeTruthy();
+      });
+    }
   });
 });
 

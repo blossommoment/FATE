@@ -222,7 +222,7 @@ export function buildRecommendations(p: UserProfile): Recommendations {
     ? NEUTRAL_INDUSTRY[primary]
     : dm.favorable.flatMap((el) => INDUSTRY_POOLS[el].slice(0, 2).map((item) => ({
       name: item.name,
-      why: `${ELEMENT_CN[el]}是你的喜用（${item.why}）`,
+      why: `这类环境天然给你补给（${ELEMENT_CN[el]}为你的喜用，${item.why}）`,
     }))).slice(0, 4);
 
   const environments = dm.favorable.length === 0
@@ -238,6 +238,100 @@ export function buildRecommendations(p: UserProfile): Recommendations {
     : "尚未起运或大运数据缺失，当下策略以流年为准。";
 
   return { vocations, industries, environments, currentPhase };
+}
+
+// ── 标签人话解释（与 REQ_AI_DIGEST §五 一一对应，兜底与 UI 提示共用）──────
+
+export const TAG_EXPLAIN: Record<string, string> = {
+  引导型恋人: "关系里主动带节奏、有掌控欲", 需要被接住的人: "依赖高、感受浓",
+  慢热观察员: "信任给得慢、警觉性高", 独立空间型: "要自己的房间和沉默权",
+  黏人补给型: "高频联系才安心", 直球选手: "有话当场说",
+  情绪翻译官: "能接住对方没说出口的", 浪漫主义者: "相信心动这回事",
+  新鲜感猎人: "腻得快、要更新", 老派长情型: "认定了就不换台",
+  醋意敏感体质: "风吹草动都接收", 大心脏恋人: "不多想、不内耗",
+  被追才有感觉: "浪漫但不先动", 嘴硬心软型: "吵架冲、转头软",
+  安静陪伴型: "话少但在场", 仪式感大户: "纪念日一个不能少",
+  冷静调解人: "吵不起来的那个", 恋爱规划师: "爱得有条理、不上头",
+  心动就行动: "快热、敢开口", 行动派爱人: "不说爱你但接你下班",
+  稳定供电型: "情绪输出稳定，是关系里的压舱石", 需要确认的人: "回应慢了会自己写小剧本",
+  靠近需要耐心: "熟了才见真心", 顺其自然派: "节奏交给缘分",
+  深耕专家型: "把一件事做穿的体质", 军师参谋型: "想得深说得少，幕后出主意",
+  创意输出型: "想法有天然的出口", 细水长流的创作者: "创作要配补给，慢产but稳",
+  抗压执行型: "压力越大越有形状", 规则里的稳手: "在框架内把事办漂亮",
+  稳步爬梯型: "适合有台阶的体系，一层层上", 资源整合型: "把人和资源攒成局",
+  务实操盘手: "不声张，把账算明白", 机会嗅觉型: "对风口天生敏感",
+  靠谱交付型: "答应的事一定有下文", 破局开创型: "规则是用来重写的",
+  并肩作战型: "合伙体质，受不了层级", 自由个体型: "一个人就是一支队伍",
+  台前发光体: "站在人前反而来电", 幕后操盘手: "不出面，但盘是你的",
+  救火队长: "越乱越冷静", 多线程选手: "几件事并行反而高效",
+  单线程深潜员: "一次只做一件事，但做到底", 长期主义者: "慢变量的信徒",
+  独处回血: "社交后需要独处充电", 人群充电: "热闹本身就是能量",
+  压力转化者: "压力能被消化成动力", 节奏敏感体质: "环境一乱就耗电",
+  省电模式选手: "能量预算有限，花在刀刃上", 长续航体质: "耐力型选手，后程发力",
+};
+
+// 正文禁用的命理黑话（校验器与测试共用）
+export const JARGON_RE = /食神|伤官|比肩|劫财|正印|偏印|正官|七杀|正财|偏财|日主|喜用|忌神|身弱|身强|从弱|从强|禄|刃|藏干|十神|用神/;
+
+// ── AI 叙述层：提示词契约、校验器、确定性兜底 ─────────────────────
+
+export type DigestPayload = {
+  headline: string;                                  // 一句话人设，≤15字
+  tagReads: { tag: string; note: string }[];         // 标签逐条人话解释
+  advice: { vocation: string; industry: string; environment: string; love: string; phase: string };
+  summary: string;                                   // 80~120字收束
+};
+
+export function buildDigestPrompt(facts: ReturnType<typeof buildPersonalFacts>): { system: string; user: string } {
+  return {
+    system: [
+      "你是 Fate 的「AI 读你」撰稿人。输入是一份由规则引擎算好的个人事实清单（JSON），你的工作是把它组织成普通人爱读的人话，不是算命。",
+      `硬性契约：${facts.contract.rule}`,
+      "输出严格为 JSON（不要 markdown 代码块），结构：",
+      `{"headline":"一句话人设，15字以内","tagReads":[{"tag":"标签名（只能用清单 tags 里给出的）","note":"这个人身上这条标签的具体样子，25字内"}],"advice":{"vocation":"职业建议，只能从清单 recommendations.vocations 里挑，60字内","industry":"行业建议，同上限定 industries，50字内","environment":"环境建议，基于 environments，50字内","love":"感情里的你：喜欢什么样的相处、什么最耗你，70字内","phase":"当下时段策略，基于 currentPhase，50字内"},"summary":"80~120字总结，落在接下来怎么活"}`,
+      "语气：具体、有画面、不端着；括号里可以引用清单数字当依据；禁止吉凶断言，禁止「注定/命中」类词。",
+    ].join("\n"),
+    user: `事实清单：\n${JSON.stringify(facts, null, 0)}`,
+  };
+}
+
+// 校验：结构完整、标签只能来自清单、正文零黑话——不合格即弃用（调用方走兜底或重试）
+export function validateDigestPayload(raw: unknown, facts: ReturnType<typeof buildPersonalFacts>): DigestPayload | null {
+  if (!raw || typeof raw !== "object") return null;
+  const d = raw as Partial<DigestPayload>;
+  if (typeof d.headline !== "string" || d.headline.length === 0 || d.headline.length > 24) return null;
+  if (!Array.isArray(d.tagReads) || d.tagReads.length < 3) return null;
+  const allTags = new Set([...facts.tags.love, ...facts.tags.career, ...facts.tags.energy]);
+  for (const item of d.tagReads) {
+    if (!item || typeof item.tag !== "string" || typeof item.note !== "string") return null;
+    if (!allTags.has(item.tag)) return null; // 标签不得自创
+  }
+  const a = d.advice;
+  if (!a || [a.vocation, a.industry, a.environment, a.love, a.phase].some((s) => typeof s !== "string" || s.length === 0)) return null;
+  if (typeof d.summary !== "string" || d.summary.length < 40) return null;
+  const everything = [d.headline, d.summary, a.vocation, a.industry, a.environment, a.love, a.phase, ...d.tagReads.map((t) => t.note)].join("");
+  // 契约允许术语出现在括号依据里——剥掉括号内容后，正文必须零命理黑话
+  if (JARGON_RE.test(everything.replace(/（[^）]*）|\([^)]*\)/g, ""))) return null;
+  return d as DigestPayload;
+}
+
+// 确定性兜底：AI 不可用时的完整成品（同输入同输出，永不开天窗）
+export function buildFallbackDigest(facts: ReturnType<typeof buildPersonalFacts>): DigestPayload {
+  const t = facts.tags;
+  const r = facts.recommendations;
+  const allTags = [...t.love, ...t.career, ...t.energy];
+  return {
+    headline: `${t.career[0] ?? t.energy[0]} · ${t.love[0]}`,
+    tagReads: allTags.map((tag) => ({ tag, note: TAG_EXPLAIN[tag] ?? "" })),
+    advice: {
+      vocation: `更顺手的方向：${r.vocations.slice(0, 3).map((v) => v.name).join("、")}。${r.vocations[0]?.why ?? ""}。`,
+      industry: `行业优先看：${r.industries.slice(0, 3).map((v) => v.name).join("、")}。`,
+      environment: r.environments.join("；"),
+      love: `你在感情里是${t.love.join("、")}——${TAG_EXPLAIN[t.love[0]] ?? ""}。找能尊重这个节奏的人，别硬改出厂设置。`,
+      phase: r.currentPhase,
+    },
+    summary: `${t.career[0] ?? "按自己的节奏做事"}是你的正职人设，${t.energy[0]}是你的能量说明书。${r.currentPhase}把力气花在${r.vocations[0]?.name ?? "顺手的事"}上，感情里保持${t.love[0]}的本色——顺着结构走，比对抗它省电。`,
+  };
 }
 
 // ── 个人事实清单：AI 叙述层的唯一输入 ────────────────────────────
