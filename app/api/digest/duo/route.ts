@@ -53,7 +53,7 @@ export async function POST(request: Request) {
             { role: "system", content: system },
             {
               role: "user",
-              content: attempt === 0 ? user : `${user}\n\n（上一次输出未通过校验：五章齐全、正文禁数字禁命理术语、字数达标、以名字互称。请严格重来。）`,
+              content: attempt === 0 ? user : `${user}\n\n（上一次输出未通过校验：五章齐全、正文禁数字禁命理术语、评述禁对话引语、字数达标、以名字互称。请严格重来。）`,
             },
           ],
         }),

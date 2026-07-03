@@ -265,7 +265,7 @@ export type DuoDigestPayload = {
 };
 
 const DUO_STYLE_ORIGIN = "你们的开场不是烟花，是对焦。一个习惯先观察再靠近，把每条信号都过一遍雷达；一个信任给得快，已经把对方写进了周末计划。这不是温差，是两种出厂设置刚好互相踩中了开关——慢的那位提供确定感，快的那位提供推进力。真正的吸引藏在第三次见面之后：当快的开始愿意等，慢的开始愿意提前一点点，这段关系就成立了。";
-const DUO_STYLE_FRICTION = "你们的吵架从来不是同一场吵架。一个的版本是：话都说到这儿了，为什么不回应；另一个的版本是：正因为要回应，才需要先退出去想。于是一个越追越急，一个越退越远——追的人觉得对方冷，退的人觉得对方在逼。其实你们要的是同一件事：确认这段关系稳不稳。只是一个用「现在就谈」来确认，一个用「让我想想」来确认。把这句话记住，一半的战争会自己消失。";
+const DUO_STYLE_FRICTION = "你们的吵架从来不是同一场吵架。一个的版本是：话都说到这儿了，为什么不回应；另一个的版本是：正因为要回应，才需要先退出去想。于是一个越追越急，一个越退越远——追的人觉得对方冷，退的人觉得对方在逼。其实你们要的是同一件事：确认这段关系稳不稳。只是一个靠当场把话说完来确认，一个靠先退出去想清楚来确认。看懂这一层，一半的战争会自己消失。";
 
 export function buildDuoPrompt(facts: DuoFacts): { system: string; user: string } {
   return {
@@ -280,8 +280,8 @@ export function buildDuoPrompt(facts: DuoFacts): { system: string; user: string 
       `4. 以名字称呼两人（${facts.persons[0].name}、${facts.persons[1].name}），写「你们」的具体场景（谁先发消息、饭桌氛围、冷战谁破冰）；禁止各写一段拼成两份个人报告。`,
       "5. 每章 advice 必须是两个人一起能做的一件具体的事。",
       "写作要求（付费报告，读者要的是被看穿的感觉）：",
-      "a. 每章至少一个具体生活场景——微信里谁先发消息、饭桌上的氛围、周末怎么定、吵架现场各自会说什么。把 duoTags 与 comparisons 的差异翻译成画面，禁止抽象关系学套话。",
-      "b. 清单里的 behaviors、frictions（含 playbook）、initiator.firstMove 是现成素材库：改写成场景化人话（其中的数字一律丢弃，禁止照抄进正文）。",
+      "a. 每章至少一个具体生活场景——微信里谁先发消息、回复节奏、饭桌上的氛围、周末怎么定。场景只写到【行为模式】为止（如：一方追问时，另一方会先沉默）。【严禁虚构对话与台词】：不得编造两人说过或会说的任何一句话，评述里不得出现引号台词。",
+      "b. 清单里的 behaviors、frictions（含 playbook）、initiator.firstMove 是现成素材库：改写成行为模式描写（其中的数字一律丢弃，禁止照抄进正文）。advice 栏例外：可以给一句让两人照着说的话。",
       "c. 每章要有一句值得截图转发的精辟短句。",
       "d. headline 参考 verdict.quip 的幽默感重写，不要照抄 verdict.title。",
       `风格样例一（缘起章）：${DUO_STYLE_ORIGIN}`,
@@ -306,6 +306,7 @@ export function validateDuoPayload(raw: unknown): DuoDigestPayload | null {
     if (!page || typeof page.essay !== "string" || typeof page.advice !== "string") return null;
     if (page.essay.length < 90 || page.advice.length < 15) return null;
     if (key !== "season" && DUO_DIGIT_RE.test(page.essay + page.advice)) return null;
+    if (/[“”]/.test(page.essay)) return null; // 评述禁对话引语（模拟话术红线；advice 可给照着说的话）
   }
   const everything = [d.headline, ...keys.flatMap((k) => [pages[k]!.essay, pages[k]!.advice])].join("");
   if (DUO_JARGON_RE.test(everything)) return null;
