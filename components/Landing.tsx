@@ -81,7 +81,7 @@ export default function Landing({ embeddedResult = false }: { embeddedResult?: b
     <main>
       <nav>
         <a className="brand" href="#"><i>缘</i>FATE<span>°</span></a>
-        <div className="nav-links"><a href="#method">分析方法</a><a href="#report">我的画像</a><span>V1 / 关系模型</span></div>
+        <div className="nav-links"><a href="#method">分析方法</a><a href="#report">我的画像</a><span>FATE 模型 2.0</span></div>
       </nav>
 
       <section className="hero">
@@ -89,7 +89,7 @@ export default function Landing({ embeddedResult = false }: { embeddedResult?: b
           <span>FATE<i>°</i></span>
           <small>缘分不是注定<br />是理解之后的选择</small>
         </div>
-        <div className="eyebrow">关系人格建模系统 / SOCIAL MATCHING</div>
+        <div className="eyebrow">东方人格建模系统 / EASTERN PERSONA MODELING</div>
         <h1>遇见与你<br /><em>相互成全的人。</em></h1>
         <p className="hero-copy">出生数据不是答案。它是一组坐标，用来理解你如何靠近、表达，以及与谁产生真正的张力。</p>
         <button type="button" className="hero-cta hero-cta-center" onClick={openForm}>
@@ -195,7 +195,7 @@ export default function Landing({ embeddedResult = false }: { embeddedResult?: b
 
       {!embeddedResult && <footer>
         <div className="brand">FATE<span>°</span></div>
-        <p>Fate is a social matching system based on birth data and personality modeling.</p>
+        <p>FATE — 东方人格建模系统 · Eastern Persona Modeling.</p>
         <small>不是算命，而是一种理解关系的新语言。</small>
       </footer>}
     </main>

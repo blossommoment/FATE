@@ -41,6 +41,7 @@ describe("判定级黄金用例的历法有效性守卫", () => {
       ["己卯", "辛未", "壬午", "丁未"],
       ["己卯", "戊辰", "己丑", "甲子"],
       ["癸未", "丁巳", "丙午", "辛卯"],
+      ["庚午", "辛巳", "壬寅", "壬寅"],
     ];
     verdictCharts.forEach((c) => {
       expect(isCalendarValid(c), `${c.join(" ")} 历法无效`).toBe(true);
@@ -259,6 +260,12 @@ describe("黄金用例：从弱格", () => {
     expect(result.dayMaster.rooted).toBe(false); // 根拔不作有根论
     expect(result.dayMaster.level).toBe("从弱");
     expect(result.dayMaster.reasons.join("")).toContain("被冲拔");
+  });
+
+  it("印透有根不从（用户 2026-07-03 裁定）：壬水巳月无根、火当令 7.5%，但庚辛双印透干且庚长生于巳——印透通根有救，判身弱不从", () => {
+    const result = computeEnergy(chart("庚午", "辛巳", "壬寅", "壬寅"));
+    expect(result.dayMaster.rooted).toBe(false);
+    expect(result.dayMaster.level).toBe("身弱"); // 印比透干有活根即不从
   });
 
   it("根拔印救不从：同为双申夹冲拔根，双印透干通根则守住身弱（杀印相生）", () => {

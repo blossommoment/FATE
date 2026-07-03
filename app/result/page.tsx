@@ -2,7 +2,6 @@ import Link from "next/link";
 import type { CSSProperties } from "react";
 import { analyzeAnnualFlow, analyzeBirth, analyzeRelationship, matchProfiles, monthGanZhi, validateBirth } from "@/lib/fate";
 import type { BirthInput } from "@/lib/types";
-import FateReport from "@/components/FateReport";
 import ChatAssistant from "@/components/ChatAssistant";
 import InviteShare from "@/components/InviteShare";
 import ShareCard from "@/components/ShareCard";
@@ -399,7 +398,19 @@ export async function ResultContent({
           <div><div className="section-number">01 — 十神关系画像</div><h2>从十神出发，理解你<br />如何进入一段关系。</h2></div>
           <div className="signature"><small>日主</small><strong>{profile.bazi.dayPillar}</strong><span>{profile.spine.strength.level === "中和" ? "中和之局 · 岁运定潮汐" : `${profile.spine.strength.level}之局 · 喜${profile.spine.favorable.join("、") || "随岁运"}`}</span></div>
         </div>
-        <FateReport birth={birth} profileId={profile.id} />
+        <section className="fate-book fate-book-intro">
+          <span className="fb-mono">FATE° · 深度解读报告</span>
+          <h3>四章，读懂你自己。</h3>
+          <div className="fb-toc-preview">
+            <span className="fb-c-love"><b>壹</b>感情</span>
+            <span className="fb-c-career"><b>贰</b>事业</span>
+            <span className="fb-c-social"><b>叁</b>人际</span>
+            <span className="fb-c-season"><b>肆</b>时运</span>
+          </div>
+          <p>感情、事业、人际、时运各一章——你的标签、数据表征、与一段只属于你的评述与建议。生成一次，永久可看，可分享。</p>
+          <Link className="fb-cta" href={`/report?${baseQuery}`}>打开我的深度解读 ↗</Link>
+          <div className="fb-note">报告内容基于 FATE 模型 2.0 得出。</div>
+        </section>
         <section className="dominant-persona">
           <div className="persona-god"><span>主轴 · {profile.dominantPersona.weight}分 · {profile.dominantBasis}</span><strong>{profile.dominantPersona.god}</strong><small>{profile.dominantPersona.name}</small></div>
           <div className={`persona-god secondary${profile.tertiaryPersona ? " dual" : ""}`}><span>{profile.tertiaryPersona ? `双副轴 · ${profile.secondaryPersona.weight}/${profile.tertiaryPersona.weight}分` : `副轴 · ${profile.secondaryPersona.weight}分`}</span><strong>{profile.secondaryPersona.god}{profile.tertiaryPersona ? `·${profile.tertiaryPersona.god}` : ""}</strong><small>{profile.secondaryPersona.name}{profile.tertiaryPersona ? ` × ${profile.tertiaryPersona.name}` : ""}</small></div>
@@ -427,7 +438,7 @@ export async function ResultContent({
           </div>
         </section>
         <div className="module-directory">
-          <header><div><span>DEEP CHAPTERS</span><h3>深度目录 · 五章</h3></div><small>四类关系维度 + 专项观察 · 逐章展开</small></header>
+          <header><div><span>DEEP CHAPTERS</span><h3>深度目录 · {["零","一","二","三","四","五","六","七","八","九"][deepModules.length]}章</h3></div><small>四类关系维度 + 专项观察 · 逐章展开</small></header>
           <div className="module-grid">
             {deepModules.map((item, index) => <Link key={item.key} href={`/?${baseQuery}&view=deep&module=${item.key}#deep-report`}>
               <i>{item.no}</i>
@@ -534,7 +545,6 @@ export async function ResultContent({
         </nav>
         </div>}
         {!deepActive && <div className="persona-signature">
-          <blockquote>“{profile.summary}”</blockquote>
           <div className="signature-keywords">
             {profile.deepAnalysis.slice().sort((x, y) => y.score - x.score).slice(0, 6).map((item) => <span key={item.key}><b>{item.keywords[0]}</b><small>{item.label} {item.score}</small></span>)}
           </div>
@@ -981,7 +991,7 @@ export async function ResultContent({
         <div className="feed-loader"><i /><span>继续发现更多同频的人</span><i /></div>
       </section>}
 
-      <footer><div className="brand">FATE<span>°</span></div><p>Fate is a social matching system based on birth data and personality modeling.</p><small>不是算命，而是一种理解关系的新语言。</small></footer>
+      <footer><div className="brand">FATE<span>°</span></div><p>FATE — 东方人格建模系统 · Eastern Persona Modeling.</p><small>不是算命，而是一种理解关系的新语言。</small></footer>
       {(selectedDeep || selectedInteraction) && <div className="logic-overlay">
         <Link className="logic-backdrop" href={`/?${baseQuery}&view=${view}${view === "match" ? partnerQuery : ""}${moduleQuery}#${returnAnchor}`} aria-label="关闭推理详情" />
         <section className="logic-sheet">

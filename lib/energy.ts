@@ -398,9 +398,14 @@ export function computeEnergy(pillars: PillarGZ[]): EnergyResult {
   const allyEls = new Set<ElementKey>([dayEl, yinEl]);
   const alliesHaveMainRoot = branchMainEls.some((el) => allyEls.has(el));
   const opponentsHaveMainRoot = branchMainEls.some((el) => !allyEls.has(el));
+  // 印比透干且有活根亦不从（2026-07-03 用户依「庚午 辛巳 壬寅 壬寅」裁定）：
+  // 印透通根则日主有救——与「杀印相生不从」同理；只查地支本气会漏掉透干的同党
+  const allyStemAlive = pillars.some((pl, i) =>
+    i !== 2 && allyEls.has(STEM_ELEMENT[pl.gan]) && findBestRoot(pl.gan, branches).alive,
+  );
 
   let level: DayMasterStrength["level"];
-  if (!rooted && ratio <= 0.2 && !alliesHaveMainRoot) level = "从弱";
+  if (!rooted && ratio <= 0.2 && !alliesHaveMainRoot && !allyStemAlive) level = "从弱";
   // 从强线 90%（2026-07-03 三次拍板定稿：配合「会局成员随局论」放宽否决后，
   // 线上调至 90%，80~90 区间由置信机制标记为「趋近从强」）
   else if (ratio >= 0.9 && gotSeason && !opponentsHaveMainRoot) level = "从强";
@@ -415,7 +420,7 @@ export function computeEnergy(pillars: PillarGZ[]): EnergyResult {
   // 边界只在「跨过去会改判」时才构成不确定性：从格已被硬否决的边界不参与置信度计算
   const congQiangPossible = gotSeason && !opponentsHaveMainRoot;
   const boundaries = [0.3, 0.55];
-  if (!rooted && !alliesHaveMainRoot) boundaries.push(0.2);
+  if (!rooted && !alliesHaveMainRoot && !allyStemAlive) boundaries.push(0.2);
   if (congQiangPossible) boundaries.push(0.9);
   const nearest = Math.min(...boundaries.map((b) => Math.abs(ratio - b)));
   let confidence: DayMasterStrength["confidence"] = nearest < 0.04 ? "low" : nearest < 0.08 ? "medium" : "high";

@@ -1263,3 +1263,10 @@ main:not(.result-page) .entry form input { font-size:23px; }
 .fb-locked .fb-blur { filter:blur(7px); pointer-events:none; user-select:none; }
 .fb-unlock { position:absolute; inset:0; display:grid; place-items:center; }
 @media (max-width:760px) { .fate-book { padding:6px 16px 20px; } .fate-book-intro { padding:22px 18px; } }
+a.fb-cta { display:inline-block; text-decoration:none; color:#fff; }
+.report-page { max-width:600px; margin:0 auto; padding:14px 16px 70px; }
+.report-topbar { display:flex; justify-content:space-between; align-items:center; padding:10px 2px 12px; }
+.report-topbar a { text-decoration:none; color:#4a544f; font-size:11px; letter-spacing:.06em; }
+.share-btn { border:1px solid #1d211f; background:#fffdf9; color:#1d211f; cursor:pointer; padding:8px 18px; border-radius:999px; font-size:11px; letter-spacing:.08em; transition:.2s; }
+.share-btn:hover { background:#1d211f; color:#fff; }
+.report-error { font-size:13px; color:#a45c6e; }
