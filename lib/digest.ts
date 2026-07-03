@@ -34,7 +34,7 @@ export function buildPersonaTags(p: UserProfile): PersonaTags {
   const P = p.personality;
   const social = p.socialProfile;
 
-  // 感情域：按超出阈值的幅度排序取前 3，不足 2 个时以依恋类型兜底
+  // 感情域：按超出阈值的幅度排序取前 3，不足 2 个时以依恋类型、关系节奏兜底
   const loveRules: { tag: string; hit: boolean; margin: number }[] = [
     { tag: "引导型恋人", hit: trait(p, "initiative") >= 60 && P.control >= 60, margin: trait(p, "initiative") + P.control - 120 },
     { tag: "需要被接住的人", hit: deep(p, "dependency") >= 58 && P.emotion >= 65, margin: deep(p, "dependency") + P.emotion - 123 },
@@ -43,6 +43,19 @@ export function buildPersonaTags(p: UserProfile): PersonaTags {
     { tag: "黏人补给型", hit: deep(p, "dependency") >= 58 && social.communication_need === "high", margin: deep(p, "dependency") - 58 },
     { tag: "直球选手", hit: deep(p, "conflict_expression") >= 60 && trait(p, "expressiveness") >= 60, margin: deep(p, "conflict_expression") + trait(p, "expressiveness") - 120 },
     { tag: "情绪翻译官", hit: trait(p, "empathy") >= 65 && trait(p, "expressiveness") >= 55, margin: trait(p, "empathy") - 65 + trait(p, "expressiveness") - 55 },
+    { tag: "浪漫主义者", hit: deep(p, "romance") >= 60 && P.emotion >= 55, margin: deep(p, "romance") - 60 + P.emotion - 55 },
+    { tag: "新鲜感猎人", hit: deep(p, "novelty") >= 65, margin: deep(p, "novelty") - 65 },
+    { tag: "老派长情型", hit: deep(p, "novelty") <= 42 && P.stability >= 60, margin: 42 - deep(p, "novelty") + P.stability - 60 },
+    { tag: "醋意敏感体质", hit: deep(p, "vigilance") >= 62 && P.emotion >= 60, margin: deep(p, "vigilance") - 62 + P.emotion - 60 },
+    { tag: "大心脏恋人", hit: deep(p, "vigilance") <= 42 && P.stability >= 60, margin: 42 - deep(p, "vigilance") + P.stability - 60 },
+    { tag: "被追才有感觉", hit: trait(p, "initiative") <= 42 && deep(p, "romance") >= 50, margin: 42 - trait(p, "initiative") + deep(p, "romance") - 50 },
+    { tag: "嘴硬心软型", hit: deep(p, "conflict_expression") >= 58 && trait(p, "empathy") >= 58, margin: deep(p, "conflict_expression") - 58 + trait(p, "empathy") - 58 },
+    { tag: "安静陪伴型", hit: trait(p, "expressiveness") <= 45 && P.stability >= 55, margin: 45 - trait(p, "expressiveness") + P.stability - 55 },
+    { tag: "仪式感大户", hit: deep(p, "romance") >= 62 && deep(p, "novelty") >= 50, margin: deep(p, "romance") - 62 + deep(p, "novelty") - 50 },
+    { tag: "冷静调解人", hit: P.stability >= 68 && deep(p, "conflict_expression") <= 45, margin: P.stability - 68 + 45 - deep(p, "conflict_expression") },
+    { tag: "恋爱规划师", hit: P.control >= 60 && P.stability >= 60 && deep(p, "romance") <= 50, margin: P.control + P.stability - 120 },
+    { tag: "心动就行动", hit: deep(p, "trust_speed") >= 62 && deep(p, "social_openness") >= 52, margin: deep(p, "trust_speed") - 62 + deep(p, "social_openness") - 52 },
+    { tag: "行动派爱人", hit: trait(p, "expressiveness") <= 48 && trait(p, "initiative") >= 52, margin: 48 - trait(p, "expressiveness") + trait(p, "initiative") - 52 },
   ];
   const love = loveRules.filter((r) => r.hit).sort((a, b) => b.margin - a.margin).slice(0, 3).map((r) => r.tag);
   if (love.length < 2) {
@@ -54,19 +67,41 @@ export function buildPersonaTags(p: UserProfile): PersonaTags {
     if (!love.includes(paceTag)) love.push(paceTag);
   }
 
-  // 事业域：主轴十神组定基调，四维与深维做加权
+  // 事业域：主轴十神组定基调（主轴规则 +8 权重保证优先），四维与深维扩展泛化标签
   const group = godGroup(p.dominantPersona.god);
-  const career: string[] = [];
-  if (group === "resource" || (isWeak(p) && p.tenGodAnalysis[1].score >= Math.max(p.tenGodAnalysis[0].score, p.tenGodAnalysis[2].score))) career.push("深耕专家型");
-  if (group === "resource" && trait(p, "expressiveness") <= 55) career.push("军师参谋型");
-  if (group === "output" && !isWeak(p)) career.push("创意输出型");
-  if (group === "output" && isWeak(p)) career.push("细水长流的创作者");
-  if (group === "authority" && deep(p, "resilience") >= 70) career.push("抗压执行型");
-  if (group === "authority" && deep(p, "resilience") < 70) career.push("规则里的稳手");
-  if (group === "wealth" && P.extroversion >= 55) career.push("资源整合型");
-  if (group === "wealth" && P.extroversion < 55) career.push("务实操盘手");
-  if (group === "peer") career.push("并肩作战型"); // 比劫靠同伴成事、不服层级——不是单打独斗（2026-07-03 拍板修正）
-  if (deep(p, "autonomy") >= 62 && social.communication_need === "low" && (group === "output" || p.dominantPersona.god === "偏印")) career.push("自由个体型");
+  const god = p.dominantPersona.god;
+  const AXIS = 8; // 主轴标签的排序加成
+  const careerRules: { tag: string; hit: boolean; margin: number }[] = [
+    // —— 主轴基调 ——
+    { tag: "深耕专家型", hit: group === "resource" || (isWeak(p) && p.tenGodAnalysis[1].score >= Math.max(p.tenGodAnalysis[0].score, p.tenGodAnalysis[2].score)), margin: AXIS + p.tenGodAnalysis[1].score / 5 },
+    { tag: "军师参谋型", hit: group === "resource" && trait(p, "expressiveness") <= 55, margin: AXIS + 55 - trait(p, "expressiveness") },
+    { tag: "创意输出型", hit: group === "output" && !isWeak(p), margin: AXIS + p.tenGodAnalysis[4].score / 5 },
+    { tag: "细水长流的创作者", hit: group === "output" && isWeak(p), margin: AXIS + p.tenGodAnalysis[4].score / 5 },
+    { tag: "抗压执行型", hit: group === "authority" && deep(p, "resilience") >= 70, margin: AXIS + deep(p, "resilience") - 70 },
+    { tag: "规则里的稳手", hit: group === "authority" && deep(p, "resilience") < 70 && P.stability >= 55, margin: AXIS + P.stability - 55 },
+    { tag: "资源整合型", hit: group === "wealth" && P.extroversion >= 55, margin: AXIS + P.extroversion - 55 },
+    { tag: "务实操盘手", hit: group === "wealth" && P.extroversion < 55, margin: AXIS + 55 - P.extroversion },
+    { tag: "并肩作战型", hit: group === "peer", margin: AXIS + p.tenGodAnalysis[3].score / 5 }, // 比劫靠同伴成事、不服层级——不是单打独斗（2026-07-03 拍板修正）
+    { tag: "破局开创型", hit: god === "伤官" && !isWeak(p), margin: AXIS + deep(p, "conflict_expression") - 50 },
+    { tag: "机会嗅觉型", hit: god === "偏财" && deep(p, "novelty") >= 55, margin: AXIS + deep(p, "novelty") - 55 },
+    { tag: "靠谱交付型", hit: (god === "正财" || god === "正官") && P.stability >= 60, margin: AXIS + P.stability - 60 },
+    { tag: "稳步爬梯型", hit: group === "authority" && P.stability >= 65, margin: AXIS / 2 + P.stability - 65 },
+    // —— 泛化风格（不依赖主轴，任何盘都可能命中）——
+    { tag: "自由个体型", hit: deep(p, "autonomy") >= 62 && social.communication_need === "low" && (group === "output" || god === "偏印"), margin: deep(p, "autonomy") - 62 },
+    { tag: "台前发光体", hit: P.extroversion >= 65 && trait(p, "expressiveness") >= 60, margin: P.extroversion - 65 + trait(p, "expressiveness") - 60 },
+    { tag: "幕后操盘手", hit: P.extroversion <= 45 && P.control >= 60, margin: 45 - P.extroversion + P.control - 60 },
+    { tag: "救火队长", hit: deep(p, "resilience") >= 75 && trait(p, "adaptability") >= 55, margin: deep(p, "resilience") - 75 + trait(p, "adaptability") - 55 },
+    { tag: "多线程选手", hit: trait(p, "adaptability") >= 65 && deep(p, "novelty") >= 55, margin: trait(p, "adaptability") - 65 + deep(p, "novelty") - 55 },
+    { tag: "单线程深潜员", hit: deep(p, "autonomy") >= 60 && deep(p, "novelty") <= 45, margin: deep(p, "autonomy") - 60 + 45 - deep(p, "novelty") },
+    { tag: "长期主义者", hit: deep(p, "novelty") <= 42 && P.stability >= 62, margin: 42 - deep(p, "novelty") + P.stability - 62 },
+  ];
+  const career = careerRules.filter((r) => r.hit).sort((a, b) => b.margin - a.margin).slice(0, 3).map((r) => r.tag);
+  if (career.length < 2) {
+    const groupDefault: Record<GodGroup, string> = {
+      output: "创意输出型", resource: "深耕专家型", wealth: "务实操盘手", authority: "规则里的稳手", peer: "并肩作战型",
+    };
+    if (!career.includes(groupDefault[group])) career.push(groupDefault[group]);
+  }
 
   // 能量域
   const energyTags: string[] = [];
