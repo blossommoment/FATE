@@ -31,7 +31,10 @@ const GOD_CAT: Record<string, { cat: string; catEn: string; color: string }> = {
 
 const T = (lang: "zh" | "en", zh: string, en: string) => lang === "en" ? en : zh;
 
-export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "en"; reportId: string; generatedAt: string }): Promise<Buffer> {
+type ChapterText = { essay: string; advice: string };
+export type DeepDigest = { source: "ai" | "fallback"; headline: string; pages: { love: ChapterText; career: ChapterText; social: ChapterText; season: ChapterText } };
+
+export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "en"; reportId: string; generatedAt: string; digest?: DeepDigest }): Promise<Buffer> {
   const lang = opts.lang;
   const hei = HEI.find((c) => c && existsSync(c));
   const kai = KAI.find((c) => c && existsSync(c));
@@ -61,6 +64,28 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
     doc.font("en").fontSize(8.5).fillColor(color).text(value.toFixed(1).replace(/\.0$/, ""), barLeft + barW + 6, y, { width: 30, lineBreak: false });
     if (opts2.note) doc.font("hei").fontSize(7.5).fillColor(FAINT).text(opts2.note, barLeft + barW + 40, y + 1, { width: 24, lineBreak: false });
     doc.x = ML; doc.y = y + 15;
+  };
+
+  // 关键词 chips
+  const chips = (tags: string[], color = CINNABAR) => {
+    ensure(20); let tx = ML;
+    tags.forEach((tag) => {
+      const tw = doc.font("hei").fontSize(8.5).widthOfString(tag) + 14;
+      if (tx + tw > ML + W) { tx = ML; doc.y += 19; ensure(19); }
+      doc.roundedRect(tx, doc.y, tw, 14, 4).fillColor(CARD).fill();
+      doc.fillColor(color).fontSize(8.5).text(tag, tx + 7, doc.y + 2.5, { lineBreak: false });
+      tx += tw + 5;
+    });
+    doc.x = ML; doc.y += 22;
+  };
+
+  // 带彩色小标签的一段：标签内联，正文接排成一段（紧凑，不占双行）
+  const labeled = (tag: string, text: string, color = CINNABAR) => {
+    if (!text) return;
+    ensure(22);
+    doc.font("hei").fontSize(9).fillColor(color).text(`${tag}　`, ML, doc.y, { width: W, continued: true });
+    doc.font("hei").fontSize(9).fillColor(SUB).text(text, { width: W, lineGap: 2.8 });
+    doc.moveDown(0.25); doc.x = ML;
   };
 
   // ── 封面 ──────────────────────────────────
@@ -167,38 +192,88 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
     doc.x = ML; doc.y = y + 12;
   });
 
-  // ── 伍 十二维深度分析 ────────────────────────
-  chapter(T(lang, "十二维深度画像", "Twelve-Dimension Profile"), "Derived Personality Scores");
-  para(T(lang, "以上命盘结构，折算成十二个可读的行为维度。每维一条依据，说明分数从盘里哪一处来。", "The chart structure above is converted into twelve readable behavioural dimensions. Each carries one line of evidence tying the score back to the chart."), SUB, 9.5);
+  // ── 伍 十二维深度画像（全内容铺开）────────────
+  chapter(T(lang, "十二维深度画像", "Twelve-Dimension Profile"), "Derived Personality — In Full");
+  para(T(lang, "上面的命盘结构，折算成十二个可读的行为维度。每一维都摊开：分数、关键词、总结、判定依据、什么时候不成立、如何自我验证、优势与盲点、三类真实场景——不是贴标签，是给你一套可核对的说明。", "The chart structure above becomes twelve readable behavioural dimensions. Each is laid out in full: score, keywords, summary, the evidence behind it, when it doesn't hold, how to verify it yourself, strengths and blind spots, and three real-life scenes."), SUB, 9.5);
+  doc.moveDown(0.2);
+  const CAT_COLOR: Record<string, string> = { "亲密与安全": "#4a7fb0", "沟通与连接": "#4f9d6b", "边界与冲突": "#c85a4c", "成长与行动": "#bf9a4e" };
   const byCat = new Map<string, typeof profile.deepAnalysis>();
   profile.deepAnalysis.forEach((d) => { const arr = byCat.get(d.category) ?? []; arr.push(d); byCat.set(d.category, arr); });
   for (const [cat, items] of byCat) {
-    h2(cat);
-    items.forEach((d) => {
-      const color = d.score >= 66 ? "#4f9d6b" : d.score >= 40 ? "#bf9a4e" : "#9a9587";
-      colorBar(`${d.label} · ${d.descriptor}`, d.score, 100, color, { labelW: 180 });
-      if (d.evidence[0]) para(`　${d.evidence[0]}`, FAINT, 8);
-    });
-    doc.moveDown(0.2);
+    ensure(30);
+    doc.font("kai").fontSize(12).fillColor(CAT_COLOR[cat] ?? CINNABAR).text(`— ${cat} —`, ML, doc.y, { width: W });
+    doc.moveDown(0.4);
+    for (const d of items) {
+      ensure(120); // 维度头+分数条至少留住，不强制整页翻
+      const accent = CAT_COLOR[d.category] ?? CINNABAR;
+      // 维度头 + 分数条
+      const hy = doc.y;
+      doc.roundedRect(ML, hy, 3, 16, 1).fillColor(accent).fill();
+      doc.font("kai").fontSize(13).fillColor(INK).text(`${d.label}`, ML + 10, hy, { width: W - 120, lineBreak: false });
+      doc.font("hei").fontSize(9).fillColor(accent).text(`${d.descriptor} · ${d.level}`, ML + 10, hy + 17, { width: W - 60 });
+      doc.font("en").fontSize(16).fillColor(accent).text(String(d.score), ML + W - 40, hy, { width: 40, align: "right", lineBreak: false });
+      doc.y = hy + 32; doc.x = ML;
+      doc.roundedRect(ML, doc.y, W, 5, 2.5).fillColor(TRACK).fill();
+      doc.roundedRect(ML, doc.y, Math.max(4, W * d.score / 100), 5, 2.5).fillColor(accent).fill();
+      doc.y += 12;
+      if (d.keywords.length) chips(d.keywords, accent);
+      para(d.summary, INK, 9.5);
+      if (d.evidence.length) labeled(T(lang, "判定依据", "Evidence"), d.evidence.join("；"), accent);
+      labeled(T(lang, "倾向来源", "Origin"), d.logic.premise, accent);
+      labeled(T(lang, "反向信号", "Counter"), d.logic.counterSignal, accent);
+      labeled(T(lang, "如何验证", "Verify"), d.logic.realWorldCheck, accent);
+      labeled(T(lang, "优势", "Strength"), d.logic.strength, "#4f9d6b");
+      labeled(T(lang, "盲点", "Blind spot"), d.logic.blindSpot, "#c85a4c");
+      d.sceneInsights.forEach((s) => labeled(`${s.scene}·${s.title}`, s.text, accent));
+      doc.moveDown(0.3);
+      doc.moveTo(ML, doc.y).lineTo(ML + W, doc.y).lineWidth(0.4).strokeColor(LINE).stroke();
+      doc.moveDown(0.5);
+    }
   }
 
-  // ── 陆 人格画像 ──────────────────────────────
+  // ── 陆 专长天赋 ──────────────────────────────
+  if (profile.specialtyAnalysis.length) {
+    chapter(T(lang, "专长与天赋", "Special Aptitudes"), "Where the Chart Sharpens");
+    for (const s of profile.specialtyAnalysis) {
+      ensure(70);
+      const accent = s.score >= 66 ? "#4f9d6b" : s.score >= 40 ? "#bf9a4e" : "#9a9587";
+      doc.font("kai").fontSize(12.5).fillColor(INK).text(`${s.label} · ${s.descriptor}`, ML, doc.y, { width: W - 50, lineBreak: false });
+      doc.font("en").fontSize(14).fillColor(accent).text(String(s.score), ML + W - 40, doc.y, { width: 40, align: "right", lineBreak: false });
+      doc.moveDown(0.5); doc.x = ML;
+      doc.roundedRect(ML, doc.y, W, 5, 2.5).fillColor(TRACK).fill();
+      doc.roundedRect(ML, doc.y, Math.max(4, W * s.score / 100), 5, 2.5).fillColor(accent).fill();
+      doc.y += 12;
+      para(s.summary, INK, 9.5);
+      if (s.evidence.length) labeled(T(lang, "依据", "Evidence"), s.evidence.join("；"), accent);
+      labeled(T(lang, "提醒", "Caution"), s.caution, "#c85a4c");
+      doc.moveDown(0.3);
+      doc.moveTo(ML, doc.y).lineTo(ML + W, doc.y).lineWidth(0.4).strokeColor(LINE).stroke();
+      doc.moveDown(0.5);
+    }
+  }
+
+  // ── 柒 人格画像 ──────────────────────────────
   chapter(T(lang, "人格画像", "Persona"), "Who This Chart Describes");
   h2(`${profile.dominantPersona.name}（${profile.dominantPersona.god}）`);
   para(profile.dominantPersona.drive.replaceAll(" / ", "、"), SUB, 9.5);
   para(profile.combinedPersona.summary);
   doc.moveDown(0.2);
-  // 身份标签 chips
-  let tx = ML; const ty = doc.y;
-  ensure(20);
-  profile.identityTags.forEach((tag) => {
-    const tw = doc.font("hei").fontSize(9).widthOfString(tag) + 16;
-    if (tx + tw > ML + W) { tx = ML; doc.y += 20; }
-    doc.roundedRect(tx, doc.y, tw, 15, 4).fillColor(CARD).fill();
-    doc.fillColor(CINNABAR).text(tag, tx + 8, doc.y + 2.5, { lineBreak: false });
-    tx += tw + 6;
-  });
-  doc.y += 26;
+  chips(profile.identityTags);
+
+  // ── 捌 AI 综合评述（后端 DeepSeek 生成，压轴）──
+  if (opts.digest) {
+    chapter(T(lang, "综合评述", "Holistic Reading"), opts.digest.source === "ai" ? "Composed by FATE narrative layer" : "Deterministic edition");
+    doc.font("kai").fontSize(15).fillColor(CINNABAR).text(`「${opts.digest.headline}」`, ML, doc.y, { width: W });
+    doc.moveDown(0.6);
+    const chapterMap: [keyof DeepDigest["pages"], string, string][] = [["love", "感情", "Love"], ["career", "事业", "Career"], ["social", "人际", "Social"], ["season", "时运", "Timing"]];
+    for (const [key, zh, en] of chapterMap) {
+      const page = opts.digest.pages[key];
+      h2(T(lang, zh, en));
+      para(page.essay, INK, 10);
+      labeled(T(lang, "建议", "Advice"), page.advice, CINNABAR);
+      doc.moveDown(0.4);
+    }
+  }
 
   // ── 免责 ────────────────────────────────────
   chapter(T(lang, "免责声明", "Disclaimer"), "Disclaimer");

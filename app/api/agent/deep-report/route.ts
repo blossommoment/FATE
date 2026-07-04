@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { buildDeepReport, validateDeepInput } from "@/lib/deepReport";
 import { checkAgentAuth } from "../report/route";
 
-export const maxDuration = 120; // 中文秒回；英文含一次翻译，给足余量
+export const maxDuration = 300; // 规则引擎秒出 + 后端 DS 压轴评述(~60s)；英文再加一次翻译
 
 // 单人深度报告端点（OKX 黑客松）。纯规则引擎，中文单请求直接返回 PDF；英文加一次翻译。
 export async function POST(request: Request) {
