@@ -32,6 +32,11 @@ const GOD_CAT: Record<string, { cat: string; catEn: string; color: string }> = {
 
 const T = (lang: "zh" | "en", zh: string, en: string) => lang === "en" ? en : zh;
 const levelOf = (v: number) => v >= 82 ? "强倾向" : v >= 65 ? "偏高" : v >= 45 ? "中段" : v >= 28 ? "偏低" : "弱倾向";
+// 命理术语中英对照（英文报告里译掉等级、十神名，避免露中文）
+const LEVEL_EN: Record<string, string> = { 从强: "Follow-Strong", 身强: "Strong", 中和: "Balanced", 身弱: "Weak", 从弱: "Follow-Weak" };
+const GOD_EN: Record<string, string> = { 比肩: "Friend", 劫财: "Rival", 食神: "Output", 伤官: "Hurting Officer", 正财: "Direct Wealth", 偏财: "Indirect Wealth", 正官: "Direct Officer", 七杀: "Seven Killings", 正印: "Direct Resource", 偏印: "Indirect Resource" };
+const godT = (lang: "zh" | "en", god: string) => lang === "en" ? (GOD_EN[god] ?? god) : god;
+const levelT = (lang: "zh" | "en", level: string) => lang === "en" ? (LEVEL_EN[level] ?? level) : level;
 
 type ChapterText = { essay: string; advice: string };
 export type DeepDigest = { source: "ai" | "fallback"; headline: string; pages: { love: ChapterText; career: ChapterText; social: ChapterText; season: ChapterText } };
@@ -103,7 +108,7 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
   const name = profile.birth.name ?? "命主";
   const dayEl = profile.energy.dayMaster.element;
   doc.font("hei").fontSize(14).fillColor(INK).text(name, ML, doc.y, { width: W, align: "center" });
-  doc.font("hei").fontSize(11).fillColor(SUB).text(`${T(lang, "日主", "Day Master")} ${profile.bazi.dayPillar[0]}${EL_ZH[dayEl]} · ${profile.energy.dayMaster.level} · ${profile.archetype}`, ML, doc.y, { width: W, align: "center" });
+  doc.font("hei").fontSize(11).fillColor(SUB).text(`${T(lang, "日主", "Day Master")} ${profile.bazi.dayPillar[0]}${lang === "en" ? " " + (EL_EN[dayEl] ?? "") : EL_ZH[dayEl]} · ${levelT(lang, profile.energy.dayMaster.level)} · ${profile.archetype}`, ML, doc.y, { width: W, align: "center" });
   doc.moveDown(1.1);
   // 命主八字四柱（封面即见，天干地支按五行上色）
   const cvPillars = profile.bazi.pillars;
@@ -129,7 +134,7 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
       doc.font("kai").fontSize(19).fillColor(CINNABAR).text(`「${opts.digest.headline}」`, ML, doc.y, { width: W });
       doc.moveDown(0.3);
     }
-    doc.font("hei").fontSize(10.5).fillColor(SUB).text(`${T(lang, "性格特点", "Character")}：${profile.archetype} · ${profile.dominantPersona.name}（${profile.dominantPersona.god}）`, ML, doc.y, { width: W });
+    doc.font("hei").fontSize(10.5).fillColor(SUB).text(`${T(lang, "性格特点", "Character")}${T(lang, "：", ": ")}${profile.archetype} · ${profile.dominantPersona.name}（${godT(lang, profile.dominantPersona.god)}）`, ML, doc.y, { width: W });
     doc.moveDown(0.2);
     para(profile.combinedPersona.summary, INK, 11);
     doc.moveDown(0.3);
@@ -227,7 +232,7 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
   ensure(60);
   const statY = doc.y;
   doc.roundedRect(ML, statY, W, 52, 8).fillColor(CARD).fill();
-  doc.font("kai").fontSize(26).fillColor(CINNABAR).text(dm.level, ML + 16, statY + 12, { width: 120 });
+  doc.font("kai").fontSize(lang === "en" ? 18 : 26).fillColor(CINNABAR).text(levelT(lang, dm.level), ML + 16, statY + 12, { width: 130 });
   doc.font("hei").fontSize(9).fillColor(SUB).text(`${T(lang, "同党占比", "Self-party ratio")} ${dm.score}%　${dm.rooted ? T(lang, "· 有根", "· rooted") : T(lang, "· 无根", "· rootless")}　${T(lang, "置信", "conf.")} ${dm.confidence}`, ML + 150, statY + 14, { width: W - 160 });
   // 喜忌 chips
   let chipX = ML + 150, chipY = statY + 30;
@@ -271,7 +276,7 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
   // ── 人格画像（前移，铺满一页）──────────────────
   chapter(T(lang, "人格画像", "Persona"), "Who This Chart Describes");
   const dp = profile.dominantPersona;
-  doc.font("kai").fontSize(20).fillColor(CINNABAR).text(`${dp.name}（${dp.god}）`, ML, doc.y, { width: W });
+  doc.font("kai").fontSize(20).fillColor(CINNABAR).text(`${dp.name}（${godT(lang, dp.god)}）`, ML, doc.y, { width: W });
   doc.moveDown(0.3);
   para(dp.drive.replaceAll(" / ", "、"), SUB, 11);
   para(profile.combinedPersona.summary, INK, 12);
@@ -281,9 +286,9 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
   doc.moveDown(0.4);
   h2(T(lang, "副轴与配轴", "Secondary Threads"));
   const sp = profile.secondaryPersona;
-  if (sp) labeled(`${sp.name}（${sp.god}）`, sp.drive.replaceAll(" / ", "、"), "#4f9d6b");
+  if (sp) labeled(`${sp.name}（${godT(lang, sp.god)}）`, sp.drive.replaceAll(" / ", "、"), "#4f9d6b");
   const tp = profile.tertiaryPersona;
-  if (tp) labeled(`${tp.name}（${tp.god}）`, tp.drive.replaceAll(" / ", "、"), "#bf9a4e");
+  if (tp) labeled(`${tp.name}（${godT(lang, tp.god)}）`, tp.drive.replaceAll(" / ", "、"), "#bf9a4e");
   doc.moveDown(0.5);
   h2(T(lang, "身份标签", "Identity Tags"));
   chips(profile.identityTags);
