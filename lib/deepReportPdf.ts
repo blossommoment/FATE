@@ -47,6 +47,9 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
   const done = new Promise<Buffer>((resolve, reject) => { doc.on("data", (c: Buffer) => chunks.push(c)); doc.on("end", () => resolve(Buffer.concat(chunks))); doc.on("error", reject); });
 
   const PW = 595.28, PH = 841.89, ML = 60, W = PW - 120;
+  const BG = "#f6f1e4"; // 暖宣纸底
+  // 每页自动铺暖底 + 顶部朱砂细条（pageAdded 在内容前触发）
+  doc.on("pageAdded", () => { doc.rect(0, 0, PW, PH).fill(BG); doc.rect(0, 0, PW, 5).fill(CINNABAR); doc.fillColor(INK); });
   const ensure = (n: number) => { if (doc.y + n > PH - 78) doc.addPage(); };
   const mono = (s: string) => { doc.font("en").fontSize(7.5).fillColor(FAINT).text(s.toUpperCase(), ML, doc.y, { width: W, characterSpacing: 1.3 }); doc.moveDown(0.3); };
   const chapter = (zh: string, en: string) => { if (doc.y > 96) doc.addPage(); mono(en); const y = doc.y; doc.font("kai").fontSize(23).fillColor(CINNABAR).text(zh, ML, y, { width: W }); doc.moveDown(0.15); doc.font("en").fontSize(10.5).fillColor(GOLD).text(en, ML, doc.y, { width: W }); doc.moveDown(0.4); doc.moveTo(ML, doc.y).lineTo(ML + W, doc.y).lineWidth(1).strokeColor(CINNABAR).stroke(); doc.moveDown(0.55); };
@@ -79,18 +82,17 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
     doc.x = ML; doc.y += 22;
   };
 
-  // 带彩色小标签的一段：标签内联，正文接排成一段（紧凑，不占双行）
-  const labeled = (tag: string, text: string, color = CINNABAR) => {
+  // 带彩色小标签的一段：标签内联，正文接排成一段（字号可调）
+  const labeled = (tag: string, text: string, color = CINNABAR, size = 10) => {
     if (!text) return;
-    ensure(22);
-    doc.font("hei").fontSize(9).fillColor(color).text(`${tag}　`, ML, doc.y, { width: W, continued: true });
-    doc.font("hei").fontSize(9).fillColor(SUB).text(text, { width: W, lineGap: 2.8 });
-    doc.moveDown(0.25); doc.x = ML;
+    ensure(24);
+    doc.font("hei").fontSize(size).fillColor(color).text(`${tag}　`, ML, doc.y, { width: W, continued: true });
+    doc.font("hei").fontSize(size).fillColor(SUB).text(text, { width: W, lineGap: 4 });
+    doc.moveDown(0.4); doc.x = ML;
   };
 
   // ── 封面 ──────────────────────────────────
   doc.addPage();
-  doc.rect(0, 0, PW, PH).fillColor("#fbfaf5").fill();
   doc.y = 150;
   doc.font("en").fontSize(9).fillColor(CINNABAR).text("FATE° · EASTERN PERSONA MODELING", ML, doc.y, { width: W, align: "center", characterSpacing: 2 });
   doc.moveDown(1.4);
@@ -192,43 +194,67 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
     doc.x = ML; doc.y = y + 12;
   });
 
-  // ── 伍 十二维深度画像（全内容铺开）────────────
-  chapter(T(lang, "十二维深度画像", "Twelve-Dimension Profile"), "Derived Personality — In Full");
-  para(T(lang, "上面的命盘结构，折算成十二个可读的行为维度。每一维都摊开：分数、关键词、总结、判定依据、什么时候不成立、如何自我验证、优势与盲点、三类真实场景——不是贴标签，是给你一套可核对的说明。", "The chart structure above becomes twelve readable behavioural dimensions. Each is laid out in full: score, keywords, summary, the evidence behind it, when it doesn't hold, how to verify it yourself, strengths and blind spots, and three real-life scenes."), SUB, 9.5);
-  doc.moveDown(0.2);
+  // ── 伍 十二维深度画像 ────────────────────────
   const CAT_COLOR: Record<string, string> = { "亲密与安全": "#4a7fb0", "沟通与连接": "#4f9d6b", "边界与冲突": "#c85a4c", "成长与行动": "#bf9a4e" };
-  const byCat = new Map<string, typeof profile.deepAnalysis>();
-  profile.deepAnalysis.forEach((d) => { const arr = byCat.get(d.category) ?? []; arr.push(d); byCat.set(d.category, arr); });
-  for (const [cat, items] of byCat) {
-    ensure(30);
-    doc.font("kai").fontSize(12).fillColor(CAT_COLOR[cat] ?? CINNABAR).text(`— ${cat} —`, ML, doc.y, { width: W });
-    doc.moveDown(0.4);
-    for (const d of items) {
-      ensure(120); // 维度头+分数条至少留住，不强制整页翻
-      const accent = CAT_COLOR[d.category] ?? CINNABAR;
-      // 维度头 + 分数条
-      const hy = doc.y;
-      doc.roundedRect(ML, hy, 3, 16, 1).fillColor(accent).fill();
-      doc.font("kai").fontSize(13).fillColor(INK).text(`${d.label}`, ML + 10, hy, { width: W - 120, lineBreak: false });
-      doc.font("hei").fontSize(9).fillColor(accent).text(`${d.descriptor} · ${d.level}`, ML + 10, hy + 17, { width: W - 60 });
-      doc.font("en").fontSize(16).fillColor(accent).text(String(d.score), ML + W - 40, hy, { width: 40, align: "right", lineBreak: false });
-      doc.y = hy + 32; doc.x = ML;
-      doc.roundedRect(ML, doc.y, W, 5, 2.5).fillColor(TRACK).fill();
-      doc.roundedRect(ML, doc.y, Math.max(4, W * d.score / 100), 5, 2.5).fillColor(accent).fill();
-      doc.y += 12;
-      if (d.keywords.length) chips(d.keywords, accent);
-      para(d.summary, INK, 9.5);
-      if (d.evidence.length) labeled(T(lang, "判定依据", "Evidence"), d.evidence.join("；"), accent);
-      labeled(T(lang, "倾向来源", "Origin"), d.logic.premise, accent);
-      labeled(T(lang, "反向信号", "Counter"), d.logic.counterSignal, accent);
-      labeled(T(lang, "如何验证", "Verify"), d.logic.realWorldCheck, accent);
-      labeled(T(lang, "优势", "Strength"), d.logic.strength, "#4f9d6b");
-      labeled(T(lang, "盲点", "Blind spot"), d.logic.blindSpot, "#c85a4c");
-      d.sceneInsights.forEach((s) => labeled(`${s.scene}·${s.title}`, s.text, accent));
+  chapter(T(lang, "十二维深度画像", "Twelve-Dimension Profile"), "Derived Personality — In Full");
+  para(T(lang, "命盘结构折算成十二个可读的行为维度。先看整体雷达，再一维一页逐条拆开——每维都给出分数、构成、判定依据、反向信号与自我验证方式。", "The chart becomes twelve readable behavioural dimensions. First the overall radar, then one page per dimension — each with its score, composition, evidence, counter-signals and how to verify it."), SUB, 10);
+  doc.moveDown(0.3);
+  // —— 十二维雷达 ——
+  const dims = profile.deepAnalysis;
+  const cx = ML + W / 2, cy = doc.y + 150, R = 130;
+  const pt = (i: number, r: number) => { const a = -Math.PI / 2 + i * Math.PI * 2 / dims.length; return [cx + Math.cos(a) * r, cy + Math.sin(a) * r] as const; };
+  [0.25, 0.5, 0.75, 1].forEach((f) => { doc.polygon(...dims.map((_, i) => pt(i, R * f) as [number, number])).lineWidth(0.5).strokeColor("#d8d2c0").stroke(); });
+  dims.forEach((_, i) => { const [x, y] = pt(i, R); doc.moveTo(cx, cy).lineTo(x, y).lineWidth(0.4).strokeColor("#e0dac8").stroke(); });
+  doc.polygon(...dims.map((d, i) => pt(i, R * d.score / 100) as [number, number])).fillOpacity(0.28).fill(CINNABAR);
+  doc.fillOpacity(1);
+  doc.polygon(...dims.map((d, i) => pt(i, R * d.score / 100) as [number, number])).lineWidth(1.2).strokeColor(CINNABAR).stroke();
+  dims.forEach((d, i) => { const [x, y] = pt(i, R * d.score / 100); doc.circle(x, y, 2.2).fill(CAT_COLOR[d.category] ?? CINNABAR); });
+  dims.forEach((d, i) => { const [x, y] = pt(i, R + 16); doc.font("hei").fontSize(7.5).fillColor(SUB).text(d.label, x - 30, y - 4, { width: 60, align: "center" }); });
+  doc.y = cy + R + 34; doc.x = ML;
+
+  // 解析「十神/五行 权重×次数」→ 构成柱状图
+  const parseFactors = (evidence: string[]) => {
+    const out: { label: string; value: number; color: string }[] = [];
+    const re = /([一-龥]{1,2})\s*([\d.]+)×(\d+)/g;
+    for (const line of evidence) { let m: RegExpExecArray | null; while ((m = re.exec(line))) { const g = m[1]; const v = parseFloat(m[2]) * parseInt(m[3], 10); if (v <= 0) continue; const color = GOD_CAT[g]?.color ?? EL_COLOR[Object.keys(EL_ZH).find((k) => EL_ZH[k] === g) ?? ""] ?? SUB; out.push({ label: g, value: Math.round(v * 10) / 10, color }); } }
+    return out.slice(0, 6);
+  };
+
+  // —— 一维一页 ——
+  for (const d of dims) {
+    doc.addPage();
+    const accent = CAT_COLOR[d.category] ?? CINNABAR;
+    const ty = doc.y;
+    doc.font("hei").fontSize(10).fillColor(accent).text(d.category, ML, ty, { width: W - 90 });
+    doc.font("en").fontSize(34).fillColor(accent).text(String(d.score), ML + W - 84, ty - 4, { width: 84, align: "right", lineBreak: false });
+    doc.font("kai").fontSize(24).fillColor(INK).text(d.label, ML, doc.y + 2, { width: W - 90 });
+    doc.font("hei").fontSize(12).fillColor(accent).text(`${d.descriptor} · ${d.level}`, ML, doc.y + 2, { width: W });
+    doc.moveDown(0.5); doc.x = ML;
+    // 醒目分数条
+    doc.roundedRect(ML, doc.y, W, 8, 4).fillColor(TRACK).fill();
+    doc.roundedRect(ML, doc.y, Math.max(6, W * d.score / 100), 8, 4).fillColor(accent).fill();
+    doc.y += 18;
+    if (d.keywords.length) chips(d.keywords, accent);
+    doc.moveDown(0.2);
+    para(d.summary, INK, 12);
+    doc.moveDown(0.2);
+    // 判定依据 → 构成柱状图
+    const factors = parseFactors(d.evidence);
+    if (factors.length) {
+      h2(T(lang, "构成（判定依据）", "Composition (Evidence)"));
+      const fmax = Math.max(...factors.map((f) => f.value));
+      factors.forEach((f) => colorBar(f.label, f.value, fmax, f.color, { labelW: 70 }));
       doc.moveDown(0.3);
-      doc.moveTo(ML, doc.y).lineTo(ML + W, doc.y).lineWidth(0.4).strokeColor(LINE).stroke();
-      doc.moveDown(0.5);
+    } else if (d.evidence.length) {
+      labeled(T(lang, "判定依据", "Evidence"), d.evidence.join("；"), accent);
     }
+    labeled(T(lang, "倾向来源", "Origin"), d.logic.premise, accent);
+    labeled(T(lang, "反向信号", "Counter"), d.logic.counterSignal, accent);
+    labeled(T(lang, "如何验证", "Verify"), d.logic.realWorldCheck, accent);
+    labeled(T(lang, "优势", "Strength"), d.logic.strength, "#4f9d6b");
+    labeled(T(lang, "盲点", "Blind spot"), d.logic.blindSpot, "#c85a4c");
+    doc.moveDown(0.2);
+    d.sceneInsights.forEach((s) => labeled(`${s.scene}·${s.title}`, s.text, accent));
   }
 
   // ── 陆 专长天赋 ──────────────────────────────
@@ -281,9 +307,17 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
     "本报告由 FATE 模型 2.0 基于传统历法结构与行为模型推演生成，内容仅供娱乐与自我认知参考，不构成婚恋、医疗、心理、法律或投资建议，不作任何吉凶祸福的断言或承诺。报告呈现的是结构与倾向，真实的人生由你的选择决定。",
     "This report is generated by FATE Model 2.0 from traditional calendrical structures and behavioural modelling, for entertainment and self-reflection only. It is not relationship, medical, psychological, legal, or financial advice, and makes no claim about fortune. It shows structures and tendencies; your life is shaped by your choices."), SUB, 9.5);
 
-  // 页脚
+  // 页脚（每页统一：基于 FATE 模型 2.0 生成报告 + 页码）
+  // 关键：页脚 y 在底边距之下，必须先把该页 bottom 边距设 0，否则 pdfkit 判为溢出→每写一次多开一张空白页
   const range = doc.bufferedPageRange();
-  for (let i = 1; i < range.count; i++) { doc.switchToPage(range.start + i); doc.font("en").fontSize(8).fillColor(FAINT).text(`FATE° · ${opts.reportId}`, ML, PH - 52, { width: W / 2, lineBreak: false }).text(`${i} / ${range.count - 1}`, ML + W / 2, PH - 52, { width: W / 2, align: "right", lineBreak: false }); }
+  const fy = PH - 44;
+  for (let i = 1; i < range.count; i++) {
+    doc.switchToPage(range.start + i);
+    doc.page.margins.bottom = 0;
+    doc.moveTo(ML, fy - 7).lineTo(ML + W, fy - 7).lineWidth(0.4).strokeColor(LINE).stroke();
+    doc.font("hei").fontSize(8).fillColor(FAINT).text(T(lang, "基于 FATE 模型 2.0 生成报告", "Generated by FATE Model 2.0"), ML, fy, { width: W * 0.7, lineBreak: false });
+    doc.font("en").fontSize(8).fillColor(FAINT).text(`${i} / ${range.count - 1}`, ML + W * 0.7, fy, { width: W * 0.3, align: "right", lineBreak: false });
+  }
 
   doc.end();
   return done;
