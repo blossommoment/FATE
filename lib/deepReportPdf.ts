@@ -368,31 +368,58 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
     const yb = profile.bazi.yearPillar[1];
     if (db) {
       h2(T(lang, "未来五年流年", "The Next Five Years"));
-      para(T(lang, "逐年看流年地支与你命盘的关系：冲/合婚姻宫、桃花与驿马是否引动、当年五行对你是补还是耗。刻度色即倾向——红为动荡、绿为顺、金为变。", "Year by year: whether the annual branch clashes or combines your marriage palace, whether the Peach-Blossom or Travel star is triggered, and whether the year's element feeds or drains you."), FAINT, 9);
+      para(T(lang, "逐年拆开：流年地支与你命盘的关系（冲/合婚姻宫、桃花与驿马是否引动、当年五行对你补还是耗），以及这一年具体该怎么过。", "Year by year: how the annual branch relates to your chart — clash/combine of the marriage palace, whether the Peach-Blossom or Travel star fires, and whether the year feeds or drains you — plus what to actually do."), FAINT, 9.5);
+      doc.moveDown(0.2);
+      // 逐项分析句 + 建议（按信号种类拼装）
+      const SIG_TEXT: Record<string, { zh: string; en: string }> = {
+        clash: { zh: "婚姻宫受冲：亲密关系与既定节奏这一年更容易被外部事件打断或加速，是感情与生活变动偏大的一年。重大决定放慢、多留确认时间，别在情绪冲动上定下终身大事。", en: "Marriage palace clashed: intimacy and routine are more easily disrupted or sped up this year. Slow big decisions and leave room to confirm." },
+        combine: { zh: "婚姻宫得合：环境与核心关系更容易配合，是推进关系、定下名分、见家长这类大事的顺手窗口，想推进的别拖。", en: "Marriage palace combined: a smooth window to advance the relationship — don't stall on what you've been putting off." },
+        taisui: { zh: "值太岁：自我课题被放大，容易对现状生出重新选择的冲动。冲动是信号不是命令，落地前给自己一个季度的观察期。", en: "Same as birth-year branch: self-questions amplify; observe a quarter before acting on the urge to change." },
+        peach: { zh: "桃花引动：被关注、被示好的社交曝光明显上升。机会变多不等于结果，主动权与筛选权都在你手里；有伴的一方，透明是最省事的解法。", en: "Peach-Blossom fires: social exposure and charm rise. More chances, not outcomes — if attached, transparency is the easy fix." },
+        horse: { zh: "驿马引动：搬迁、出差、换城市这类物理位移概率上升，生活半径可能被重画。涉及位置的机会出现时，第一时间纳入规划、和相关的人商量。", en: "Travel star fires: relocation or frequent travel likely; fold any location decision into your plans early." },
+        feed: { zh: "流年五行补你的喜用：个人状态偏顺，情绪与精力余量足，是攒力气、做增量、推进个人目标的好时段。", en: "The year's element feeds your favorable element: a good stretch to build and push forward." },
+        drain: { zh: "流年五行落忌神：个人耗电偏大，情绪余量变薄。这一年按省电模式过——守成、蓄力、少折腾，把身体和状态照顾好比冲刺更重要。", en: "The year's element hits your unfavorable element: run in low-power mode — consolidate rather than sprint." },
+        steady: { zh: "无强结构引动：流年这一年不加戏也不递刀，质量完全取决于你自己怎么经营。适合把平时没空做的细活做了——复盘、储蓄、把关系里的小疙瘩谈开。", en: "No strong structure fires: a neutral year whose quality is up to you — good for the slow, overdue work." },
+      };
+      const ADVICE: Record<string, { zh: string; en: string }> = {
+        clash: { zh: "把今年已知的大变动提前列出来，重大决定至少留一周冷静期。", en: "List the year's known changes early; give big decisions a cooling week." },
+        combine: { zh: "想推进的那件事排上日程，趁窗口把它落地。", en: "Schedule the thing you want to advance and land it in the window." },
+        taisui: { zh: "重大改变先小步试，别一次性推倒重来。", en: "Test big changes in small steps first." },
+        peach: { zh: "把上扬的魅力用回该用的地方；社交多了，边界也要更清楚。", en: "Aim the rising charm where it belongs; keep boundaries clear." },
+        horse: { zh: "任何涉及城市/租约/工作的机会，第一时间纳入整体规划。", en: "Bring any location-related opportunity into the plan immediately." },
+        feed: { zh: "把重要的事排进今年，趁状态好做增量。", en: "Put the important things in this year while your energy is up." },
+        drain: { zh: "降低今年的目标强度，把睡眠、身体和存款放前面。", en: "Lower the year's intensity; prioritise sleep, health and savings." },
+        steady: { zh: "挑一件一直想做没做的事，趁平顺把它做了。", en: "Pick one overdue thing and get it done while it's calm." },
+      };
       const baseYear = profile.luckCycles.currentYear || new Date().getFullYear();
       for (let k = 0; k < 5; k++) {
         const y = baseYear + k, gz = gzOf(y), zhi = gz[1], stem = gz[0];
-        const signals: { t: string; c: string }[] = [];
-        if (clashMap[zhi] === db) signals.push({ t: T(lang, "冲婚姻宫", "clash palace"), c: "#c85a4c" });
-        else if (combineMap[zhi] === db) signals.push({ t: T(lang, "合婚姻宫", "combine palace"), c: "#4f9d6b" });
-        else if (zhi === yb) signals.push({ t: T(lang, "值太岁", "same as year"), c: "#bf9a4e" });
-        if (zhi === peachOf(db) || zhi === peachOf(yb)) signals.push({ t: T(lang, "桃花", "peach-blossom"), c: "#c96f7d" });
-        if (zhi === horseOf(db) || zhi === horseOf(yb)) signals.push({ t: T(lang, "驿马", "travel"), c: "#bf9a4e" });
+        const kinds: string[] = [];
+        const chips: { t: string; c: string }[] = [];
+        if (clashMap[zhi] === db) { kinds.push("clash"); chips.push({ t: T(lang, "冲婚姻宫", "clash"), c: "#c85a4c" }); }
+        else if (combineMap[zhi] === db) { kinds.push("combine"); chips.push({ t: T(lang, "合婚姻宫", "combine"), c: "#4f9d6b" }); }
+        else if (zhi === yb) { kinds.push("taisui"); chips.push({ t: T(lang, "值太岁", "tai-sui"), c: "#bf9a4e" }); }
+        if (zhi === peachOf(db) || zhi === peachOf(yb)) { kinds.push("peach"); chips.push({ t: T(lang, "桃花", "peach"), c: "#c96f7d" }); }
+        if (zhi === horseOf(db) || zhi === horseOf(yb)) { kinds.push("horse"); chips.push({ t: T(lang, "驿马", "travel"), c: "#bf9a4e" }); }
         const el = ganEl[stem];
-        if (favSet.has(el)) signals.push({ t: T(lang, "补气", "feeds you"), c: "#4f9d6b" });
-        else if (unfavSet.has(el)) signals.push({ t: T(lang, "耗气", "drains you"), c: "#9a9587" });
-        ensure(22); const yy = doc.y;
-        doc.font("kai").fontSize(13).fillColor(k === 0 ? CINNABAR : INK).text(`${y}`, ML, yy, { width: 40, lineBreak: false });
-        doc.font("hei").fontSize(11).fillColor(SUB).text(gz, ML + 44, yy + 1, { width: 40, lineBreak: false });
-        let sx = ML + 96;
-        if (!signals.length) signals.push({ t: T(lang, "平顺", "steady"), c: "#9a9587" });
-        for (const sig of signals) {
-          const w = doc.font("hei").fontSize(8.5).widthOfString(sig.t) + 12;
-          doc.roundedRect(sx, yy, w, 15, 4).fillColor(sig.c).fill();
-          doc.fillColor("#fff").fontSize(8.5).text(sig.t, sx + 6, yy + 2.5, { lineBreak: false });
-          sx += w + 5;
-        }
-        doc.x = ML; doc.y = yy + 20;
+        if (favSet.has(el)) { kinds.push("feed"); chips.push({ t: T(lang, "补气", "feeds"), c: "#4f9d6b" }); }
+        else if (unfavSet.has(el)) { kinds.push("drain"); chips.push({ t: T(lang, "耗气", "drains"), c: "#9a9587" }); }
+        if (!kinds.length) { kinds.push("steady"); chips.push({ t: T(lang, "平顺", "steady"), c: "#9a9587" }); }
+        ensure(70);
+        const yy = doc.y;
+        // 年份 + 干支 + 信号 chips
+        doc.font("kai").fontSize(15).fillColor(k === 0 ? CINNABAR : INK).text(`${y}`, ML, yy, { width: 44, lineBreak: false });
+        doc.font("kai").fontSize(13).fillColor(SUB).text(gz, ML + 46, yy + 2, { width: 40, lineBreak: false });
+        let sx = ML + 92;
+        for (const c of chips) { const w = doc.font("hei").fontSize(8.5).widthOfString(c.t) + 12; doc.roundedRect(sx, yy + 1, w, 15, 4).fillColor(c.c).fill(); doc.fillColor("#fff").fontSize(8.5).text(c.t, sx + 6, yy + 3.5, { lineBreak: false }); sx += w + 5; }
+        doc.x = ML; doc.y = yy + 22;
+        // 具体分析（把命中的信号句拼起来）
+        const analysis = kinds.map((kk) => T(lang, SIG_TEXT[kk].zh, SIG_TEXT[kk].en)).join(lang === "en" ? " " : "");
+        para(analysis, INK, 10.5);
+        labeled(T(lang, "这一年怎么过", "This year"), T(lang, ADVICE[kinds[0]].zh, ADVICE[kinds[0]].en), k === 0 ? CINNABAR : "#8a6d2f", 10);
+        doc.moveDown(0.35);
+        doc.moveTo(ML, doc.y).lineTo(ML + W, doc.y).lineWidth(0.4).strokeColor(LINE).stroke();
+        doc.moveDown(0.45);
       }
     }
 
