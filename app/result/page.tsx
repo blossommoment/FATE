@@ -103,6 +103,8 @@ export async function ResultContent({
       `主轴十神：${profile.dominantPersona.god} × ${partnerProfile.dominantPersona.god}`,
       ...(relationship.branchDynamics[0] ? [`最强跨盘结构：${relationship.branchDynamics[0].title}（${relationship.branchDynamics[0].scoreImpact > 0 ? "+" : ""}${relationship.branchDynamics[0].scoreImpact} 分）`] : []),
       `建议先主动的一方：${relationship.guide.initiator.name}`,
+      ...analyzeDuoRhythm(profile, partnerProfile, relationship.relationType, new Date().getFullYear(), 5)
+        .map((yearItem) => `流年 ${yearItem.year} ${yearItem.ganZhi}：${yearItem.tendencies.map((t) => `${t.label}倾向 ${t.value}（${t.causes.map((c) => `${c.who}${c.label}`).join("、")}）`).join("；") || "无强倾向"}`),
     ],
     suggestions: ["综合点评我们这段关系", "我们最大的雷区是什么？", "第一次吵架该怎么处理？"],
   } : {
@@ -1030,6 +1032,21 @@ export async function ResultContent({
                 让 AI 结合全部信号，写一份你们的关系点评 <span>→</span>
               </Link>
             </section>}
+            {(() => {
+              // 每章的 AI 总结入口：与柒章 guide-ai 同机制，提问按章定制（柒章自有入口，不重复）
+              const chapterAsk: Record<string, string> = {
+                dimensions: "结合六个维度的分数与构成，用人话总结我们的关系底盘：最强的一维、最弱的一维，以及最值得花力气的地方",
+                nature: "结合两人最不一样的三处和各自的使用说明书，总结我们俩最核心的不同，以及各自最该记住对方的一条",
+                structure: "解读我们两张命盘之间的合冲结构，说说它们在日常相处里通常以什么样子出现",
+                manner: "结合五条相处断语，描绘我们日常相处最典型的三个画面",
+                reef: "结合三个摩擦情境和它们的结构来源，点评我们最需要防的一个雷区和最实用的一个拆法",
+                rhythm: "结合未来五年的逐年倾向与结构信号，给我们每一年的相处重点各提一句建议",
+              };
+              const question = chapterAsk[active.key];
+              return question ? <Link className="guide-ai" href={`${moduleBase}&module=${active.key}&ask=${encodeURIComponent(question)}#match-report`}>
+                让 AI 结合本章信号，写一段你们的专属总结 <span>→</span>
+              </Link> : null;
+            })()}
             <nav className="module-pager">
               {activeIndex > 0
                 ? <Link href={`${moduleBase}&module=${moduleMeta[activeIndex - 1].key}#match-report`}>← {moduleMeta[activeIndex - 1].no} · {moduleMeta[activeIndex - 1].title}</Link>
