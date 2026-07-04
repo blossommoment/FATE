@@ -296,7 +296,13 @@ export function preprocessInteractions(pillars: PillarGZ[], command: ElementKey)
 export const ROOT_ALIVE_THRESHOLD = 0.45;
 
 // ④ 通根：返回天干在全盘的最佳根（导出以便单测）
-export function findBestRoot(gan: string, branchStates: { zhi: string; availability: number }[]): {
+// 会入局折根（2026-07-04 拍板·方案A 线性折减）：根所在支若处于三会/三合成局、且日主五行正被
+// 转出为局五行，则该根的有效可用性按转化率线性折减——庚金 70% 会入火局，其根有效可用性 ×0.3，
+// 跌破活根线即拔根。这样巳午未三会火局中「巳藏庚」不再撑起辛金的从格否决。
+export function findBestRoot(
+  gan: string,
+  branchStates: { zhi: string; availability: number; conversions?: { to: ElementKey; ratio: number }[]; inFullTrio?: boolean }[],
+): {
   tier: "禄刃" | "长生" | "中余气" | "墓库" | null;
   multiplier: number;
   branch: string | null;
@@ -305,6 +311,15 @@ export function findBestRoot(gan: string, branchStates: { zhi: string; availabil
   const el = STEM_ELEMENT[gan];
   let best: { tier: "禄刃" | "长生" | "中余气" | "墓库"; mult: number; branch: string } | null = null;
   let anyAlive = false;
+  // 根的有效可用性：该支成局且把日主五行转走时，按转化率折减（方案A 线性）
+  const effAvail = (b: { availability: number; conversions?: { to: ElementKey; ratio: number }[]; inFullTrio?: boolean }) => {
+    const trioEl = b.inFullTrio ? b.conversions?.[0]?.to : undefined;
+    if (trioEl && trioEl !== el && b.conversions?.length) {
+      const convAway = Math.min(b.conversions.reduce((sum, c) => sum + c.ratio, 0), 0.8);
+      return b.availability * (1 - convAway);
+    }
+    return b.availability;
+  };
   // 按「打折后的有效乘数」取最佳根（被拔的禄刃可能不如完好的余气）；活根看全部根
   const consider = (tier: "禄刃" | "长生" | "中余气" | "墓库", base: number, branch: string, avail: number) => {
     const mult = 1 + (base - 1) * avail;
@@ -313,10 +328,11 @@ export function findBestRoot(gan: string, branchStates: { zhi: string; availabil
   };
   for (const b of branchStates) {
     const hidden = BRANCH_HIDDEN[b.zhi];
-    if (STEM_ELEMENT[hidden[0]] === el) consider("禄刃", 1.3, b.zhi, b.availability);
-    if (YANG_STEMS.has(gan) && CHANG_SHENG[gan] === b.zhi) consider("长生", 1.15, b.zhi, b.availability);
-    if (hidden.slice(1).some((h) => STEM_ELEMENT[h] === el)) consider("中余气", 1.1, b.zhi, b.availability);
-    if (TOMB[el] === b.zhi) consider("墓库", 1.05, b.zhi, b.availability);
+    const av = effAvail(b);
+    if (STEM_ELEMENT[hidden[0]] === el) consider("禄刃", 1.3, b.zhi, av);
+    if (YANG_STEMS.has(gan) && CHANG_SHENG[gan] === b.zhi) consider("长生", 1.15, b.zhi, av);
+    if (hidden.slice(1).some((h) => STEM_ELEMENT[h] === el)) consider("中余气", 1.1, b.zhi, av);
+    if (TOMB[el] === b.zhi) consider("墓库", 1.05, b.zhi, av);
   }
   if (!best) return { tier: null, multiplier: 0.3, branch: null, alive: false };
   const found = best as { tier: "禄刃" | "长生" | "中余气" | "墓库"; mult: number; branch: string };
