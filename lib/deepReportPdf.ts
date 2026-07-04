@@ -53,8 +53,8 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
   const ensure = (n: number) => { if (doc.y + n > PH - 78) doc.addPage(); };
   const mono = (s: string) => { doc.font("en").fontSize(7.5).fillColor(FAINT).text(s.toUpperCase(), ML, doc.y, { width: W, characterSpacing: 1.3 }); doc.moveDown(0.3); };
   const chapter = (zh: string, en: string) => { if (doc.y > 96) doc.addPage(); mono(en); const y = doc.y; doc.font("kai").fontSize(23).fillColor(CINNABAR).text(zh, ML, y, { width: W }); doc.moveDown(0.15); doc.font("en").fontSize(10.5).fillColor(GOLD).text(en, ML, doc.y, { width: W }); doc.moveDown(0.4); doc.moveTo(ML, doc.y).lineTo(ML + W, doc.y).lineWidth(1).strokeColor(CINNABAR).stroke(); doc.moveDown(0.55); };
-  const h2 = (s: string) => { ensure(40); doc.font("kai").fontSize(13).fillColor(INK).text(s, ML, doc.y, { width: W }); doc.moveDown(0.35); };
-  const para = (s: string, color = INK, size = 10) => { ensure(34); doc.font("hei").fontSize(size).fillColor(color).text(s, ML, doc.y, { width: W, lineGap: 3.5 }); doc.moveDown(0.4); };
+  const h2 = (s: string) => { ensure(42); doc.font("kai").fontSize(15).fillColor(INK).text(s, ML, doc.y, { width: W }); doc.moveDown(0.4); };
+  const para = (s: string, color = INK, size = 11) => { ensure(36); doc.font("hei").fontSize(size).fillColor(color).text(s, ML, doc.y, { width: W, lineGap: 4.5 }); doc.moveDown(0.45); };
   const GOLD = "#bf9a4e";
 
   // 通用彩色横条：label + 轨道 + 值，颜色自定
@@ -83,12 +83,12 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
   };
 
   // 带彩色小标签的一段：标签内联，正文接排成一段（字号可调）
-  const labeled = (tag: string, text: string, color = CINNABAR, size = 10) => {
+  const labeled = (tag: string, text: string, color = CINNABAR, size = 11) => {
     if (!text) return;
-    ensure(24);
+    ensure(26);
     doc.font("hei").fontSize(size).fillColor(color).text(`${tag}　`, ML, doc.y, { width: W, continued: true });
-    doc.font("hei").fontSize(size).fillColor(SUB).text(text, { width: W, lineGap: 4 });
-    doc.moveDown(0.4); doc.x = ML;
+    doc.font("hei").fontSize(size).fillColor(SUB).text(text, { width: W, lineGap: 4.5 });
+    doc.moveDown(0.45); doc.x = ML;
   };
 
   // ── 封面 ──────────────────────────────────
@@ -194,13 +194,97 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
     doc.x = ML; doc.y = y + 12;
   });
 
-  // ── 伍 十二维深度画像 ────────────────────────
+  // ── 人格画像（前移，铺满一页）──────────────────
+  chapter(T(lang, "人格画像", "Persona"), "Who This Chart Describes");
+  const dp = profile.dominantPersona;
+  doc.font("kai").fontSize(20).fillColor(CINNABAR).text(`${dp.name}（${dp.god}）`, ML, doc.y, { width: W });
+  doc.moveDown(0.3);
+  para(dp.drive.replaceAll(" / ", "、"), SUB, 11);
+  para(profile.combinedPersona.summary, INK, 12);
+  doc.moveDown(0.3);
+  labeled(T(lang, "行为底色", "Behaviour"), dp.behavior, CINNABAR);
+  labeled(T(lang, "关系里", "In relationships"), dp.relationship, CINNABAR);
+  doc.moveDown(0.4);
+  h2(T(lang, "副轴与配轴", "Secondary Threads"));
+  const sp = profile.secondaryPersona;
+  if (sp) labeled(`${sp.name}（${sp.god}）`, sp.drive.replaceAll(" / ", "、"), "#4f9d6b");
+  const tp = profile.tertiaryPersona;
+  if (tp) labeled(`${tp.name}（${tp.god}）`, tp.drive.replaceAll(" / ", "、"), "#bf9a4e");
+  doc.moveDown(0.5);
+  h2(T(lang, "身份标签", "Identity Tags"));
+  chips(profile.identityTags);
+
+  // ── 行为模式（traitAnalysis）────────────────────
+  if (profile.traitAnalysis.length) {
+    chapter(T(lang, "行为模式", "Behaviour Patterns"), "How This Chart Acts");
+    para(T(lang, "把命盘折算成可观察的行为倾向，每一条都附命盘依据——分数越高，该模式越稳定鲜明。", "The chart translated into observable behavioural tendencies, each with its chart-based evidence. The higher the score, the more consistently the pattern shows."), SUB, 10.5);
+    doc.moveDown(0.3);
+    const tMax = Math.max(...profile.traitAnalysis.map((t) => t.score), 100);
+    for (const t of profile.traitAnalysis) {
+      ensure(40);
+      const color = t.score >= 66 ? "#4f9d6b" : t.score >= 40 ? "#bf9a4e" : "#9a9587";
+      colorBar(t.label, t.score, tMax, color, { labelW: 120 });
+      if (t.basis) para(`　${t.basis}`, FAINT, 9);
+      doc.moveDown(0.15);
+    }
+  }
+
+  // ── 流年大运（时运结构：本命冲合 + 大运走势 + 今年流年）──
+  {
+    chapter(T(lang, "流年大运", "Fortune Cycles"), "Timing — Clashes & Cycles");
+    const clashMap: Record<string, string> = { 子: "午", 午: "子", 丑: "未", 未: "丑", 寅: "申", 申: "寅", 卯: "酉", 酉: "卯", 辰: "戌", 戌: "辰", 巳: "亥", 亥: "巳" };
+    const combineMap: Record<string, string> = { 子: "丑", 丑: "子", 寅: "亥", 亥: "寅", 卯: "戌", 戌: "卯", 辰: "酉", 酉: "辰", 巳: "申", 申: "巳", 午: "未", 未: "午" };
+    // 本命结构冲合
+    if (profile.specialPoints.length) {
+      h2(T(lang, "本命结构（原局冲合）", "Native Structure"));
+      for (const s of profile.specialPoints) {
+        ensure(38);
+        const color = s.type === "冲" ? "#c85a4c" : "#4f9d6b";
+        doc.font("hei").fontSize(11).fillColor(color).text(`${s.type} · ${s.title}`, ML, doc.y, { width: W - 90, continued: false });
+        doc.font("en").fontSize(9).fillColor(FAINT).text(T(lang, `强度 ${s.strength}`, `str. ${s.strength}`), ML + W - 80, doc.y - 13, { width: 80, align: "right", lineBreak: false });
+        para(s.summary, SUB, 10);
+        doc.moveDown(0.1);
+      }
+      doc.moveDown(0.3);
+    }
+    // 大运走势
+    if (profile.luckCycles.periods.length) {
+      h2(T(lang, "大运走势", "Decade Cycles"));
+      const toneColor: Record<string, string> = { boost: "#4f9d6b", drain: "#c85a4c", mixed: "#bf9a4e", neutral: "#9a9587" };
+      for (const per of profile.luckCycles.periods.slice(0, 8)) {
+        ensure(20); const y = doc.y;
+        const tc = toneColor[per.verdict?.tone ?? "neutral"];
+        if (per.isCurrent) { doc.roundedRect(ML - 4, y - 2, W + 8, 18, 3).fillColor("#efe9d8").fill(); }
+        doc.font("kai").fontSize(12).fillColor(per.isCurrent ? CINNABAR : INK).text(per.ganZhi, ML, y, { width: 40, lineBreak: false });
+        doc.font("hei").fontSize(9.5).fillColor(SUB).text(`${per.startAge}–${per.endAge} ${T(lang, "岁", "y")}`, ML + 44, y + 1, { width: 70, lineBreak: false });
+        doc.circle(ML + 124, y + 6, 3.2).fillColor(tc).fill();
+        doc.font("hei").fontSize(10).fillColor(tc).text(per.verdict?.label ?? "—", ML + 134, y + 1, { width: 90, lineBreak: false });
+        doc.font("hei").fontSize(8.5).fillColor(FAINT).text(per.isCurrent ? T(lang, "← 当前", "← now") : "", ML + 230, y + 1.5, { width: 80, lineBreak: false });
+        doc.x = ML; doc.y = y + 20;
+      }
+      doc.moveDown(0.3);
+    }
+    // 今年流年（当前流年支 vs 日支）
+    const yearBranch = profile.luckCycles.currentGanZhi?.[1];
+    const dayBranch = profile.bazi.dayPillar[1];
+    if (yearBranch && dayBranch) {
+      h2(T(lang, `今年流年 · ${profile.luckCycles.currentYear} ${profile.luckCycles.currentGanZhi}`, `This Year · ${profile.luckCycles.currentYear}`));
+      const rel = clashMap[yearBranch] === dayBranch ? { z: "流年冲日支（婚姻宫）", e: "annual branch clashes the day branch (marriage palace)", c: "#c85a4c" }
+        : combineMap[yearBranch] === dayBranch ? { z: "流年合日支（婚姻宫）", e: "annual branch combines the day branch", c: "#4f9d6b" }
+          : yearBranch === dayBranch ? { z: "流年与日支同气（值太岁）", e: "annual branch same as day branch", c: "#bf9a4e" }
+            : { z: "流年与日支无直接刑冲，节奏相对平顺", e: "no direct clash with the day branch this year", c: "#9a9587" };
+      para(T(lang, `${rel.z}——${rel.z.includes("冲") ? "核心关系与既定节奏更容易被外部事件打断或加速，宜提前商量、多留确认时间。" : rel.z.includes("合") ? "环境与核心宫位更容易配合，是推进的顺手窗口。" : rel.z.includes("值太岁") ? "自我课题被放大，容易生出重新选择的冲动，落地前多给自己一个季度观察。" : "外部结构不加戏，质量取决于经营本身。"}`, `${rel.e}.`), rel.c, 11);
+    }
+  }
+
+  // ── 十二维深度画像 ────────────────────────
   const CAT_COLOR: Record<string, string> = { "亲密与安全": "#4a7fb0", "沟通与连接": "#4f9d6b", "边界与冲突": "#c85a4c", "成长与行动": "#bf9a4e" };
   chapter(T(lang, "十二维深度画像", "Twelve-Dimension Profile"), "Derived Personality — In Full");
   para(T(lang, "命盘结构折算成十二个可读的行为维度。先看整体雷达，再一维一页逐条拆开——每维都给出分数、构成、判定依据、反向信号与自我验证方式。", "The chart becomes twelve readable behavioural dimensions. First the overall radar, then one page per dimension — each with its score, composition, evidence, counter-signals and how to verify it."), SUB, 10);
   doc.moveDown(0.3);
-  // —— 十二维雷达 ——
-  const dims = profile.deepAnalysis;
+  // —— 十二维雷达（按四类排序，使同类的三维在报告里连续成组）——
+  const CAT_ORDER = ["亲密与安全", "沟通与连接", "边界与冲突", "成长与行动"];
+  const dims = [...profile.deepAnalysis].sort((a, b) => (CAT_ORDER.indexOf(a.category) - CAT_ORDER.indexOf(b.category)) || 0);
   const cx = ML + W / 2, cy = doc.y + 150, R = 130;
   const pt = (i: number, r: number) => { const a = -Math.PI / 2 + i * Math.PI * 2 / dims.length; return [cx + Math.cos(a) * r, cy + Math.sin(a) * r] as const; };
   [0.25, 0.5, 0.75, 1].forEach((f) => { doc.polygon(...dims.map((_, i) => pt(i, R * f) as [number, number])).lineWidth(0.5).strokeColor("#d8d2c0").stroke(); });
@@ -220,12 +304,19 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
     return out.slice(0, 6);
   };
 
-  // —— 一维一页 ——
+  // —— 一维一页（同类连续，首维标注「第 N/3」）——
+  let lastCat = "";
+  const catSeq: Record<string, number> = {};
   for (const d of dims) {
     doc.addPage();
     const accent = CAT_COLOR[d.category] ?? CINNABAR;
+    catSeq[d.category] = (catSeq[d.category] ?? 0) + 1;
+    const catCount = dims.filter((x) => x.category === d.category).length;
+    const isFirstOfCat = d.category !== lastCat; lastCat = d.category;
     const ty = doc.y;
-    doc.font("hei").fontSize(10).fillColor(accent).text(d.category, ML, ty, { width: W - 90 });
+    // 类目 banner（首维更醒目）
+    if (isFirstOfCat) { doc.roundedRect(ML, ty, 4, 13, 1).fillColor(accent).fill(); }
+    doc.font("hei").fontSize(10).fillColor(accent).text(`${d.category}　${catSeq[d.category]}/${catCount}`, ML + (isFirstOfCat ? 10 : 0), ty, { width: W - 90 });
     doc.font("en").fontSize(34).fillColor(accent).text(String(d.score), ML + W - 84, ty - 4, { width: 84, align: "right", lineBreak: false });
     doc.font("kai").fontSize(24).fillColor(INK).text(d.label, ML, doc.y + 2, { width: W - 90 });
     doc.font("hei").fontSize(12).fillColor(accent).text(`${d.descriptor} · ${d.level}`, ML, doc.y + 2, { width: W });
@@ -257,34 +348,42 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
     d.sceneInsights.forEach((s) => labeled(`${s.scene}·${s.title}`, s.text, accent));
   }
 
-  // ── 陆 专长天赋 ──────────────────────────────
+  // ── 专长与天赋（一节一页 + 命理注释：为什么这些结构代表该天赋）──
+  // 注释固定表：说明每类天赋在命理上由哪些结构支撑（偏印/正印/华盖/十灵/桃花等）
+  const SPECIALTY_NOTE: Record<string, { zh: string; en: string }> = {
+    intuition: { zh: "命理依据：偏印主感知与灵性、正印主吸收与内化；华盖为孤高玄思之星，十灵日主聪慧敏感——三者叠加，故取为直觉与灵感的结构指标。", en: "Basis: Indirect Resource governs perception and spirituality, Direct Resource absorption; the Canopy star marks solitary contemplation and the Ten-Spirit day marks acuity — together they mark intuitive aptitude." },
+    love_structure: { zh: "命理依据：官杀与财星的配置决定亲密里的吸引与投入方式，印星调和情感的接收——由此读出你在爱里的默认结构。", en: "Basis: the interplay of Authority, Wealth and Resource stars sets how attraction and investment work in intimacy — hence your default structure in love." },
+    attraction: { zh: "命理依据：桃花（咸池）主人际吸引与曝光，食伤主表达魅力，财星主流动与机会——共同抬升被看见、被靠近的密度。", en: "Basis: the Peach-Blossom star governs charm and exposure, Output stars expressive appeal, Wealth stars flow and opportunity — together they raise how often you are noticed." },
+    creative_sensitivity: { zh: "命理依据：食伤主创造与输出，偏印主异想与灵感，水木相生主流动与生发——由此取为创造敏感度的结构来源。", en: "Basis: Output stars drive creation, Indirect Resource unconventional imagination, and Water-feeding-Wood the sense of flow — the structural source of creative sensitivity." },
+  };
   if (profile.specialtyAnalysis.length) {
-    chapter(T(lang, "专长与天赋", "Special Aptitudes"), "Where the Chart Sharpens");
     for (const s of profile.specialtyAnalysis) {
-      ensure(70);
+      doc.addPage();
       const accent = s.score >= 66 ? "#4f9d6b" : s.score >= 40 ? "#bf9a4e" : "#9a9587";
-      doc.font("kai").fontSize(12.5).fillColor(INK).text(`${s.label} · ${s.descriptor}`, ML, doc.y, { width: W - 50, lineBreak: false });
-      doc.font("en").fontSize(14).fillColor(accent).text(String(s.score), ML + W - 40, doc.y, { width: 40, align: "right", lineBreak: false });
+      mono(T(lang, "专长与天赋", "Special Aptitude"));
+      const ty = doc.y;
+      doc.font("en").fontSize(34).fillColor(accent).text(String(s.score), ML + W - 84, ty - 4, { width: 84, align: "right", lineBreak: false });
+      doc.font("kai").fontSize(24).fillColor(INK).text(s.label, ML, ty, { width: W - 90 });
+      doc.font("hei").fontSize(12).fillColor(accent).text(`${s.descriptor} · ${s.level}`, ML, doc.y + 2, { width: W });
       doc.moveDown(0.5); doc.x = ML;
-      doc.roundedRect(ML, doc.y, W, 5, 2.5).fillColor(TRACK).fill();
-      doc.roundedRect(ML, doc.y, Math.max(4, W * s.score / 100), 5, 2.5).fillColor(accent).fill();
-      doc.y += 12;
-      para(s.summary, INK, 9.5);
-      if (s.evidence.length) labeled(T(lang, "依据", "Evidence"), s.evidence.join("；"), accent);
+      doc.roundedRect(ML, doc.y, W, 8, 4).fillColor(TRACK).fill();
+      doc.roundedRect(ML, doc.y, Math.max(6, W * s.score / 100), 8, 4).fillColor(accent).fill();
+      doc.y += 18;
+      para(s.summary, INK, 12);
+      doc.moveDown(0.2);
+      if (s.evidence.length) labeled(T(lang, "命盘依据", "Chart evidence"), s.evidence.join("；"), accent);
       labeled(T(lang, "提醒", "Caution"), s.caution, "#c85a4c");
-      doc.moveDown(0.3);
-      doc.moveTo(ML, doc.y).lineTo(ML + W, doc.y).lineWidth(0.4).strokeColor(LINE).stroke();
-      doc.moveDown(0.5);
+      // 玄学天赋注释（为什么这些结构代表该天赋）
+      const note = SPECIALTY_NOTE[s.key];
+      if (note) {
+        doc.moveDown(0.4);
+        const ny = doc.y;
+        doc.roundedRect(ML, ny, W, 2, 1).fillColor(accent).fill();
+        doc.y = ny + 8;
+        doc.font("hei").fontSize(9.5).fillColor(FAINT).text(T(lang, note.zh, note.en), ML, doc.y, { width: W, lineGap: 4 });
+      }
     }
   }
-
-  // ── 柒 人格画像 ──────────────────────────────
-  chapter(T(lang, "人格画像", "Persona"), "Who This Chart Describes");
-  h2(`${profile.dominantPersona.name}（${profile.dominantPersona.god}）`);
-  para(profile.dominantPersona.drive.replaceAll(" / ", "、"), SUB, 9.5);
-  para(profile.combinedPersona.summary);
-  doc.moveDown(0.2);
-  chips(profile.identityTags);
 
   // ── 捌 AI 综合评述（后端 DeepSeek 生成，压轴）──
   if (opts.digest) {
