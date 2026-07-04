@@ -104,7 +104,19 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
   const dayEl = profile.energy.dayMaster.element;
   doc.font("hei").fontSize(14).fillColor(INK).text(name, ML, doc.y, { width: W, align: "center" });
   doc.font("hei").fontSize(11).fillColor(SUB).text(`${T(lang, "日主", "Day Master")} ${profile.bazi.dayPillar[0]}${EL_ZH[dayEl]} · ${profile.energy.dayMaster.level} · ${profile.archetype}`, ML, doc.y, { width: W, align: "center" });
-  doc.moveDown(1.4);
+  doc.moveDown(1.1);
+  // 命主八字四柱（封面即见，天干地支按五行上色）
+  const cvPillars = profile.bazi.pillars;
+  const cvLabels = [T(lang, "年", "Y"), T(lang, "月", "M"), T(lang, "日", "D"), T(lang, "时", "H")];
+  const cellW = 66, tableW = cellW * 4, tx0 = ML + (W - tableW) / 2, ty0 = doc.y;
+  cvPillars.forEach((p, i) => {
+    const cx = tx0 + i * cellW;
+    doc.font("hei").fontSize(8).fillColor(FAINT).text(cvLabels[i], cx, ty0, { width: cellW, align: "center" });
+    doc.font("kai").fontSize(22).fillColor(EL_COLOR[GAN_EL[p.gan]] ?? INK).text(p.gan, cx, ty0 + 12, { width: cellW, align: "center" });
+    doc.font("kai").fontSize(22).fillColor(EL_COLOR[ZHI_EL[p.zhi]] ?? INK).text(p.zhi, cx, ty0 + 38, { width: cellW, align: "center" });
+  });
+  doc.y = ty0 + 70;
+  doc.moveDown(0.6);
   doc.font("kai").fontSize(12).fillColor(SUB).text(profile.combinedPersona.name, ML + 40, doc.y, { width: W - 80, align: "center", lineGap: 4 });
   doc.y = PH - 120;
   doc.font("en").fontSize(8.5).fillColor(FAINT).text(`${opts.reportId}   ·   ${opts.generatedAt}`, ML, doc.y, { width: W, align: "center" });
@@ -560,22 +572,22 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
   };
 
   // ── 执行顺序 ────────────────────────────────
-  // 第一部分 · 评定结果（给所有人看）：综合评定(标签+评述) → 五年流年 → 人格 → 行为 → 专长
-  secAssessment();
-  secTiming();
-  secPersona();
-  secBehavior();
-  secSpecialty();
-  // 第二部分 · 底层算法逻辑（需要一定命理了解）
-  partDivider("底层算法逻辑", "The Underlying Method",
-    "以下是这份报告的推算依据：四柱、五行力量、日主强弱、十神分布、标签判定与十二维拆解。这部分展示「结论从哪里来」，需要一点命理基础才能完全看懂——看不懂不影响前面的评定结果。",
-    "What follows is how the report was computed: the pillars, element weights, day-master strength, Ten-God distribution, tag thresholds and the twelve-dimension breakdown. It shows where the conclusions come from and assumes some familiarity with the method.");
-  secTagEvidence();
-  secChart();
-  secElements();
-  secDayMaster();
-  secTenGods();
-  secDims();
+  // 第一部分 · 结论评定（给所有人看）：只放能直接读懂的结论
+  secAssessment();   // 综合评定：性格特点 + 四域标签 + 评述 + 建议
+  secTiming();       // 五年流年评定
+  // 第二部分 · 深度分析（命理底层，需要一定了解）：结论从哪来
+  partDivider("深度分析", "Deep Analysis",
+    "以下是这份报告的推算底层：命主八字四柱、五行力量、日主强弱、十神分布、标签判定、人格与行为拆解、十二维与专长天赋。这部分展示「结论从哪里来」，需要一点命理基础才能完全看懂——看不懂不影响前面的评定。",
+    "What follows is the method beneath the report: the four pillars, element weights, day-master strength, Ten-God distribution, tag thresholds, persona & behaviour breakdown, the twelve dimensions and aptitudes. It shows where the conclusions come from and assumes some familiarity with the method.");
+  secChart();        // 命主八字四柱
+  secElements();     // 五行力量 + 计分明细
+  secDayMaster();    // 日主强弱判定
+  secTenGods();      // 十神分布 + 出处
+  secTagEvidence();  // 标签判定依据（指标+阈值）
+  secPersona();      // 人格画像
+  secBehavior();     // 行为模式
+  secDims();         // 十二维深度画像
+  secSpecialty();    // 专长与天赋
   secDisclaimer();
 
   // 页脚（每页统一：基于 FATE 模型 2.0 生成报告 + 页码）
