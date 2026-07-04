@@ -109,6 +109,7 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
   doc.y = PH - 120;
   doc.font("en").fontSize(8.5).fillColor(FAINT).text(`${opts.reportId}   ·   ${opts.generatedAt}`, ML, doc.y, { width: W, align: "center" });
 
+  const secAssessment = () => {
   // ── 综合评定（第二页：四域标签 + 分数 + 阈值刻度）──
   if (opts.tags) {
     const domains: [keyof PersonaTags, string, string, string][] = [
@@ -147,6 +148,9 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
     }
   }
 
+  };
+
+  const secChart = () => {
   // ── 壹 四柱命盘 ──────────────────────────────
   chapter(T(lang, "四柱命盘", "The Four Pillars"), "The Natal Chart");
   para(T(lang, "四柱是全部推算的起点。天干地支各自属五行，颜色即其五行归属——一眼看出这张盘由什么能量构成。", "The four pillars are the starting point of every calculation. Each stem and branch carries one of the five elements; the colour is that element."), SUB, 9.5);
@@ -169,6 +173,9 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
   });
   doc.y = ry + 6;
 
+  };
+
+  const secElements = () => {
   // ── 贰 五行力量分布 ──────────────────────────
   chapter(T(lang, "五行力量分布", "Five-Element Power"), "How the Elements Weigh");
   para(T(lang, "把命盘里每个字的力量按五行归堆、归一化成百分比。这不是拍脑袋，下方「测算明细」列出每一分的来源。", "Every character's strength is tallied by element and normalised to a percentage. Not guesswork — the breakdown below lists where every point comes from."), SUB, 9.5);
@@ -193,6 +200,9 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
     doc.x = ML; doc.y = y + 13;
   });
 
+  };
+
+  const secDayMaster = () => {
   // ── 叁 日主强弱判定 ──────────────────────────
   chapter(T(lang, "日主强弱判定", "Day-Master Strength"), "Strong or Weak — and Why");
   const dm = profile.energy.dayMaster;
@@ -212,6 +222,9 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
   h2(T(lang, "判定依据", "The Reasoning"));
   dm.reasons.forEach((r) => para(`· ${r}`, SUB, 9));
 
+  };
+
+  const secTenGods = () => {
   // ── 肆 十神分布 ──────────────────────────────
   chapter(T(lang, "十神分布", "Ten-God Distribution"), "Which Forces Dominate");
   para(T(lang, "十神是命盘的「性格算子」。按五类归堆，权重越高，这类心理动力越主导——颜色区分五类。", "The Ten Gods are the chart's personality operators, grouped into five families. Higher weight means a more dominant drive; colour marks the family."), SUB, 9.5);
@@ -234,6 +247,9 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
     doc.x = ML; doc.y = y + 12;
   });
 
+  };
+
+  const secPersona = () => {
   // ── 人格画像（前移，铺满一页）──────────────────
   chapter(T(lang, "人格画像", "Persona"), "Who This Chart Describes");
   const dp = profile.dominantPersona;
@@ -254,6 +270,9 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
   h2(T(lang, "身份标签", "Identity Tags"));
   chips(profile.identityTags);
 
+  };
+
+  const secBehavior = () => {
   // ── 行为模式（traitAnalysis）────────────────────
   if (profile.traitAnalysis.length) {
     chapter(T(lang, "行为模式", "Behaviour Patterns"), "How This Chart Acts");
@@ -269,6 +288,9 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
     }
   }
 
+  };
+
+  const secTiming = () => {
   // ── 流年大运（时运结构：本命冲合 + 大运走势 + 今年流年）──
   {
     chapter(T(lang, "流年大运", "Fortune Cycles"), "Timing — Clashes & Cycles");
@@ -315,8 +337,52 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
             : { z: "流年与日支无直接刑冲，节奏相对平顺", e: "no direct clash with the day branch this year", c: "#9a9587" };
       para(T(lang, `${rel.z}——${rel.z.includes("冲") ? "核心关系与既定节奏更容易被外部事件打断或加速，宜提前商量、多留确认时间。" : rel.z.includes("合") ? "环境与核心宫位更容易配合，是推进的顺手窗口。" : rel.z.includes("值太岁") ? "自我课题被放大，容易生出重新选择的冲动，落地前多给自己一个季度观察。" : "外部结构不加戏，质量取决于经营本身。"}`, `${rel.e}.`), rel.c, 11);
     }
+  
+    // —— 未来五年流年评定（含冲克合 / 桃花 / 驿马 / 补耗）——
+    const GANS = "甲乙丙丁戊己庚辛壬癸", ZHIS = "子丑寅卯辰巳午未申酉戌亥";
+    const gzOf = (y: number) => { const i = ((y - 1984) % 60 + 60) % 60; return GANS[i % 10] + ZHIS[i % 12]; };
+    const ganEl: Record<string, string> = GAN_EL;
+    const peachOf = (b: string) => ["寅","午","戌"].includes(b) ? "卯" : ["亥","卯","未"].includes(b) ? "子" : ["申","子","辰"].includes(b) ? "酉" : "午";
+    const horseOf = (b: string) => ["申","子","辰"].includes(b) ? "寅" : ["寅","午","戌"].includes(b) ? "申" : ["巳","酉","丑"].includes(b) ? "亥" : "巳";
+    const favSet = new Set<string>(profile.energy.dayMaster.favorable);
+    const unfavSet = new Set<string>(profile.energy.dayMaster.unfavorable);
+    const db = profile.bazi.dayPillar[1];
+    const yb = profile.bazi.yearPillar[1];
+    if (db) {
+      h2(T(lang, "未来五年流年", "The Next Five Years"));
+      para(T(lang, "逐年看流年地支与你命盘的关系：冲/合婚姻宫、桃花与驿马是否引动、当年五行对你是补还是耗。刻度色即倾向——红为动荡、绿为顺、金为变。", "Year by year: whether the annual branch clashes or combines your marriage palace, whether the Peach-Blossom or Travel star is triggered, and whether the year's element feeds or drains you."), FAINT, 9);
+      const baseYear = profile.luckCycles.currentYear || new Date().getFullYear();
+      for (let k = 0; k < 5; k++) {
+        const y = baseYear + k, gz = gzOf(y), zhi = gz[1], stem = gz[0];
+        const signals: { t: string; c: string }[] = [];
+        if (clashMap[zhi] === db) signals.push({ t: T(lang, "冲婚姻宫", "clash palace"), c: "#c85a4c" });
+        else if (combineMap[zhi] === db) signals.push({ t: T(lang, "合婚姻宫", "combine palace"), c: "#4f9d6b" });
+        else if (zhi === yb) signals.push({ t: T(lang, "值太岁", "same as year"), c: "#bf9a4e" });
+        if (zhi === peachOf(db) || zhi === peachOf(yb)) signals.push({ t: T(lang, "桃花", "peach-blossom"), c: "#c96f7d" });
+        if (zhi === horseOf(db) || zhi === horseOf(yb)) signals.push({ t: T(lang, "驿马", "travel"), c: "#bf9a4e" });
+        const el = ganEl[stem];
+        if (favSet.has(el)) signals.push({ t: T(lang, "补气", "feeds you"), c: "#4f9d6b" });
+        else if (unfavSet.has(el)) signals.push({ t: T(lang, "耗气", "drains you"), c: "#9a9587" });
+        ensure(22); const yy = doc.y;
+        doc.font("kai").fontSize(13).fillColor(k === 0 ? CINNABAR : INK).text(`${y}`, ML, yy, { width: 40, lineBreak: false });
+        doc.font("hei").fontSize(11).fillColor(SUB).text(gz, ML + 44, yy + 1, { width: 40, lineBreak: false });
+        let sx = ML + 96;
+        if (!signals.length) signals.push({ t: T(lang, "平顺", "steady"), c: "#9a9587" });
+        for (const sig of signals) {
+          const w = doc.font("hei").fontSize(8.5).widthOfString(sig.t) + 12;
+          doc.roundedRect(sx, yy, w, 15, 4).fillColor(sig.c).fill();
+          doc.fillColor("#fff").fontSize(8.5).text(sig.t, sx + 6, yy + 2.5, { lineBreak: false });
+          sx += w + 5;
+        }
+        doc.x = ML; doc.y = yy + 20;
+      }
+    }
+
   }
 
+  };
+
+  const secDims = () => {
   // ── 十二维深度画像 ────────────────────────
   const CAT_COLOR: Record<string, string> = { "亲密与安全": "#4a7fb0", "沟通与连接": "#4f9d6b", "边界与冲突": "#c85a4c", "成长与行动": "#bf9a4e" };
   chapter(T(lang, "十二维深度画像", "Twelve-Dimension Profile"), "Derived Personality — In Full");
@@ -388,6 +454,9 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
     d.sceneInsights.forEach((s) => labeled(`${s.scene}·${s.title}`, s.text, accent));
   }
 
+  };
+
+  const secSpecialty = () => {
   // ── 专长与天赋（一节一页 + 命理注释：为什么这些结构代表该天赋）──
   // 注释固定表：说明每类天赋在命理上由哪些结构支撑（偏印/正印/华盖/十灵/桃花等）
   const SPECIALTY_NOTE: Record<string, { zh: string; en: string }> = {
@@ -425,6 +494,9 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
     }
   }
 
+  };
+
+  const secAI = () => {
   // ── 捌 AI 综合评述（后端 DeepSeek 生成，压轴）──
   if (opts.digest) {
     chapter(T(lang, "综合评述", "Holistic Reading"), opts.digest.source === "ai" ? "Composed by FATE narrative layer" : "Deterministic edition");
@@ -440,11 +512,46 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
     }
   }
 
+  };
+
+  const secDisclaimer = () => {
   // ── 免责 ────────────────────────────────────
   chapter(T(lang, "免责声明", "Disclaimer"), "Disclaimer");
   para(T(lang,
     "本报告由 FATE 模型 2.0 基于传统历法结构与行为模型推演生成，内容仅供娱乐与自我认知参考，不构成婚恋、医疗、心理、法律或投资建议，不作任何吉凶祸福的断言或承诺。报告呈现的是结构与倾向，真实的人生由你的选择决定。",
     "This report is generated by FATE Model 2.0 from traditional calendrical structures and behavioural modelling, for entertainment and self-reflection only. It is not relationship, medical, psychological, legal, or financial advice, and makes no claim about fortune. It shows structures and tendencies; your life is shaped by your choices."), SUB, 9.5);
+
+  };
+
+
+  // —— 第二部分分隔页：告知用户以下是底层算法逻辑 ——
+  const partDivider = (zh: string, en: string, note: string, noteEn: string) => {
+    doc.addPage(); doc.y = 300;
+    doc.font("en").fontSize(9).fillColor(CINNABAR).text("PART TWO", ML, doc.y, { width: W, align: "center", characterSpacing: 3 });
+    doc.moveDown(1);
+    doc.font("kai").fontSize(30).fillColor(INK).text(T(lang, zh, en), ML, doc.y, { width: W, align: "center" });
+    doc.moveDown(1.2);
+    doc.font("hei").fontSize(11).fillColor(SUB).text(T(lang, note, noteEn), ML + 60, doc.y, { width: W - 120, align: "center", lineGap: 5 });
+  };
+
+  // ── 执行顺序 ────────────────────────────────
+  // 第一部分 · 评定结果（给所有人看）
+  secAssessment();
+  secTiming();
+  secPersona();
+  secBehavior();
+  secSpecialty();
+  secAI();
+  // 第二部分 · 底层算法逻辑（需要一定命理了解）
+  partDivider("底层算法逻辑", "The Underlying Method",
+    "以下是这份报告的推算依据：四柱、五行力量、日主强弱、十神分布与十二维拆解。这部分展示「结论从哪里来」，需要一点命理基础才能完全看懂——看不懂不影响前面的评定结果。",
+    "What follows is how the report was computed: the pillars, element weights, day-master strength, Ten-God distribution and the twelve-dimension breakdown. It shows where the conclusions come from and assumes some familiarity with the method.");
+  secChart();
+  secElements();
+  secDayMaster();
+  secTenGods();
+  secDims();
+  secDisclaimer();
 
   // 页脚（每页统一：基于 FATE 模型 2.0 生成报告 + 页码）
   // 关键：页脚 y 在底边距之下，必须先把该页 bottom 边距设 0，否则 pdfkit 判为溢出→每写一次多开一张空白页
