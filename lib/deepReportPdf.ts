@@ -109,45 +109,51 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
   doc.y = PH - 120;
   doc.font("en").fontSize(8.5).fillColor(FAINT).text(`${opts.reportId}   ·   ${opts.generatedAt}`, ML, doc.y, { width: W, align: "center" });
 
+  // 综合评定（第二页）：性格特点标题 + 四域(标签 + 触发指标 + AI 评述 + 建议)
   const secAssessment = () => {
-  // ── 综合评定（第二页：四域标签 + 分数 + 阈值刻度）──
-  if (opts.tags) {
-    const domains: [keyof PersonaTags, string, string, string][] = [
-      ["love", "感情", "Love", "#c96f7d"], ["career", "事业", "Career", "#bf9a4e"],
-      ["social", "人际", "Social", "#4f9d6b"], ["energy", "能量·时运", "Energy", "#4a7fb0"],
-    ];
-    chapter(T(lang, "综合评定", "Overall Assessment"), "Persona Tags at a Glance");
-    para(T(lang, "把命盘一次性读成四个领域的人话标签，每个标签下方给出触发它的指标分数——刻度线是命中阈值，条越过线，标签才成立。", "The chart read at a glance into tags across four domains. Under each tag are the metric scores that triggered it — the tick marks the threshold; the bar crossing it is why the tag holds."), SUB, 10);
-    doc.moveDown(0.2);
-    for (const [key, zh, en, color] of domains) {
-      const hits = opts.tags[key];
-      if (!hits?.length) continue;
-      ensure(30);
-      doc.font("kai").fontSize(14).fillColor(color).text(T(lang, zh, en), ML, doc.y, { width: W });
+    chapter(T(lang, "综合评定", "Overall Assessment"), "Who You Are");
+    // 性格特点评定：AI 一句话人设 + 主轴人格
+    if (opts.digest?.headline) {
+      doc.font("kai").fontSize(19).fillColor(CINNABAR).text(`「${opts.digest.headline}」`, ML, doc.y, { width: W });
       doc.moveDown(0.3);
-      for (const hit of hits) {
-        ensure(20 + hit.metrics.length * 15);
-        // 标签名（药丸）
-        const tw = doc.font("hei").fontSize(10.5).widthOfString(hit.tag) + 18;
-        doc.roundedRect(ML, doc.y, tw, 17, 5).fillColor(color).fill();
-        doc.fillColor("#fff").fontSize(10.5).text(hit.tag, ML + 9, doc.y + 3, { lineBreak: false });
-        doc.x = ML; doc.y += 22;
-        // 指标条（带阈值刻度）
-        for (const m of hit.metrics) {
-          ensure(15); const y = doc.y, lw = 96, barLeft = ML + lw, barW = W - lw - 40;
-          doc.font("hei").fontSize(9).fillColor(SUB).text(m.label, ML + 8, y + 1, { width: lw - 12, lineBreak: false });
-          doc.roundedRect(barLeft, y + 2, barW, 6, 3).fillColor(TRACK).fill();
-          doc.roundedRect(barLeft, y + 2, Math.max(4, barW * Math.min(100, m.value) / 100), 6, 3).fillColor(color).fill();
-          if (m.t !== undefined) { const tx = barLeft + barW * Math.min(100, m.t) / 100; doc.moveTo(tx, y).lineTo(tx, y + 10).lineWidth(1).strokeColor(INK).stroke(); }
-          doc.font("en").fontSize(8.5).fillColor(color).text(String(m.value), barLeft + barW + 6, y, { width: 30, lineBreak: false });
-          doc.x = ML; doc.y = y + 14;
-        }
-        doc.moveDown(0.25);
-      }
-      doc.moveDown(0.2);
     }
-  }
-
+    doc.font("hei").fontSize(10.5).fillColor(SUB).text(`${T(lang, "性格特点", "Character")}：${profile.archetype} · ${profile.dominantPersona.name}（${profile.dominantPersona.god}）`, ML, doc.y, { width: W });
+    doc.moveDown(0.2);
+    para(profile.combinedPersona.summary, INK, 11);
+    doc.moveDown(0.3);
+    // 四域：标签 → 触发指标 → AI 评述 → 建议
+    const domains: { tagKey: keyof PersonaTags; pageKey: keyof DeepDigest["pages"]; zh: string; en: string; color: string }[] = [
+      { tagKey: "love", pageKey: "love", zh: "感情", en: "Love", color: "#c96f7d" },
+      { tagKey: "career", pageKey: "career", zh: "事业", en: "Career", color: "#bf9a4e" },
+      { tagKey: "social", pageKey: "social", zh: "人际", en: "Social", color: "#4f9d6b" },
+      { tagKey: "energy", pageKey: "season", zh: "时运", en: "Timing", color: "#4a7fb0" },
+    ];
+    for (const dom of domains) {
+      const hits = opts.tags?.[dom.tagKey] ?? [];
+      const page = opts.digest?.pages[dom.pageKey];
+      ensure(80);
+      // 领域标题
+      doc.font("kai").fontSize(16).fillColor(dom.color).text(T(lang, dom.zh, dom.en), ML, doc.y, { width: W });
+      doc.moveDown(0.35);
+      // 标签药丸（横排）
+      if (hits.length) {
+        let tx = ML;
+        for (const hit of hits) {
+          const tw = doc.font("hei").fontSize(10).widthOfString(hit.tag) + 18;
+          if (tx + tw > ML + W) { tx = ML; doc.y += 22; ensure(22); }
+          doc.roundedRect(tx, doc.y, tw, 17, 5).fillColor(dom.color).fill();
+          doc.fillColor("#fff").fontSize(10).text(hit.tag, tx + 9, doc.y + 3, { lineBreak: false });
+          tx += tw + 6;
+        }
+        doc.x = ML; doc.y += 24;
+      }
+      // AI 评述 + 建议
+      if (page) {
+        para(page.essay, INK, 11);
+        labeled(T(lang, "建议", "Advice"), page.advice, dom.color);
+      }
+      doc.moveDown(0.5);
+    }
   };
 
   const secChart = () => {
@@ -496,22 +502,41 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
 
   };
 
-  const secAI = () => {
-  // ── 捌 AI 综合评述（后端 DeepSeek 生成，压轴）──
-  if (opts.digest) {
-    chapter(T(lang, "综合评述", "Holistic Reading"), opts.digest.source === "ai" ? "Composed by FATE narrative layer" : "Deterministic edition");
-    doc.font("kai").fontSize(15).fillColor(CINNABAR).text(`「${opts.digest.headline}」`, ML, doc.y, { width: W });
-    doc.moveDown(0.6);
-    const chapterMap: [keyof DeepDigest["pages"], string, string][] = [["love", "感情", "Love"], ["career", "事业", "Career"], ["social", "人际", "Social"], ["season", "时运", "Timing"]];
-    for (const [key, zh, en] of chapterMap) {
-      const page = opts.digest.pages[key];
-      h2(T(lang, zh, en));
-      para(page.essay, INK, 10);
-      labeled(T(lang, "建议", "Advice"), page.advice, CINNABAR);
-      doc.moveDown(0.4);
+  // 标签判定依据（第二部分）：每个综合评定标签由哪些指标+阈值触发（分数条+阈值刻度线）
+  const secTagEvidence = () => {
+    if (!opts.tags) return;
+    const domains: [keyof PersonaTags, string, string, string][] = [
+      ["love", "感情", "Love", "#c96f7d"], ["career", "事业", "Career", "#bf9a4e"],
+      ["social", "人际", "Social", "#4f9d6b"], ["energy", "能量·时运", "Energy", "#4a7fb0"],
+    ];
+    chapter(T(lang, "标签判定依据", "How the Tags Were Assigned"), "Metrics & Thresholds");
+    para(T(lang, "前面综合评定的每个标签，都由指标分数越过命中阈值触发。下方给出每个标签的判定指标——竖线是阈值，条越过线，标签才成立。", "Each tag in the assessment is triggered by metric scores crossing a threshold. Below are the metrics behind each tag — the tick is the threshold; a bar past it is why the tag holds."), SUB, 9.5);
+    doc.moveDown(0.2);
+    for (const [key, zh, en, color] of domains) {
+      const hits = opts.tags[key];
+      if (!hits?.length) continue;
+      ensure(30);
+      doc.font("kai").fontSize(14).fillColor(color).text(T(lang, zh, en), ML, doc.y, { width: W });
+      doc.moveDown(0.3);
+      for (const hit of hits) {
+        ensure(20 + hit.metrics.length * 15);
+        const tw = doc.font("hei").fontSize(10).widthOfString(hit.tag) + 16;
+        doc.roundedRect(ML, doc.y, tw, 16, 5).fillColor(color).fill();
+        doc.fillColor("#fff").fontSize(10).text(hit.tag, ML + 8, doc.y + 2.5, { lineBreak: false });
+        doc.x = ML; doc.y += 21;
+        for (const m of hit.metrics) {
+          ensure(15); const y = doc.y, lw = 100, barLeft = ML + lw, barW = W - lw - 40;
+          doc.font("hei").fontSize(9).fillColor(SUB).text(m.label, ML + 8, y + 1, { width: lw - 12, lineBreak: false });
+          doc.roundedRect(barLeft, y + 2, barW, 6, 3).fillColor(TRACK).fill();
+          doc.roundedRect(barLeft, y + 2, Math.max(4, barW * Math.min(100, m.value) / 100), 6, 3).fillColor(color).fill();
+          if (m.t !== undefined) { const tx = barLeft + barW * Math.min(100, m.t) / 100; doc.moveTo(tx, y).lineTo(tx, y + 10).lineWidth(1).strokeColor(INK).stroke(); }
+          doc.font("en").fontSize(8.5).fillColor(color).text(String(m.value), barLeft + barW + 6, y, { width: 30, lineBreak: false });
+          doc.x = ML; doc.y = y + 14;
+        }
+        doc.moveDown(0.2);
+      }
+      doc.moveDown(0.15);
     }
-  }
-
   };
 
   const secDisclaimer = () => {
@@ -535,17 +560,17 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
   };
 
   // ── 执行顺序 ────────────────────────────────
-  // 第一部分 · 评定结果（给所有人看）
+  // 第一部分 · 评定结果（给所有人看）：综合评定(标签+评述) → 五年流年 → 人格 → 行为 → 专长
   secAssessment();
   secTiming();
   secPersona();
   secBehavior();
   secSpecialty();
-  secAI();
   // 第二部分 · 底层算法逻辑（需要一定命理了解）
   partDivider("底层算法逻辑", "The Underlying Method",
-    "以下是这份报告的推算依据：四柱、五行力量、日主强弱、十神分布与十二维拆解。这部分展示「结论从哪里来」，需要一点命理基础才能完全看懂——看不懂不影响前面的评定结果。",
-    "What follows is how the report was computed: the pillars, element weights, day-master strength, Ten-God distribution and the twelve-dimension breakdown. It shows where the conclusions come from and assumes some familiarity with the method.");
+    "以下是这份报告的推算依据：四柱、五行力量、日主强弱、十神分布、标签判定与十二维拆解。这部分展示「结论从哪里来」，需要一点命理基础才能完全看懂——看不懂不影响前面的评定结果。",
+    "What follows is how the report was computed: the pillars, element weights, day-master strength, Ten-God distribution, tag thresholds and the twelve-dimension breakdown. It shows where the conclusions come from and assumes some familiarity with the method.");
+  secTagEvidence();
   secChart();
   secElements();
   secDayMaster();
