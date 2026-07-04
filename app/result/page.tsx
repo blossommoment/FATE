@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { CSSProperties } from "react";
-import { analyzeAnnualFlow, analyzeBirth, analyzeRelationship, matchProfiles, monthGanZhi, validateBirth } from "@/lib/fate";
-import type { BirthInput } from "@/lib/types";
+import { analyzeAnnualFlow, analyzeBirth, analyzeDuoRhythm, analyzeRelationship, matchProfiles, monthGanZhi, validateBirth } from "@/lib/fate";
+import type { BirthInput, PairMetric } from "@/lib/types";
 import ChatAssistant from "@/components/ChatAssistant";
 import InviteShare from "@/components/InviteShare";
 import ShareCard from "@/components/ShareCard";
@@ -11,6 +11,31 @@ import PlotPanel, { PlotTrigger } from "@/components/PlotPanel";
 import { askDeepSeek } from "@/lib/deepseek";
 
 const labels = { extroversion: "外向表达", stability: "情绪稳定", control: "边界控制", emotion: "情感感知" };
+// 六维分数构成说明：与 compatibilityBreakdown 的合成要素一一对应，回答「这个分数哪来的」
+const DIM_FORMULA: Record<string, string> = {
+  attraction: "五行互补 × 外向表达差 × 合会增益",
+  emotional: "情绪浓度接近度 × 稳定托底 × 印星支持",
+  expression: "表达强度差 × 双方食伤结构 × 情绪差",
+  power: "边界控制差 × 空间需求差 × 冲克压力",
+  daily: "推进节奏差 × 新鲜感差 × 日支结构",
+  repair: "压力韧性 × 冲突表达差 × 合冲结构",
+};
+// 双人对比条：正文只写定性结论，数字一律走图形（对应 PairMetric；b 缺省时渲染单条）
+const clampBar = (value: number) => Math.min(100, Math.max(4, value));
+function PairBars({ metrics, aName, bName }: { metrics: PairMetric[]; aName: string; bName: string }) {
+  if (!metrics.length) return null;
+  const hasPair = metrics.some((metric) => metric.b !== undefined);
+  return <div className="pair-bars">
+    {hasPair && <div className="pair-bars-legend"><span className="legend-a">{aName}</span><span className="legend-b">{bName}</span></div>}
+    {metrics.map((metric) => <div className="pair-bar-row" key={metric.label}>
+      <span>{metric.label}</span>
+      <div className="pair-lines">
+        <div className="pair-line"><i className="pair-track"><b className={metric.b !== undefined ? "pair-fill-a" : "pair-fill-solo"} style={{ width: `${clampBar(metric.a)}%` }} /></i><em>{metric.a}</em></div>
+        {metric.b !== undefined && <div className="pair-line"><i className="pair-track"><b className="pair-fill-b" style={{ width: `${clampBar(metric.b)}%` }} /></i><em>{metric.b}</em></div>}
+      </div>
+    </div>)}
+  </div>;
+}
 const elementLabels = { wood: "木", fire: "火", earth: "土", metal: "金", water: "水" };
 const socialLabels: Record<string, string> = {
   low: "低", medium: "中等", high: "高", slow: "慢热", fast: "快速",
@@ -66,7 +91,8 @@ export async function ResultContent({
     title: selectedDeep.label, summary: selectedDeep.summary, evidence: [...selectedDeep.evidence, `命盘量化分数 ${selectedDeep.score}`],
     suggestions: ["为什么这个分数高？", "反向信号是什么？", "能举个生活例子吗？"],
   } : selectedInteraction ? {
-    title: selectedInteraction.label, summary: selectedInteraction.summary, evidence: [selectedInteraction.summary, selectedInteraction.advice],
+    title: selectedInteraction.label, summary: selectedInteraction.summary,
+    evidence: [selectedInteraction.summary, ...selectedInteraction.metrics.map((metric) => metric.b !== undefined ? `${metric.label} ${metric.a}:${metric.b}` : `${metric.label} ${metric.a}`), selectedInteraction.advice],
     suggestions: ["为什么会这样互动？", "冲突时具体怎么做？", "双方谁更需要安全感？"],
   } : view === "match" && relationship && partnerProfile ? {
     title: `${birth.name ?? "我"}与${partnerBirth?.name ?? "TA"}的${relationship.relationType}合盘`,
@@ -189,8 +215,11 @@ export async function ResultContent({
     ["适应", profile.traitAnalysis[7].score, partnerProfile.traitAnalysis[7].score],
   ] as [string, number, number][] : [];
   const duoGrid = (radius: number) => duoDimensions.map((_, index) => polygonPoint(index, 6, radius)).join(" ");
-  const duoMine = duoDimensions.map((item, index) => polygonPoint(index, 6, 112 * item[1] / 100)).join(" ");
-  const duoTheirs = duoDimensions.map((item, index) => polygonPoint(index, 6, 112 * item[2] / 100)).join(" ");
+  // 雷达按本图数据动态定标：最大值落在约九成半径处，避免中低分盘挤成小团（标签仍显示原始分）
+  const duoScale = Math.max(55, ...duoDimensions.map((item) => Math.max(item[1], item[2]))) / 0.9;
+  const duoRadius = (score: number) => 112 * Math.min(1, score / duoScale);
+  const duoMine = duoDimensions.map((item, index) => polygonPoint(index, 6, duoRadius(item[1]))).join(" ");
+  const duoTheirs = duoDimensions.map((item, index) => polygonPoint(index, 6, duoRadius(item[2]))).join(" ");
   const elementColors = { wood: "#58a878", fire: "#e66e5e", earth: "#d6a64f", metal: "#86a3ad", water: "#5b83bd" };
   const elementRadar = (Object.entries(profile.bazi.elementStrength) as [keyof typeof elementLabels, number][]).map(([key, value]) => ({
     key, label: elementLabels[key], value, color: elementColors[key],
@@ -637,13 +666,14 @@ export async function ResultContent({
           const moduleBase = `/?${baseQuery}&view=match${partnerQuery}`;
           const dscore = (target: typeof profile, key: string) => target.deepAnalysis.find((item) => item.key === key)?.score ?? 50;
           const bestDim = relationship.scoreBreakdown.slice().sort((x, y) => y.score - x.score)[0];
+          const duoRhythm = analyzeDuoRhythm(profile, partnerProfile, relationType, new Date().getFullYear(), 5);
           const moduleMeta = [
             { key: "dimensions", no: "壹", title: "关系总览", subtitle: "总分、六维与剧本", teaser: relationship.spine.thesis },
-            { key: "nature", no: "贰", title: "两人底色", subtitle: "各自的性情与出厂设置", teaser: relationship.guide.dispositions[0]?.trait ?? "结构安稳，各有分寸" },
+            { key: "nature", no: "贰", title: "两人底色", subtitle: "使用说明书与最不一样的三处", teaser: `${userNameSafe}与${partnerNameSafe}，各一份说明书` },
             { key: "structure", no: "叁", title: "八字化学反应", subtitle: "两张命盘如何咬合", teaser: relationship.branchDynamics[0]?.title ?? "无强合冲，互动由行为层主导" },
             { key: "manner", no: "肆", title: "相处样态", subtitle: "日常里的你们：谁主动、谁吃醋", teaser: relationship.guide.behaviors[1]?.conclusion ?? relationship.guide.behaviors[0].conclusion },
             { key: "reef", no: "伍", title: "摩擦与化解", subtitle: "最容易起分歧的具体情景", teaser: relationship.guide.hotspots[0].scene },
-            { key: "voyage", no: "陆", title: "长线经营", subtitle: "给这段关系的行动建议", teaser: `先动的人：${relationship.guide.initiator.name}` },
+            { key: "rhythm", no: "陆", title: "未来五年", subtitle: "逐年倾向、结构信号与排期", teaser: `${duoRhythm[0].year} ${duoRhythm[0].ganZhi} · ${duoRhythm[0].tendencies[0] ? `${duoRhythm[0].tendencies[0].label}倾向` : "无强倾向"}` },
             { key: "summary", no: "柒", title: "总结与要点", subtitle: "判词回顾与全景收束", teaser: `判词：${relationship.guide.verdict.title}` },
           ];
           const activeIndex = moduleMeta.findIndex((item) => item.key === moduleKey);
@@ -720,6 +750,7 @@ export async function ResultContent({
               <p className="verdict-quip">{relationship.guide.verdict.quip}</p>
               <p>{relationship.guide.verdict.tagline}</p>
               <small className="hero-basis">判据：{relationship.guide.verdict.basis}</small>
+              <PairBars metrics={relationship.guide.verdict.metrics} aName={userNameSafe} bName={partnerNameSafe} />
             </div>
           </div>
           <div className="match-keypoints">
@@ -796,8 +827,8 @@ export async function ResultContent({
                   <polygon points={duoMine} className="duo-mine" />
                   <polygon points={duoTheirs} className="duo-theirs" />
                   {duoDimensions.flatMap((item, index) => {
-                    const [mineX, mineY] = polygonPoint(index, 6, 112 * item[1] / 100).split(",");
-                    const [theirX, theirY] = polygonPoint(index, 6, 112 * item[2] / 100).split(",");
+                    const [mineX, mineY] = polygonPoint(index, 6, duoRadius(item[1])).split(",");
+                    const [theirX, theirY] = polygonPoint(index, 6, duoRadius(item[2])).split(",");
                     return [<circle key={`${item[0]}-mine`} className="duo-dot-mine" cx={mineX} cy={mineY} r="4" />, <circle key={`${item[0]}-theirs`} className="duo-dot-theirs" cx={theirX} cy={theirY} r="4" />];
                   })}
                 </svg>
@@ -820,12 +851,12 @@ export async function ResultContent({
                   if (!scoreItem || !cardItem) return null;
                   return <article id={`match-card-${cardItem.key}`} key={cardItem.key}>
                     <div className="dimension-head">
-                      <div><small>0{index + 1} · {scoreItem.label} · 权重 {scoreItem.weight}%</small><h4>{cardItem.label}</h4></div>
+                      <div><small>0{index + 1} · {scoreItem.label}</small><h4>{cardItem.label}</h4></div>
                       <strong>{scoreItem.score}</strong>
                     </div>
                     <i className="dimension-bar"><b style={{ width: `${scoreItem.score}%` }} /></i>
-                    <p>{cardItem.summary}</p>
-                    <div className="interaction-advice"><b>相处建议</b>{cardItem.advice}</div>
+                    <p>{scoreItem.summary}</p>
+                    <small className="dim-formula">构成：{DIM_FORMULA[scoreItem.key] ?? ""}</small>
                     <Link className="logic-link" href={`${moduleBase}&module=dimensions&detail=${cardItem.key}#match-card-${cardItem.key}`}>查看双方推理 <span>→</span></Link>
                   </article>;
                 })}
@@ -867,7 +898,7 @@ export async function ResultContent({
                   <div className="dynamic-body">
                     <h4>{dynamic.title}</h4>
                     <div className="dynamic-roles"><span>{userNameSafe} · {dynamic.userRole}</span><i>×</i><span>{partnerNameSafe} · {dynamic.partnerRole}</span></div>
-                    <div className="dynamic-source"><span>{userNameSafe}：{dynamic.userPillars.join("、")}</span><span>{partnerNameSafe}：{dynamic.partnerPillars.join("、")}</span><b>{dynamic.scoreImpact > 0 ? "+" : ""}{dynamic.scoreImpact} 分修正</b></div>
+                    <div className="dynamic-source"><span>{userNameSafe}：{dynamic.userPillars.join("、")}</span><span>{partnerNameSafe}：{dynamic.partnerPillars.join("、")}</span><b className={dynamic.scoreImpact > 0 ? "impact-pos" : "impact-neg"}>{dynamic.scoreImpact > 0 ? "增益结构" : "压力结构"}</b></div>
                     <div className="dynamic-strength"><small>结构强度 {dynamic.strength}</small><i><b style={{ width: `${dynamic.strength}%` }} /></i></div>
                     <p>{dynamic.summary}</p><p className="dynamic-scene">{dynamic.scenarioImpact}</p>
                     <aside><b>怎么相处</b>{dynamic.advice}</aside>
@@ -893,7 +924,7 @@ export async function ResultContent({
                 <h4>关系样态判读<small>五项行为断语 · 均附命盘依据</small></h4>
                 {relationship.guide.behaviors.map((item) => <article key={item.label}>
                   <span>{item.label}</span>
-                  <div><strong>{item.conclusion}</strong><p>{item.basis}</p></div>
+                  <div><strong>{item.conclusion}</strong><p>{item.basis}</p><PairBars metrics={item.metrics} aName={userNameSafe} bName={partnerNameSafe} /></div>
                 </article>)}
               </div>
             </section>
@@ -909,63 +940,92 @@ export async function ResultContent({
                   <div className="nature-tags">{target.identityTags.map((tag) => <span key={tag}>{tag}</span>)}</div>
                 </article>)}
               </div>
-              <div className="guide-translation-grid nature-dispositions">
-                {relationship.guide.dispositions.map((item, index) => <article key={`${item.person}-${index}`}>
-                  <header><b>{item.person}</b><span>{item.trait}</span></header>
-                  <p><strong>结构释义</strong>{item.reading}</p>
-                  <p className="guide-response"><strong>相处要领</strong>{item.approach}</p>
-                </article>)}
+              <div className="nature-diffs">
+                <h4>你们最不一样的三处<small>取自双方深度报告 · 结构差值最大的维度</small></h4>
+                {profile.deepAnalysis
+                  .map((item) => { const other = partnerProfile.deepAnalysis.find((entry) => entry.key === item.key); return other ? { key: item.key, label: item.label, mine: item, theirs: other, gap: Math.abs(item.score - other.score) } : null; })
+                  .filter((pair): pair is NonNullable<typeof pair> => pair !== null)
+                  .sort((x, y) => y.gap - x.gap).slice(0, 3)
+                  .map((pair) => <article key={pair.key}>
+                    <PairBars metrics={[{ label: pair.label, a: pair.mine.score, b: pair.theirs.score }]} aName={userNameSafe} bName={partnerNameSafe} />
+                    <div className="diff-cols">
+                      <div><b>{userNameSafe} · {pair.mine.descriptor}</b><p>{pair.mine.summary}</p></div>
+                      <div><b>{partnerNameSafe} · {pair.theirs.descriptor}</b><p>{pair.theirs.summary}</p></div>
+                    </div>
+                  </article>)}
               </div>
-            </section>}
-            {active.key === "reef" && <section className="duo-guide">
-              <p className="guide-philosophy">{relationship.guide.philosophy}</p>
-              <div className="guide-hotspots">
-                <h4>易生摩擦的三种情境<small>按双方结构差值降序排列</small></h4>
-                {relationship.guide.hotspots.map((item, index) => <article key={item.scene}>
-                  <span>0{index + 1}</span>
-                  <div>
-                    <h5>{item.scene}</h5>
-                    <p>{item.risk}</p>
-                    <aside><b>解法</b>{item.playbook}</aside>
+              <div className="nature-manuals">
+                {relationship.guide.manuals.map((manual) => <article key={manual.person}>
+                  <h4>{manual.person} 使用说明书<small>怎么对TA，比懂TA更实用</small></h4>
+                  <div className="manual-cols">
+                    <div><span className="manual-tag manual-do">可以多做</span><ul>{manual.dos.map((entry) => <li key={entry}>{entry}</li>)}</ul></div>
+                    <div><span className="manual-tag manual-dont">尽量别做</span><ul>{manual.donts.map((entry) => <li key={entry}>{entry}</li>)}</ul></div>
                   </div>
                 </article>)}
               </div>
             </section>}
-            {active.key === "voyage" && <section className="duo-guide">
-              <article className="guide-initiator">
-                <i>先</i>
-                <div>
-                  <h4>主动权，建议交给{relationship.guide.initiator.name}</h4>
-                  <p>{relationship.guide.initiator.why}</p>
-                </div>
-              </article>
-              <div className="voyage-path">
-                <article><i>壹</i><div><span>首步</span><p>{relationship.guide.initiator.firstMove}</p></div></article>
-                <article><i>贰</i><div><span>磨合</span><p>{(relationship.guide.hotspots[1] ?? relationship.guide.hotspots[0]).playbook}</p></div></article>
-                <article><i>叁</i><div><span>长线</span><p>{relationship.guide.longRun}</p></div></article>
+            {active.key === "reef" && (() => {
+              const riskCandidates = duoRhythm.map((yearItem) => {
+                const worst = yearItem.tendencies.filter((t) => t.key === "turbulence" || t.key === "change" || t.key === "drain").sort((x, y) => y.value - x.value)[0];
+                return worst ? { year: yearItem.year, label: worst.label, value: worst.value } : null;
+              }).filter((item): item is { year: number; label: string; value: number } => item !== null).sort((x, y) => y.value - x.value);
+              const riskYear = riskCandidates[0];
+              return <section className="duo-guide">
+              <p className="guide-philosophy">{relationship.guide.philosophy}</p>
+              <div className="guide-hotspots">
+                <h4>易生摩擦的三种情境<small>按双方结构差值降序 · 每条标注结构来源，倾向非断言</small></h4>
+                {relationship.guide.hotspots.map((item, index) => <article key={item.scene}>
+                  <span>0{index + 1}</span>
+                  <div>
+                    <h5>{item.scene}</h5>
+                    <small className="hotspot-source">{item.source}</small>
+                    <PairBars metrics={item.metrics} aName={userNameSafe} bName={partnerNameSafe} />
+                    <p>{item.risk}</p>
+                    <aside><b>拆法</b>{item.playbook}</aside>
+                  </div>
+                </article>)}
+                {riskYear && <p className="hotspot-window">未来五年中，{riskYear.year} 年的{riskYear.label}倾向偏高——本章雷区在那样的年份更容易被放大，逐年信号见 陆 · 未来五年。</p>}
               </div>
+            </section>;
+            })()}
+            {active.key === "rhythm" && <section className="duo-guide rhythm-years">
+              <p className="rhythm-note">逐年只列倾向：每条倾向给出倾向值与触发它的结构信号（原因标签，悬停可看解释）——供两个人安排节奏参考，不作吉凶断言。</p>
+              {duoRhythm.map((item) => <article key={item.year} className={`rhythm-year tone-${item.tone}`}>
+                <header className="rhythm-head">
+                  <i>{item.ganZhi}</i>
+                  <div><span>{item.year} 年</span><h4>{item.tendencies.length ? `${item.tendencies[0].label}倾向为主` : "无强倾向"}</h4></div>
+                </header>
+                {item.tendencies.length > 0 && <div className="pair-bars rhythm-bars">
+                  {item.tendencies.map((tendency) => <div className="tendency-block" key={tendency.key}>
+                    <div className="pair-bar-row">
+                      <span>{tendency.label}倾向</span>
+                      <div className="pair-lines"><div className="pair-line"><i className="pair-track"><b className={`tend-${tendency.key}`} style={{ width: `${tendency.value}%` }} /></i><em>{tendency.value}</em></div></div>
+                    </div>
+                    <div className="rhythm-signals">{tendency.causes.map((cause, causeIndex) => <span key={causeIndex} title={cause.detail}>{cause.who} · {cause.label}</span>)}</div>
+                  </div>)}
+                </div>}
+                <p>{item.reading}</p>
+                <aside className="rhythm-advice"><b>这一年怎么过</b>{item.advice}</aside>
+              </article>)}
             </section>}
             {active.key === "summary" && <section className="duo-guide">
               <article className="guide-verdict">
                 <div className="verdict-seal"><small>关系判词</small><strong>{relationship.guide.verdict.title}</strong></div>
                 <div>
-                  <p className="verdict-quip">{relationship.guide.verdict.quip}</p>
-                  <p>{relationship.guide.verdict.tagline}</p>
                   <small>判据：{relationship.guide.verdict.basis}</small>
+                  <p>判词全文在报告首屏——这一章只留印章与全景，不再复述。</p>
                 </div>
               </article>
-              <p className="guide-philosophy">{relationship.guide.philosophy}</p>
               <div className="summary-dims">
                 <h4>六维一览<small>全篇唯一的全景一屏</small></h4>
                 {relationship.scoreBreakdown.map((item) => <div className="summary-dim-row" key={item.key}><span>{item.label}</span><i><b style={{ width: `${item.score}%` }} /></i><small>{item.score}</small></div>)}
               </div>
               <div className="guide-behaviors">
-                <h4>要点回顾<small>最高维度 · 最需留意 · 破局之人</small></h4>
-                <article><span>最高维度</span><div><strong>{bestDim.label} · {bestDim.score} 分</strong><p>{bestDim.summary}</p></div></article>
-                <article><span>最需留意</span><div><strong>{relationship.guide.hotspots[0].scene}</strong><p>{relationship.guide.hotspots[0].playbook}</p></div></article>
-                <article><span>破局之人</span><div><strong>先动的人：{relationship.guide.initiator.name}</strong><p>{relationship.guide.initiator.firstMove}</p></div></article>
+                <h4>要点回顾<small>最高维度 · 最需留意 · 未来五年</small></h4>
+                <article><span>最高维度</span><div><strong>{bestDim.label}</strong><p>{bestDim.summary}</p></div></article>
+                <article><span>最需留意</span><div><strong>{relationship.guide.hotspots[0].scene}</strong><p><Link href={`${moduleBase}&module=reef#match-report`}>拆法见 伍 · 摩擦与化解 →</Link></p></div></article>
+                <article><span>未来五年</span><div><strong>{duoRhythm[0].tendencies[0] ? `开局${duoRhythm[0].tendencies[0].label}倾向` : "开局平稳"}</strong><p><Link href={`${moduleBase}&module=rhythm#match-report`}>逐年倾向与信号见 陆 · 未来五年 →</Link></p></div></article>
               </div>
-              <p className="guide-longrun">{relationship.guide.longRun}</p>
               <Link className="guide-ai" href={`${moduleBase}&module=summary&ask=${encodeURIComponent("综合所有维度点评我们这段关系，并给出三条最重要的相处建议")}#match-report`}>
                 让 AI 结合全部信号，写一份你们的关系点评 <span>→</span>
               </Link>
@@ -1029,7 +1089,7 @@ export async function ResultContent({
           {selectedInteraction && <>
             <div className="logic-result"><strong>{relationship?.score}</strong><div><span>双人关系</span><p>{selectedInteraction.summary}</p></div></div>
             <div className="logic-steps"><h3>双方推导步骤</h3>{selectedInteraction.logic.map((step) => <div key={step}>{step}</div>)}</div>
-            <div className="logic-block"><span>量化证据</span><p>{selectedInteraction.evidence}</p></div>
+            <div className="logic-block"><span>量化证据</span><PairBars metrics={selectedInteraction.metrics} aName={birth.name ?? "我"} bName={partnerBirth?.name ?? "TA"} /></div>
             <div className="logic-block counter"><span>关系原因</span><p>{selectedInteraction.why}</p></div>
             <div className="logic-block verify"><span>建议如何验证</span><p>{selectedInteraction.advice}</p></div>
           </>}

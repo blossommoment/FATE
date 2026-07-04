@@ -1134,6 +1134,218 @@ function elementRoleForDayMaster(dayStem: string, targetElement: string) {
   return "印星";
 }
 
+// ── 双人流年节律：规则表 → 指数合成 → 变体文案 ─────────────────────
+// 合规口径：只输出「压力/窗口」的相对节律与结构信号，不作吉凶祸福断言；
+// 指数走图形呈现，评述文字零数字（与报告全线口径一致）。
+export type DuoYearCause = { label: string; who: string; detail: string };
+// 倾向制输出：不贴「XX之年」标签——每年给若干条倾向（变动/动荡/推进/外缘/耗损），
+// 每条带 0-100 倾向值 + 原因标签（谁·驿马动 / 谁·婚姻宫被冲），值走图形、因走标签。
+export type DuoYearTendency = { key: "change" | "turbulence" | "advance" | "attraction" | "drain"; label: string; value: number; causes: DuoYearCause[] };
+export type DuoYearOutlook = {
+  year: number;
+  ganZhi: string;
+  tone: "boost" | "drain" | "mixed" | "neutral";
+  tendencies: DuoYearTendency[];
+  reading: string;
+  advice: string;
+};
+
+export function analyzeDuoRhythm(a: UserProfile, b: UserProfile, relationType: string, startYear: number, span = 3): DuoYearOutlook[] {
+  const nameA = a.birth.name?.trim() || "你";
+  const nameB = b.birth.name?.trim() || "TA";
+  const palace = relationType === "恋爱" ? "婚姻宫" : "日支";
+  const clashMap: Record<string, string> = { 子: "午", 午: "子", 丑: "未", 未: "丑", 寅: "申", 申: "寅", 卯: "酉", 酉: "卯", 辰: "戌", 戌: "辰", 巳: "亥", 亥: "巳" };
+  const sixMap: Record<string, string> = { 子: "丑", 丑: "子", 寅: "亥", 亥: "寅", 卯: "戌", 戌: "卯", 辰: "酉", 酉: "辰", 巳: "申", 申: "巳", 午: "未", 未: "午" };
+  const peachOf = (base: string) => ["寅", "午", "戌"].includes(base) ? "卯" : ["亥", "卯", "未"].includes(base) ? "子" : ["申", "子", "辰"].includes(base) ? "酉" : "午";
+  const horseOf = (base: string) => ["申", "子", "辰"].includes(base) ? "寅" : ["寅", "午", "戌"].includes(base) ? "申" : ["巳", "酉", "丑"].includes(base) ? "亥" : "巳";
+  const fiveCombine: Record<string, string> = { 甲: "己", 己: "甲", 乙: "庚", 庚: "乙", 丙: "辛", 辛: "丙", 丁: "壬", 壬: "丁", 戊: "癸", 癸: "戊" };
+  const ganZhiOf = (year: number) => { const index = ((year - 1984) % 60 + 60) % 60; return `${"甲乙丙丁戊己庚辛壬癸"[index % 10]}${"子丑寅卯辰巳午未申酉戌亥"[index % 12]}`; };
+  const clampIndex = (value: number) => Math.max(6, Math.min(94, Math.round(value)));
+
+  type PersonYear = { clash: boolean; bond: boolean; peach: boolean; horse: boolean; supply: -1 | 0 | 1; stemBond: boolean; signals: DuoYearCause[] };
+  const personYear = (p: UserProfile, name: string, gz: string): PersonYear => {
+    const stem = gz[0];
+    const branch = gz[1];
+    const dayBranch = p.bazi.dayPillar[1];
+    const yearBranch = p.bazi.yearPillar[1];
+    const flags: PersonYear = { clash: false, bond: false, peach: false, horse: false, supply: 0, stemBond: false, signals: [] };
+    if (clashMap[branch] === dayBranch) { flags.clash = true; flags.signals.push({ label: `${palace}被冲`, who: name, detail: "流年与核心宫位相冲：相处环境与既定节奏容易被外部事件打断或加速" }); }
+    if (sixMap[branch] === dayBranch) { flags.bond = true; flags.signals.push({ label: `${palace}得合`, who: name, detail: "核心宫位得合：安定感上升，是推进关系的顺手年份" }); }
+    if (branch === peachOf(dayBranch) || branch === peachOf(yearBranch)) { flags.peach = true; flags.signals.push({ label: "桃花动", who: name, detail: "被关注与示好的场景密度上升——机会变多不预言结果，筛选权在自己手里" }); }
+    if (branch === horseOf(dayBranch) || branch === horseOf(yearBranch)) { flags.horse = true; flags.signals.push({ label: "驿马动", who: name, detail: "迁移、出行、换环境的概率上升，两人的物理距离这一年可能被重新安排" }); }
+    const yearElement = stemElements[stems.indexOf(stem)];
+    const dayMaster = p.energy.dayMaster;
+    if (dayMaster.level !== "中和") {
+      if (dayMaster.favorable.includes(yearElement)) { flags.supply = 1; flags.signals.push({ label: "喜用补给", who: name, detail: "流年主气落在喜用：个人状态偏顺，留给关系的情绪余量更足" }); }
+      else if (dayMaster.unfavorable.includes(yearElement)) { flags.supply = -1; flags.signals.push({ label: "忌神耗损", who: name, detail: "流年主气落在忌神：个人耗电偏大，情绪余量变薄，易把疲惫带回关系" }); }
+    }
+    if (fiveCombine[p.bazi.dayPillar[0]] === stem) { flags.stemBond = true; flags.signals.push({ label: "日主逢合", who: name, detail: "情感与合作议题被引动，容易遇到走得近的人与事" }); }
+    return flags;
+  };
+
+  // 年度主题规则表：从特殊到一般依次命中；文案变体池按盘面+年份取种子，防千人一面
+  const pick = (slot: string, year: number, variants: string[]) => variants[textSeed(`${a.id}|${b.id}|${year}|${slot}`) % variants.length];
+
+  return Array.from({ length: span }, (_, offset) => {
+    const year = startYear + offset;
+    const gz = ganZhiOf(year);
+    const pa = personYear(a, nameA, gz);
+    const pb = personYear(b, nameB, gz);
+    const clashCount = Number(pa.clash) + Number(pb.clash);
+    const bondCount = Number(pa.bond) + Number(pb.bond);
+    const peachCount = Number(pa.peach) + Number(pb.peach);
+    const horseCount = Number(pa.horse) + Number(pb.horse);
+    const stemBondCount = Number(pa.stemBond) + Number(pb.stemBond);
+    const drainCount = Number(pa.supply === -1) + Number(pb.supply === -1);
+    const supplyCount = Number(pa.supply === 1) + Number(pb.supply === 1);
+    const romantic = relationType === "恋爱";
+
+    // 倾向合成：值=基数+信号加权（走图形），原因=命中的信号标签（可视化溯源）；无因不出、低于阈值不出
+    const allSignals = [...pa.signals, ...pb.signals];
+    const causesOf = (...labels: string[]) => allSignals.filter((signal) => labels.includes(signal.label));
+    const tendencies: DuoYearTendency[] = [];
+    const pushTendency = (key: DuoYearTendency["key"], label: string, value: number, causes: DuoYearCause[]) => {
+      if (causes.length && value >= 30) tendencies.push({ key, label, value: clampIndex(value), causes });
+    };
+    pushTendency("change", "变动", 18 + horseCount * 30 + clashCount * 10, causesOf("驿马动", `${palace}被冲`));
+    pushTendency("turbulence", "动荡", 16 + clashCount * 34, causesOf(`${palace}被冲`));
+    pushTendency("advance", "推进", 20 + bondCount * 30 + stemBondCount * 14 + supplyCount * 8, causesOf(`${palace}得合`, "日主逢合", "喜用补给"));
+    pushTendency("attraction", romantic ? "外缘" : "人缘", 15 + peachCount * 32, causesOf("桃花动"));
+    pushTendency("drain", "耗损", 15 + drainCount * 28, causesOf("忌神耗损"));
+    tendencies.sort((x, y) => y.value - x.value);
+    const dominant = tendencies[0]?.key;
+
+    const themed: { tone: DuoYearOutlook["tone"]; reading: string; advice: string } =
+      clashCount === 2 ? {
+        tone: "drain",
+        reading: pick("exam", year, [
+          `两个人的核心宫位同年受冲，外部变量会轮番敲门——工作变动、环境重排、旧议题翻页，都挤在同一段时间。这一年吵的多半不是感情本身，是被打乱的节奏。把「我们 vs 问题」的站位摆正，年底回头看，这一年会是你们的成年礼。`,
+          `${nameA}和${nameB}这一年都站在自己的颠簸带上，谁也腾不出手当对方的定海针。降低对彼此情绪价值的期待，反而是这一年最高级的体贴——各自扛住自己的部分，剩下的交给分工。`,
+          `同年双冲，意味着你们会在最忙乱的时候看见对方最狼狈的样子。别嫌弃——能一起狼狈还不散的组合，比只见过体面的组合结实一个量级。`,
+        ]),
+        advice: pick("exam-adv", year, [
+          "年初各自列出今年已知的大变动，合成一张「共同风险表」贴出来——预告过的颠簸不伤感情。",
+          "约定一个「休战暗号」：任何一方说出，当天的争执立刻封存，周末再拆。",
+          "每月底做一次十分钟复盘：这个月最难的一件事、对方帮上的一件事。",
+        ]),
+      } : clashCount === 1 && bondCount >= 1 ? {
+        tone: "mixed",
+        reading: pick("uneven", year, [
+          `一个人的年份在颠簸，另一个人的年份在顺流——${pa.clash ? nameA : nameB}这一年被外部事件推着走，${pa.bond ? nameA : nameB}反而处在安定带上。位置不同，视角就不同：顺的一方别把对方的忙乱读成疏远，颠的一方别把对方的平静读成不上心。`,
+          `这一年你们的时差会拉大：一个在赶路，一个在原地看风景。安定的一方多做后勤，颠簸的一方记得报平安——角色说破了，就不会互相误读。`,
+          `同一年，两种天气。${pa.clash ? nameA : nameB}那边风大，${pa.bond ? nameA : nameB}这边天晴——天晴的一方把伞备好就行，不必陪着淋雨；风大的一方也别客气，需要伞的时候直说。`,
+        ]),
+        advice: pick("uneven-adv", year, [
+          "由安定的一方牵头定每月一次的固定约会——动荡年里，可预期的重复就是压舱石。",
+          "颠簸一方每周主动同步一次近况，哪怕只有三句话；沉默才是这种年份真正的风险。",
+          "把大决定尽量排给安定一方的主场处理，另一方只出意见不扛执行。",
+        ]),
+      } : dominant === "turbulence" ? {
+        tone: "mixed",
+        reading: pick("bump", year, [
+          `${pa.clash ? nameA : nameB}的核心宫位这一年受冲，生活半径里会有明显的变动感——环境、身份或节奏至少动一样。关系里的表现通常是：陪伴时间被挤压、情绪被外部事件带走。这不是感情降温，是带宽被占用。`,
+          `这一年${pa.clash ? nameA : nameB}的日程表说了算的部分会变少。另一方要做的不是追问，是把自己活成对方忙乱里最省心的那部分。`,
+          `冲不是坏字，是「动」字。${pa.clash ? nameA : nameB}这一年反正要动起来，与其抵抗，不如两个人一起给这场变动找个好方向——被动挨的颠簸是消耗，主动选的变化是升级。`,
+        ]),
+        advice: pick("bump-adv", year, [
+          "把「今年我最需要你怎么配合」这个问题在年初互相问一遍，答案写下来。",
+          "变动落地前先同步再决定——哪怕结论不变，被提前告知本身就是安全感。",
+          "每季度留一个完整的两人日：变动年里，成块的共处时间比零碎的问候值钱。",
+        ]),
+      } : dominant === "advance" ? {
+        tone: "boost",
+        reading: pick("window", year, [
+          `两个人的安定信号同年亮起，这是关系里少见的「双绿灯」年份——环境配合、情绪有余量、彼此都接得住。想推进的事（同居、见家人、共同计划）放在这一年，阻力最小。`,
+          `这一年你们难得地站在同一段顺流里。顺的时候人容易懒——别把窗口期过成日常，窗口的意义是干大事。`,
+          `合的年份，适合把关系里悬而未决的议题一件件落地。${nameA}和${nameB}都在状态里，谈什么都比往年容易谈成。`,
+        ]),
+        advice: pick("window-adv", year, [
+          "年初一起写下今年想一起完成的一件大事，贴在两个人都看得见的地方。",
+          "把搁置已久的那个「以后再说」拿出来重谈——这一年谈，成功率最高。",
+          "留一笔共同预算做一次像样的旅行：顺年攒下的共同记忆，是逆年的储备粮。",
+        ]),
+      } : dominant === "change" ? {
+        tone: "mixed",
+        reading: pick("horse", year, [
+          `${pa.horse && pb.horse ? "两个人的驿马同年引动" : `${pa.horse ? nameA : nameB}的驿马这一年引动`}，搬家、换城市、频繁出差这类「物理位移」的概率明显上升。距离结构一变，相处模式就得跟着改版——提前改，主动权在你们手里。`,
+          `这一年的关键词是「移动」。${pa.horse ? nameA : nameB}的生活半径可能重画，两个人的见面成本会被重新定价——成本变了不可怕，可怕的是假装它没变。`,
+          `驿马动的年份有个规律：距离本身不伤人，对距离的沉默才伤人。有变动的苗头就第一时间摆上桌一起商量，别让对方从别处听说——知情权在感情里，比结果本身还重。`,
+        ]),
+        advice: pick("horse-adv", year, [
+          "任何涉及位置的机会（工作、租约、城市）出现时，第一时间纳入两人议程，不做单方决定。",
+          "如果异地成为现实，先定通话节奏和见面频率，再谈感受——结构先行，情绪才稳。",
+          "把「如果我们不在一个城市」当成一次桌面推演提前聊一遍，真发生时就不是危机。",
+        ]),
+      } : supplyCount === 2 && dominant !== "drain" ? {
+        tone: "boost",
+        reading: pick("tailwind", year, [
+          `两个人的流年主气都落在喜用上，各自状态在线、情绪余量充足——这种年份关系的默认画质就是高的。要防的只有一件事：把顺利当成理所当然。`,
+          `双补给的年份，你们各自都被生活善待，也就更有余力善待彼此。适合把感情里的「基建」做扎实：习惯、仪式、共同的朋友圈。`,
+          `这一年风向对你们都顺。顺风时多存粮——感情账户里存下的耐心和好感，都是给未来逆风年备着的。`,
+        ]),
+        advice: pick("tailwind-adv", year, [
+          "各自把状态最好的时间段告诉对方，把重要的相处安排进彼此的高电量时区。",
+          "建立一个只属于你们的固定仪式（月度晚餐、年度旅行），趁顺年立起来，逆年靠它续命。",
+          "一起学一样新东西——双补给年学习成本最低，共同成长的记忆最保值。",
+        ]),
+      } : dominant === "drain" && drainCount === 2 ? {
+        tone: "drain",
+        reading: pick("stock", year, [
+          `两个人的流年主气都落在忌神上，各自的电量都偏低——这一年的相处要按「省电模式」设计：低成本、高频次、不折腾。累的时候人容易迁怒，先认清疲惫的来源在外面，不在对面。`,
+          `双耗损的年份，谁都当不了对方的充电桩。与其互相索取，不如把日子过小：固定的散步路线、固定的做饭日——蓄力期的感情靠低成本的重复喂养。`,
+          `这一年你们都不在巅峰状态，恰好可以练一项高级技能：不在状态时怎么好好相处。练成了，这段关系就有了抗周期能力。`,
+        ]),
+        advice: pick("stock-adv", year, [
+          "每周留一个不谈难处的晚上，只做让两个人都省电的事。",
+          "把「我今天电量低」设为可以直说的正当理由，说出口就不算冷落。",
+          "降低今年的关系KPI：不折腾、不翻旧账、按时吃饭，就算优秀。",
+        ]),
+      } : dominant === "drain" ? {
+        tone: "drain",
+        reading: pick("drain1", year, [
+          `${pa.supply === -1 ? nameA : nameB}的流年主气落在忌神上，这一年个人电量偏低——加班、琐事、身体的小状况都更容易堆积。关系里的表现是：耐心变薄、回应变慢。另一方要认清：这是电量问题，不是感情问题。`,
+          `这一年${pa.supply === -1 ? nameA : nameB}走在自己的耗损段里，留给关系的余量会变少。状态好的一方多承担一点日常运转，累的一方负责把「我只是累了」说出口——别让疲惫被误读成冷淡。`,
+          `一方耗电、一方尚可的年份，关系的重心自然要偏一偏。偏得心甘情愿的前提是说清楚：这是阶段，不是常态；是轮流，不是理所当然。`,
+        ]),
+        advice: pick("drain1-adv", year, [
+          "给累的一方设一个「低电量豁免权」：状态差的日子可以直说，免解释、免愧疚。",
+          "状态好的一方每周主动包揽一件对方最头疼的琐事——雪中送的炭比锦上添的花记得久。",
+          "把「我今天电量百分之几」变成日常暗号，用玩笑的方式互报状态，比追问「你怎么了」轻得多。",
+        ]),
+      } : dominant === "attraction" ? {
+        tone: "mixed",
+        reading: pick("peach", year, [
+          `${pa.peach && pb.peach ? "两个人的桃花同年引动" : `${pa.peach ? nameA : nameB}的桃花这一年引动`}，被关注、被示好的场景密度上升。桃花说的是曝光度不是忠诚度——它考验的从来不是当事人，是关系里的透明度。`,
+          `这一年${pa.peach ? nameA : nameB}的人缘明显变旺，社交邀约和暧昧信号都会变多。最省事的处理方式是主动透明：让另一半永远是第一个知道的人，警觉就没有生长的土壤。`,
+          `桃花动这一年的正确用法：把上扬的魅力用回关系内部。对外是曝光，对内是热度——同一股能量，看你们往哪儿引。`,
+        ]),
+        advice: pick("peach-adv", year, [
+          "约定「主动报备制」：新出现的高频联系人，主动提一嘴——透明是最便宜的安全感。",
+          "把这一年的社交场合尽量变成双人出席，让对方进入你的新圈子。",
+          "魅力上扬的一方，每月给关系内部做一次「桃花投放」：认真策划一场只给对方的心动。",
+        ]),
+      } : {
+        tone: "neutral",
+        reading: pick("calm", year, [
+          `这一年没有强结构信号——没有大冲、没有大合，流年对你们的关系不加戏也不递刀。这种年份的质量完全取决于经营本身：日子怎么过，关系就怎么长。`,
+          `无风无浪的年份，是关系的「素颜年」：没有外力加持，也没有外力干扰，你们相处的真实水平会原样呈现。它照出来的问题，都值得记下来。`,
+          `平流不是停滞。没有大事的年份最适合做细活：把沟通里的小毛刺打磨掉，把没说开的小疙瘩说开——这些活儿，动荡年里没空干。`,
+        ]),
+        advice: pick("calm-adv", year, [
+          "挑一个你们一直绕着走的小分歧，趁风平浪静把它谈透。",
+          "做一次关系年检：各自写下今年最满意和最想改进的一件事，交换。",
+          "立一个小目标一起完成——平流年需要自造里程碑，否则一年过完像没过。",
+        ]),
+      };
+
+    return {
+      year, ganZhi: gz, tone: themed.tone,
+      tendencies,
+      reading: themed.reading, advice: themed.advice,
+    };
+  });
+}
+
 function analyzeCrossBranchDynamics(a: UserProfile, b: UserProfile): RelationshipAnalysis["branchDynamics"] {
   const userName = a.birth.name?.trim() || "你";
   const partnerName = b.birth.name?.trim() || "TA";
@@ -1331,53 +1543,74 @@ export function analyzeRelationship(a: UserProfile, b: UserProfile, relationType
   const cards = [
     {
       key: "communication", label: "你们怎么沟通",
-      summary: `${userName}以${a.dominantPersona.god}为主轴，表达开放度 ${expressionA}；${partnerName}以${b.dominantPersona.god}为主轴，表达开放度 ${expressionB}。${diff("extroversion") >= 22 ? `${a.personality.extroversion > b.personality.extroversion ? userName : partnerName}更容易把话题往前推，${a.personality.extroversion > b.personality.extroversion ? partnerName : userName}更习惯确认语气与安全感后再接球。` : "两人的表达速度接近，日常话题容易连续，但涉及真实需求时可能同时等对方先开口。"}`,
+      summary: `${userName}以${a.dominantPersona.god}为主轴，${partnerName}以${b.dominantPersona.god}为主轴。${diff("extroversion") >= 22 ? `${a.personality.extroversion > b.personality.extroversion ? userName : partnerName}更容易把话题往前推，${a.personality.extroversion > b.personality.extroversion ? partnerName : userName}更习惯确认语气与安全感后再接球。` : "两人的表达速度接近，日常话题容易连续，但涉及真实需求时可能同时等对方先开口。"}`,
       why: `${dynamicReason}${diff("extroversion") >= 22 ? "表达差制造吸引，也制造误读：主动者容易觉得对方冷，观察者容易觉得被催。" : "相近的表达轮廓降低了聊天成本，但也可能把关键情绪藏在“都懂”里面。"}`,
-      evidence: `外向表达 ${a.personality.extroversion}:${b.personality.extroversion}；社交开放 ${expressionA}:${expressionB}；食伤权重 ${aGod.output.count}:${bGod.output.count}${primaryDynamic ? `；${primaryDynamic.title} 强度 ${primaryDynamic.strength}` : ""}`,
+      metrics: [
+        { label: "外向表达", a: a.personality.extroversion, b: b.personality.extroversion },
+        { label: "社交开放", a: expressionA, b: expressionB },
+        { label: "食伤强度", a: aGod.output.score, b: bGod.output.score },
+        ...(primaryDynamic ? [{ label: "跨盘结构强度", a: primaryDynamic.strength }] : []),
+      ],
       advice: diff("extroversion") >= 22
         ? `${a.personality.extroversion > b.personality.extroversion ? userName : partnerName}一次只抛一个明确问题并留出回应时间；${a.personality.extroversion > b.personality.extroversion ? partnerName : userName}不要只回“嗯”，至少补一句当下感受或下一次可聊的时间。`
         : `${userName}和${partnerName}每次聊天都多完成一步：从“发生了什么”继续问到“你当时是什么感觉”，避免只交换信息。`,
-      logic: [`读取双方日主与主轴十神：${a.bazi.dayPillar[0]}·${a.dominantPersona.god} / ${b.bazi.dayPillar[0]}·${b.dominantPersona.god}`, `比较外向表达 ${a.personality.extroversion}:${b.personality.extroversion} 与食伤权重 ${aGod.output.count}:${bGod.output.count}`, primaryDynamic ? `叠加跨盘结构 ${primaryDynamic.title}，分别落为${primaryDynamic.userRole}/${primaryDynamic.partnerRole}` : "跨盘无强合冲，不额外修正沟通判断", `表达差值 ${diff("extroversion")}；22 以上判为主导—观察结构`],
+      logic: [`读取双方日主与主轴十神：${a.bazi.dayPillar[0]}·${a.dominantPersona.god} / ${b.bazi.dayPillar[0]}·${b.dominantPersona.god}`, "比较双方外向表达与食伤权重（对比见图）", primaryDynamic ? `叠加跨盘结构 ${primaryDynamic.title}，分别落为${primaryDynamic.userRole}/${primaryDynamic.partnerRole}` : "跨盘无强合冲，不额外修正沟通判断", diff("extroversion") >= 22 ? "表达差显著，判为主导—观察结构" : "表达差不大，判为同频对话结构"],
     },
     {
       key: "pace", label: "关系如何升温",
-      summary: `${userName}的浪漫主动 ${romanceA}、新鲜感 ${noveltyA}，${partnerName}分别为 ${romanceB}、${noveltyB}。${paceA === paceB ? `两人都偏${paceA === "fast" ? "快速靠近" : paceA === "slow" ? "慢热确认" : "自然升温"}，升温不是缺速度，而是需要把下一次见面变具体。` : `${userName}偏${paceA === "fast" ? "快速靠近" : paceA === "slow" ? "慢热确认" : "自然升温"}，${partnerName}偏${paceB === "fast" ? "快速靠近" : paceB === "slow" ? "慢热确认" : "自然升温"}，热度与确认感不会同时到达。`}`,
+      summary: paceA === paceB ? `两人都偏${paceA === "fast" ? "快速靠近" : paceA === "slow" ? "慢热确认" : "自然升温"}，升温不是缺速度，而是需要把下一次见面变具体。` : `${userName}偏${paceA === "fast" ? "快速靠近" : paceA === "slow" ? "慢热确认" : "自然升温"}，${partnerName}偏${paceB === "fast" ? "快速靠近" : paceB === "slow" ? "慢热确认" : "自然升温"}，热度与确认感不会同时到达。`,
       why: `${dynamicReason}${paceA === paceB ? "节奏同频能减少拉扯，但如果双方都等氛围自然发生，关系也可能舒服地停在原地。" : "速度快的人把连续互动理解为确定，速度慢的人把稳定而不被催促理解为安全。"}`,
-      evidence: `关系速度 ${paceA}:${paceB}；浪漫主动 ${romanceA}:${romanceB}；新鲜感 ${noveltyA}:${noveltyB}；情感强度 ${a.personality.emotion}:${b.personality.emotion}`,
+      metrics: [
+        { label: "浪漫主动", a: romanceA, b: romanceB },
+        { label: "新鲜感", a: noveltyA, b: noveltyB },
+        { label: "情感强度", a: a.personality.emotion, b: b.personality.emotion },
+      ],
       advice: paceA === paceB
         ? `${romanceA >= romanceB ? userName : partnerName}负责提出一个有时间和地点的轻邀约，${romanceA >= romanceB ? partnerName : userName}负责补充偏好；结束前约定下一次，不靠“改天”。`
         : `采用“两次轻互动 + 一次明确邀约”的节奏：先共享日常，再交换一个私人偏好，最后提出具体见面；慢的一方不被催答，快的一方能看到进度。`,
-      logic: [`读取关系速度：${paceA}/${paceB}`, `比较浪漫主动 ${romanceA}:${romanceB} 与新鲜感 ${noveltyA}:${noveltyB}`, primaryDynamic ? `校验${primaryDynamic.title}对双方十神入口：${primaryDynamic.userRole}/${primaryDynamic.partnerRole}` : "无强跨盘结构，升温主要按原局关系速度判断", paceA === paceB ? "速度相同，重点判断谁负责把氛围转为具体行动" : "速度不同，设计分阶段确认而非即时对齐"],
+      logic: [`读取关系速度：${paceA}/${paceB}`, "比较双方浪漫主动与新鲜感（对比见图）", primaryDynamic ? `校验${primaryDynamic.title}对双方十神入口：${primaryDynamic.userRole}/${primaryDynamic.partnerRole}` : "无强跨盘结构，升温主要按原局关系速度判断", paceA === paceB ? "速度相同，重点判断谁负责把氛围转为具体行动" : "速度不同，设计分阶段确认而非即时对齐"],
     },
     {
       key: "conflict", label: "冲突从哪里开始",
       summary: diff("control") >= 20 ? `${a.personality.control > b.personality.control ? userName : partnerName}更需要规则与明确回应，${a.personality.control > b.personality.control ? partnerName : userName}更在意空间和自然感。` : `${userName}和${partnerName}对边界的理解接近，冲突更可能来自谁先让步、谁承担更多。`,
       why: diff("control") >= 20 ? "规则需求差异明显：追问定义的人是在寻找安全感，回避规定的人是在保护自由。" : "双方都知道边界在哪里，因此矛盾通常不是规则本身，而是投入是否公平。",
-      evidence: `边界控制 ${a.personality.control} : ${b.personality.control}；官杀权重 ${aGod.authority.count} : ${bGod.authority.count}`,
+      metrics: [
+        { label: "边界控制", a: a.personality.control, b: b.personality.control },
+        { label: "官杀强度", a: aGod.authority.score, b: bGod.authority.score },
+      ],
       advice: "冲突时先说需求，不推测动机。把“你为什么总是”改成“这件事让我需要更明确的回应”。",
-      logic: [`读取边界控制：${a.personality.control} 与 ${b.personality.control}`, `比较官杀权重：${aGod.authority.count} 与 ${bGod.authority.count}`, `边界差值 ${diff("control")}；20 以上标记为规则需求错位`],
+      logic: ["读取双方边界控制与官杀权重（对比见图）", diff("control") >= 20 ? "边界差显著，标记为规则需求错位" : "边界差不大，矛盾更可能落在投入公平上"],
     },
     {
       key: "attachment", label: "安全感如何建立",
       summary: a.socialProfile.attachment_style === b.socialProfile.attachment_style ? `${userName}和${partnerName}都偏${attachmentName(a.socialProfile.attachment_style)}，容易理解彼此的安全感语言。` : `${userName}偏${attachmentName(a.socialProfile.attachment_style)}，${partnerName}偏${attachmentName(b.socialProfile.attachment_style)}，两个人确认关系状态的方式不同。`,
       why: a.socialProfile.attachment_style === b.socialProfile.attachment_style ? "两个人对回应、空间和承诺的期待相近。" : `${userName}需要的确认方式与${partnerName}提供安全感的方式不完全相同，必须提前说清楚。`,
-      evidence: `依恋倾向 ${attachmentName(a.socialProfile.attachment_style)} : ${attachmentName(b.socialProfile.attachment_style)}；印星权重 ${aGod.resource.count} : ${bGod.resource.count}`,
+      metrics: [
+        { label: "印星强度", a: aGod.resource.score, b: bGod.resource.score },
+        { label: "情感依赖", a: deepScore(a, "dependency"), b: deepScore(b, "dependency") },
+      ],
       advice: "提前约定忙碌、沉默和需要空间时怎么告知，减少把暂时退开解释成关系降温。",
-      logic: [`识别依恋类型：${a.socialProfile.attachment_style} 与 ${b.socialProfile.attachment_style}`, `读取印星权重：${aGod.resource.count} 与 ${bGod.resource.count}`, a.socialProfile.attachment_style === b.socialProfile.attachment_style ? "类型相同，安全感语言相近" : "类型不同，标记回应确认与独处消化之间的错位"],
+      logic: [`识别依恋类型：${attachmentName(a.socialProfile.attachment_style)} 与 ${attachmentName(b.socialProfile.attachment_style)}`, "读取双方印星权重与情感依赖（对比见图）", a.socialProfile.attachment_style === b.socialProfile.attachment_style ? "类型相同，安全感语言相近" : "类型不同，标记回应确认与独处消化之间的错位"],
     },
     {
       key: "initiative", label: "谁更容易主动",
       summary: a.traitAnalysis[6].score > b.traitAnalysis[6].score + 10 ? `${userName}更容易发起邀约和维持联系，${partnerName}更习惯确认安全后回应。` : b.traitAnalysis[6].score > a.traitAnalysis[6].score + 10 ? `${partnerName}更容易发起互动，${userName}更习惯确认安全后回应。` : `${userName}和${partnerName}主动性接近，谁先遇到共同话题，谁就更可能打开关系。`,
       why: "这里不只看谁先发消息，也看谁安排时间、记住细节和在关系降温后主动修复。",
-      evidence: `关系主动性 ${a.traitAnalysis[6].score} : ${b.traitAnalysis[6].score}；财星权重 ${aGod.wealth.count} : ${bGod.wealth.count}`,
+      metrics: [
+        { label: "关系主动性", a: a.traitAnalysis[6].score, b: b.traitAnalysis[6].score },
+        { label: "财星强度", a: aGod.wealth.score, b: bGod.wealth.score },
+      ],
       advice: "不要只统计谁先联系，也观察谁在安排时间、记住细节和修复关系中投入。",
-      logic: [`读取关系主动性：${a.traitAnalysis[6].score} 与 ${b.traitAnalysis[6].score}`, `读取财星权重：${aGod.wealth.count} 与 ${bGod.wealth.count}`, "主动性差值超过 10 时标记主要发起者，否则判断为双向发起"],
+      logic: ["读取双方关系主动性与财星权重（对比见图）", "主动性差距明显时标记主要发起者，否则判断为双向发起"],
     },
     {
       key: "repair", label: "吵架后怎么修复",
       summary: Math.min(a.personality.stability, b.personality.stability) >= 60 ? `${(a.personality.stability - deepScore(a, "conflict_expression") * .5) >= (b.personality.stability - deepScore(b, "conflict_expression") * .5) ? userName : partnerName}更可能先冷静下来，把对话重新拉回问题本身。` : `${userName}和${partnerName}在压力下都容易先进入防御，立即讲道理效果有限。`,
       why: Math.min(a.personality.stability, b.personality.stability) >= 60 ? "关系里存在一个稳定锚点，修复关键是让较稳定的人先说需求而不是裁判对错。" : "两个人都需要先从情绪状态退出，再讨论事实，否则容易互相放大。",
-      evidence: `稳定度 ${a.personality.stability} : ${b.personality.stability}；压力韧性 ${deepScore(a, "resilience")} : ${deepScore(b, "resilience")}`,
+      metrics: [
+        { label: "情绪稳定", a: a.personality.stability, b: b.personality.stability },
+        { label: "压力韧性", a: deepScore(a, "resilience"), b: deepScore(b, "resilience") },
+      ],
       advice: "先暂停情绪升级，再约定恢复对话的具体时间。修复必须包含理解、责任和下一次怎么做。",
       logic: [`读取${userName}与${partnerName}的稳定方式`, `比较两人的压力恢复节奏`, Math.min(a.personality.stability, b.personality.stability) >= 60 ? `${userName}与${partnerName}具备回到问题本身的能力` : `${userName}与${partnerName}都需要先暂停降温`],
     },
@@ -1398,66 +1631,143 @@ export function analyzeRelationship(a: UserProfile, b: UserProfile, relationType
   const vigilanceB = deepScore(b, "vigilance");
   const dependencyA = deepScore(a, "dependency");
   const dependencyB = deepScore(b, "dependency");
-  // 关系判词：按结构特征从特殊到一般依次命中，标题幽默、依据严肃
+  // 关系判词：按结构特征从特殊到一般依次命中，标题幽默、依据严肃。
+  // 排序原则：区分度高的人格/依恋信号在前，地支冲合收紧门槛居中，总分兜底在后——防止冲合两类吃掉全部分布。
   const clashDynamic = branchDynamics.find((item) => item.type === "冲");
   const bondDynamic = branchDynamics.find((item) => item.type === "六合" || item.type === "三合" || item.type === "三会");
   const extGap = diff("extroversion");
+  const emotionGap = diff("emotion");
+  const attachA = a.socialProfile.attachment_style;
+  const attachB = b.socialProfile.attachment_style;
+  // 追逃结构：依恋标签命中最准，但标签罕见，故加行为代理——依赖差显著且高依赖一侧警觉偏高
+  const depGap = Math.abs(dependencyA - dependencyB);
+  const chaserVigilance = dependencyA >= dependencyB ? vigilanceA : vigilanceB;
+  const chaseAvoid = (attachA === "anxious" && attachB === "avoidant") || (attachA === "avoidant" && attachB === "anxious")
+    || (depGap >= 25 && chaserVigilance >= 62);
+  const strongestElement = (p: UserProfile) => (Object.entries(p.energy.elementPower) as [keyof Elements, number][]).sort((x, y) => y[1] - x[1])[0][0];
+  const topElA = strongestElement(a);
+  const topElB = strongestElement(b);
+  const mutualBoost = a.energy.dayMaster.level !== "中和" && b.energy.dayMaster.level !== "中和"
+    && a.energy.dayMaster.favorable.includes(topElB) && b.energy.dayMaster.favorable.includes(topElA);
   const verdict: RelationshipAnalysis["guide"]["verdict"] =
     a.dominantPersona.god === b.dominantPersona.god ? {
       title: "双星同轨",
       quip: `世界上另一个自己。优点是从不需要解释，缺点是连犯错都挑同一个坑——坑里见了面，还得互相笑一声"你也在啊"。`,
-      tagline: `两张命盘的主轴同为${a.dominantPersona.god}（权重 ${a.dominantPersona.weight}:${b.dominantPersona.weight}），同频毫不费力，只是没有人负责踩刹车。`,
+      tagline: `两张命盘的主轴是同一颗星，同频毫不费力，只是没有人负责踩刹车。`,
       basis: `主导十神相同 · 均为${a.dominantPersona.name}`,
-    } : clashDynamic && breakdownScore("attraction") >= 62 ? {
+      metrics: [],
+    } : clashDynamic && clashDynamic.strength >= 75 && breakdownScore("attraction") >= 62 ? {
       title: "相爱相杀",
       quip: `让你笑得最大声的和气得摔门的，是同一个人。外人劝你们冷静，你们自己知道——这日子过得挺来劲。`,
-      tagline: `${clashDynamic.title}，而初见引力偏有 ${breakdownScore("attraction")} 分：吸引与摩擦出自同一组地支，最热闹与最僵持的场面，大概率围绕同一个话题。`,
-      basis: `${clashDynamic.title}（强度 ${clashDynamic.strength}）× 初见引力 ${breakdownScore("attraction")}`,
-    } : breakdownScore("expression") >= 78 ? {
-      title: "高山流水",
-      quip: `你话说一半，TA已经把后半句接完了。想吵架都难——误会还没长大，就被听懂掐灭了。`,
-      tagline: `表达译码 ${breakdownScore("expression")} 分，一方起调，另一方接得住，误译率远低于常人。伯牙不常有，而钟子期就坐在对面。`,
-      basis: `表达译码 ${breakdownScore("expression")} · 食伤权重 ${aGod.output.count}:${bGod.output.count}`,
-    } : bondDynamic && bondDynamic.scoreImpact >= 4 ? {
-      title: "榫卯相合",
-      quip: `不是干柴烈火，是拼图"咔哒"一声对上的那种合适。安静，但严丝合缝——拆开反而费劲。`,
-      tagline: `${bondDynamic.title}将两张盘扣在一处，属于结构性的合得来，不依赖情绪热度维持。`,
-      basis: `${bondDynamic.title} · 结构修正 +${bondDynamic.scoreImpact}`,
+      tagline: `吸引与摩擦出自同一组地支：最热闹与最僵持的场面，往往围绕同一个话题。结构细节在叁章展开。`,
+      basis: `${clashDynamic.title} × 初见引力偏高`,
+      metrics: [{ label: "冲结构强度", a: clashDynamic.strength }, { label: "初见引力", a: breakdownScore("attraction") }],
+    } : chaseAvoid ? {
+      title: "一追一躲",
+      quip: `追的人不是缠人，是在找回音；躲的人不是无情，是在找氧气。认清这支舞的舞步，谁都不用再踩谁的脚。`,
+      tagline: `一方的安全感靠靠近与回应补给，另一方的元气靠距离与独处恢复。追逃循环是这类组合的经典剧目，也最吃「提前约定」这一招。`,
+      basis: `依赖结构 追×躲`,
+      metrics: [{ label: "情感依赖", a: dependencyA, b: dependencyB }, { label: "关系警觉", a: vigilanceA, b: vigilanceB }],
+    } : mutualBoost ? {
+      title: "互为充电宝",
+      quip: relationType === "恋爱"
+        ? `别人谈恋爱费电，你们谈恋爱充电。见一面回血一格——这不是情话，是出厂配置。`
+        : `别人相处是消耗，你们相处是充电。见一面回血一格——这不是客气话，是出厂配置。`,
+      tagline: `${partnerName}最旺的${ELEMENT_CN[topElB]}恰是${userName}的喜用，${userName}最旺的${ELEMENT_CN[topElA]}也恰是${partnerName}的喜用：双向补给结构，相处本身就在回血，越处越有精神。`,
+      basis: `喜用双向互补 · ${ELEMENT_CN[topElA]}×${ELEMENT_CN[topElB]}`,
+      metrics: [],
     } : conflictA >= 62 && conflictB >= 62 ? {
       title: "针尖麦芒",
       quip: `嘴上谁都不服，心里谁都放不下。外人看是辩论赛，你们自己心里清楚——这是你们独有的调情方式。`,
-      tagline: `两支伤官（冲突表达 ${conflictA}:${conflictB}）谁也不肯让话，争执必然精彩，和好得也快——前提是无人翻旧账。`,
-      basis: `冲突表达双高 · 伤官权重 ${a.tenGodCounts["伤官"]}:${b.tenGodCounts["伤官"]}`,
+      tagline: `两支伤官谁也不肯让话，争执往往精彩，和好得也快——前提是无人翻旧账。`,
+      basis: `冲突表达双高 · 伤官对峙`,
+      metrics: [{ label: "冲突表达", a: conflictA, b: conflictB }],
+    } : breakdownScore("expression") >= 78 ? {
+      title: "高山流水",
+      quip: `你话说一半，TA已经把后半句接完了。想吵架都难——误会还没长大，就被听懂掐灭了。`,
+      tagline: `一方起调，另一方接得住，误译率远低于常人。伯牙不常有，而钟子期就坐在对面。`,
+      basis: `表达译码突出 · 食伤互配`,
+      metrics: [{ label: "表达译码", a: breakdownScore("expression") }, { label: "食伤强度", a: aGod.output.score, b: bGod.output.score }],
+    } : vigilanceA >= 66 && vigilanceB >= 66 ? {
+      title: "雷达对雷达",
+      quip: `谁的心思都别想藏过夜。好处是这段关系没有死角，坏处也是没有死角——连装没事都装不过三秒。`,
+      tagline: `双方关系警觉都偏高，风吹草动两边同时接收：误会来得快，但被发现得更快——摊开说永远比互相扫描省电。`,
+      basis: `关系警觉双高`,
+      metrics: [{ label: "关系警觉", a: vigilanceA, b: vigilanceB }],
+    } : a.personality.control >= 68 && b.personality.control >= 68 ? {
+      title: "两个方向盘",
+      quip: `一辆车装了俩方向盘，握好了是双驾驶，握不好是拔河。方向一致的时候，这车快得没人追得上。`,
+      tagline: `谁都有主意、谁都不爱被安排：规则谈判是你们的日常，但两个有主意的人一旦同向，执行力翻倍。`,
+      basis: `边界控制双高 · 官杀对峙`,
+      metrics: [{ label: "边界控制", a: a.personality.control, b: b.personality.control }, { label: "官杀强度", a: aGod.authority.score, b: bGod.authority.score }],
+    } : (paceA === "fast" && paceB === "slow") || (paceA === "slow" && paceB === "fast") ? {
+      title: "快车慢车",
+      quip: relationType === "恋爱"
+        ? `一个已经在想周年纪念怎么过，一个还在确认上次那顿饭算不算约会。到站时间不同，好在方向一致。`
+        : `一个已经把对方当自己人，一个还在观察期里做笔记。到站时间不同，好在方向一致。`,
+      tagline: `关系速度一快一慢：快的一方把连续互动读成确定，慢的一方把不被催促读成安全。节奏差是你们的主线任务——对得上表，就没有别的大题。`,
+      basis: `关系速度 快×慢 · 信任节奏不同`,
+      metrics: [{ label: "信任建立", a: deepScore(a, "trust_speed"), b: deepScore(b, "trust_speed") }],
+    } : emotionGap >= 26 ? {
+      title: "冰火同炉",
+      quip: `一个的情绪是交响乐，一个的情绪是白噪音。合奏并不难听——只要谁都别逼对方换乐器。`,
+      tagline: `情绪音量差距明显：浓的一方负责把日子过出滋味，淡的一方负责把日子稳住，缺一边这炉火都不完整。`,
+      basis: `情感强度差显著 · 浓淡互补结构`,
+      metrics: [{ label: "情感强度", a: a.personality.emotion, b: b.personality.emotion }],
     } : extGap >= 25 ? {
       title: "一动一静",
       quip: `一个负责精彩，一个负责稳当。风筝飞得再高也不慌——线在对方手里，而且对方从不撒手。`,
-      tagline: `外向表达 ${a.personality.extroversion}:${b.personality.extroversion}，一人生风，一人定锚。只要不试图把对方改造成自己，便是上好的配置。`,
-      basis: `外向差 ${extGap} · 动静结构互补`,
+      tagline: `一人生风，一人定锚。只要不试图把对方改造成自己，便是上好的配置。`,
+      basis: `外向差显著 · 动静结构互补`,
+      metrics: [{ label: "外向表达", a: a.personality.extroversion, b: b.personality.extroversion }],
     } : paceA === "slow" && paceB === "slow" ? {
       title: "文火慢炖",
       quip: `前三个月像同事，三年后像失散多年的家人。这锅汤急不得——但凡是炖出来的，都散不了。`,
       tagline: `两个慢热结构相遇，升温以年为单位计。急不来，同样也散不快——耐心在这里按复利计息。`,
-      basis: `关系速度均为慢热 · 信任建立 ${deepScore(a, "trust_speed")}:${deepScore(b, "trust_speed")}`,
+      basis: `关系速度均为慢热 · 信任按次数累积`,
+      metrics: [{ label: "信任建立", a: deepScore(a, "trust_speed"), b: deepScore(b, "trust_speed") }],
+    } : bondDynamic && bondDynamic.scoreImpact >= 5 ? {
+      title: "榫卯相合",
+      quip: `不是干柴烈火，是拼图"咔哒"一声对上的那种合适。安静，但严丝合缝——拆开反而费劲。`,
+      tagline: `地支合会将两张盘扣在一处，属于结构性的合得来，不依赖情绪热度维持。结构细节在叁章展开。`,
+      basis: `${bondDynamic.title} · 结构性契合`,
+      metrics: [{ label: "合会结构强度", a: bondDynamic.strength }],
+    } : attachA === "secure" && attachB === "secure" && Math.min(a.personality.stability, b.personality.stability) >= 62 ? {
+      title: "双保险",
+      quip: `别人的感情靠心跳撑着，你们的靠心安垫着。听着不刺激？失眠的人才知道睡得着有多奢侈。`,
+      tagline: `双方依恋皆偏安全、稳定度都在线：少见的低内耗配置，剩下的功课只有一件——把安稳的日子过出内容。`,
+      basis: `依恋结构 安全×安全 · 稳定度双高`,
+      metrics: [{ label: "情绪稳定", a: a.personality.stability, b: b.personality.stability }],
     } : relationType !== "恋爱" && breakdownScore("daily") >= 72 ? {
       title: "福禄同席",
       quip: `一起吃饭不用找话题、沉默也不尴尬的缘分。饭搭子里的天花板，搭伙过日子的免检产品。`,
-      tagline: `日常黏合 ${breakdownScore("daily")} 分，生活节奏天然咬合，属于可以长期同桌吃饭而不生嫌隙的结构。`,
-      basis: `日常黏合 ${breakdownScore("daily")} · ${relationType}场景加权`,
+      tagline: `生活节奏天然咬合，属于可以长期同桌吃饭而不生嫌隙的结构。`,
+      basis: `日常黏合突出 · ${relationType}场景加权`,
+      metrics: [{ label: "日常黏合", a: breakdownScore("daily") }],
+    } : breakdownScore("daily") >= 68 && breakdownScore("attraction") <= 56 ? {
+      title: "先处后热",
+      quip: `第一眼平平，处起来上瘾。你们不是烟花型，是暖气型——不烫手，但过冬全靠它。`,
+      tagline: `初见引力不算亮眼，日常黏合却相当扎实：越往后越顺手的组合，别用第一印象给它定价。`,
+      basis: `日常黏合高 × 初见引力平`,
+      metrics: [{ label: "初见引力", a: breakdownScore("attraction") }, { label: "日常黏合", a: breakdownScore("daily") }],
     } : relationshipScore >= 80 ? {
       title: "珠联璧合",
       quip: `别人磨合三年才解决的问题，你们出厂就自带答案。唯一要练的本事，是别把好运气过成理所当然。`,
-      tagline: `总分 ${relationshipScore}，六维没有明显短板，此类组合的风险只剩把顺利当作寻常。`,
-      basis: `总分 ${relationshipScore} · 六维均衡`,
+      tagline: `六维没有明显短板，此类组合的风险只剩把顺利当作寻常。`,
+      basis: `六维均衡 · 低磨合结构`,
+      metrics: [],
     } : relationshipScore >= 65 ? {
       title: "渐入佳境",
       quip: `第一印象平平无奇，处久了真香。属于几年后翻聊天记录，会对着屏幕笑出声的那种。`,
-      tagline: `总分 ${relationshipScore}，吸引与磨合并存，属于"处着处着就顺了"的类型——前提是熬过前三次别扭。`,
-      basis: `总分 ${relationshipScore} · 磨合型结构`,
+      tagline: `吸引与磨合并存，属于"处着处着就顺了"的类型——前提是熬过前三次别扭。`,
+      basis: `磨合型结构`,
+      metrics: [],
     } : {
       title: "各自成篇",
       quip: `两本好书，语言不同。读懂对方得查字典——但查着查着，你就成了世界上最懂那本书的译者。`,
-      tagline: `总分 ${relationshipScore}，两套完整但语法不同的叙事：译得好是互补，译不好是平行——好在译法都写在下面。`,
-      basis: `总分 ${relationshipScore} · 差异型结构`,
+      tagline: `两套完整但语法不同的叙事：译得好是互补，译不好是平行——好在译法都写在下面。`,
+      basis: `差异型结构`,
+      metrics: [],
     };
   // 关系样态判读：结论落在具体互动情景上，命盘数据退居括号作佐证
   const jealousyA = clamp(vigilanceA * .45 + a.personality.emotion * .35 + (a.socialProfile.attachment_style === "anxious" ? 14 : 0));
@@ -1476,68 +1786,153 @@ export function analyzeRelationship(a: UserProfile, b: UserProfile, relationType
     ? "，且更倾向焦虑型依恋" : "";
   const behaviors: RelationshipAnalysis["guide"]["behaviors"] = [
     {
-      label: "主动权归属",
+      label: "谁先主动",
       conclusion: Math.abs(initiativeA - initiativeB) <= 8
         ? `双方接近，${initiatorName}略占先手`
         : `${initiatorName}更主动`,
       basis: Math.abs(initiativeA - initiativeB) <= 8
-        ? `两人的关系主动性很接近（${initiativeA}:${initiativeB}），提议见面这类事基本轮流来；但把${relationType === "恋爱" ? "浪漫主动" : "破冰主动"}（${romanceA}:${romanceB}）一起算进去，第一步由${initiatorName}发起会更自然——这与「先动的人」的结论一致。`
-        : `发起邀约、打破冷场、记住纪念日，这些事更多落在${initiatorName}身上：TA习惯把关系当成需要经营的事务（关系主动性 ${initiativeA}:${initiativeB}，${relationType === "恋爱" ? "浪漫主动" : "破冰主动"} ${romanceA}:${romanceB}，财星权重 ${aGod.wealth.count}:${bGod.wealth.count}）；${responderName}更习惯在被邀请中确认心意——一个划桨、一个掌舵，本来就是配套分工，别读成谁更爱谁。`,
+        ? `两人的关系主动性很接近，提议见面这类事基本轮流来；但把${relationType === "恋爱" ? "浪漫主动" : "破冰主动"}一起算进去，第一步由${initiatorName}发起会更自然——这与「先动的人」的结论一致。`
+        : `发起邀约、打破冷场、记住纪念日，这些事更多落在${initiatorName}身上：TA习惯把关系当成需要经营的事务，${responderName}更习惯在被邀请中确认心意——一个划桨、一个掌舵，本来就是配套分工，别读成谁更爱谁。`,
+      metrics: [
+        { label: "关系主动性", a: initiativeA, b: initiativeB },
+        { label: relationType === "恋爱" ? "浪漫主动" : "破冰主动", a: romanceA, b: romanceB },
+      ],
     },
     {
-      label: relationType === "恋爱" ? "醋意浓度" : "在意浓度",
+      label: relationType === "恋爱" ? "谁更爱吃醋" : "谁更上心",
       conclusion: Math.abs(jealousyA - jealousyB) <= 6
         ? "旗鼓相当，互相在意"
         : relationType === "恋爱" ? `${jealousName}的醋意更明显` : `${jealousName}更在意这段关系`,
       basis: Math.abs(jealousyA - jealousyB) <= 6
-        ? `对这段关系的风吹草动，你们的敏感度不相上下（关系警觉 ${vigilanceA}:${vigilanceB}）——属于互相留意型，都不算重，但都不许对方表现得无所谓。`
+        ? `对这段关系的风吹草动，你们的敏感度不相上下——属于互相留意型，都不算重，但都不许对方表现得无所谓。`
         : relationType === "恋爱"
-          ? `对方与别人聊得正欢时，先安静下来的多半是${jealousName}：TA的关系警觉与情感强度偏高（${vigilanceA}:${vigilanceB} / ${a.personality.emotion}:${b.personality.emotion}）${anxiousNote}，信息空白容易被自动补全成剧情。这种醋意说破即化——说出口的是在乎，憋出来的才是事故。`
-          : `对这段关系的风吹草动，更敏感的一方是${jealousName}（关系警觉 ${vigilanceA}:${vigilanceB}，情感强度 ${a.personality.emotion}:${b.personality.emotion}）${anxiousNote}。在意不是负担——说出来的在意是重视，憋出来的才是隔阂。`,
+          ? `对方与别人聊得正欢时，先安静下来的多半是${jealousName}：TA的关系警觉与情感强度偏高${anxiousNote}，信息空白容易被自动补全成剧情。这种醋意说破即化——说出口的是在乎，憋出来的才是事故。`
+          : `对这段关系的风吹草动，更敏感的一方是${jealousName}：TA的关系警觉与情感强度偏高${anxiousNote}。在意不是负担——说出来的在意是重视，憋出来的才是隔阂。`,
+      metrics: [
+        { label: "关系警觉", a: vigilanceA, b: vigilanceB },
+        { label: "情感强度", a: a.personality.emotion, b: b.personality.emotion },
+      ],
     },
     {
-      label: "相处氛围",
+      label: "在一起热闹吗",
       conclusion: outputScoreA >= 55 && outputScoreB >= 55
         ? "热络不冷场"
         : outputScoreA < 40 && outputScoreB < 40
           ? "静而不僵，各自安好"
           : "一人递话，一人接住",
       basis: outputScoreA >= 55 && outputScoreB >= 55
-        ? `你们的饭桌不会冷：双方食伤皆旺（权重 ${aGod.output.count}:${bGod.output.count}），一个话头能接出十个岔路。对你们而言，突然的安静反而才是值得留意的信号。${clashDynamic ? `唯${clashDynamic.title}在场，热闹里偶尔带电。` : ""}`
+        ? `你们的饭桌不会冷：双方食伤皆旺，一个话头能接出十个岔路。对你们而言，突然的安静反而才是值得留意的信号。${clashDynamic ? `唯地支强冲在场，热闹里偶尔带电。` : ""}`
         : outputScoreA < 40 && outputScoreB < 40
-          ? `你们可以一起安静很久而不觉尴尬——双方食伤皆收（${aGod.output.count}:${bGod.output.count}），各做各的事、偶尔搭一句，就是你们的舒适区。外人看着冷清，你们自己知道那叫安稳。`
-          : `一人负责起话头，一人负责接住收尾（食伤 ${aGod.output.count}:${bGod.output.count}）：${outputScoreA >= outputScoreB ? userName : partnerName}像逗哏，${outputScoreA >= outputScoreB ? partnerName : userName}像捧哏。配合得当是相声，但逗哏若长期得不到回应也会泄气——捧哏的记得偶尔主动抛一句。`,
+          ? `你们可以一起安静很久而不觉尴尬——双方食伤皆收，各做各的事、偶尔搭一句，就是你们的舒适区。外人看着冷清，你们自己知道那叫安稳。`
+          : `一人负责起话头，一人负责接住收尾：${outputScoreA >= outputScoreB ? userName : partnerName}像逗哏，${outputScoreA >= outputScoreB ? partnerName : userName}像捧哏。配合得当是相声，但逗哏若长期得不到回应也会泄气——捧哏的记得偶尔主动抛一句。`,
+      metrics: [{ label: "食伤强度", a: aGod.output.score, b: bGod.output.score }],
     },
     {
-      label: "服软次序",
+      label: "吵架谁先低头",
       conclusion: Math.abs(softenA - softenB) <= 6
         ? "视事由而定，各让一半"
         : `${softenLead}多半先递台阶`,
       basis: Math.abs(softenA - softenB) <= 6
-        ? `吵完架谁先发那句"睡了吗"，你们基本轮流——情绪稳定与冲突表达都接近（${a.personality.stability}:${b.personality.stability} / ${conflictA}:${conflictB}），谁理亏谁心软，看具体事由。`
-        : `冷战大概率由${softenLead}先打破：TA情绪降温更快（稳定 ${a.personality.stability}:${b.personality.stability}），伤官较轻、不恋战（冲突表达 ${conflictA}:${conflictB}）。先递台阶的不是输家——是TA心里那杆秤回正得更快。`,
+        ? `吵完架谁先递台阶、谁先发第一条消息，你们基本轮流——情绪稳定与冲突表达都接近，谁理亏谁心软，看具体事由。`
+        : `冷战更常由${softenLead}先打破：TA情绪降温更快，伤官较轻、不恋战。先递台阶的不是输家——是TA心里那杆秤回正得更快。`,
+      metrics: [
+        { label: "情绪稳定", a: a.personality.stability, b: b.personality.stability },
+        { label: "冲突表达", a: conflictA, b: conflictB },
+      ],
     },
     {
-      label: "依附程度",
+      label: "谁更离不开谁",
       conclusion: Math.abs(dependencyA - dependencyB) <= 7
         ? "黏度对等，进退同步"
         : `${dependLead}更为依附`,
       basis: Math.abs(dependencyA - dependencyB) <= 7
-        ? `想见就见、各忙各的也不慌——你们的黏度基本对等（情感依赖 ${dependencyA}:${dependencyB}），这种进退同步，在两人关系里是稀缺品。`
-        : `忙季或异地时，先觉得不对劲的多半是${dependLead}：TA的情感依赖更高（${dependencyA}:${dependencyB}，印星权重 ${aGod.resource.count}:${bGod.resource.count}），需要被持续接住。${dependFollow}的独立不是冷淡，是出厂设置——但独立的人不开口，不等于不需要。`,
+        ? `想见就见、各忙各的也不慌——你们的黏度基本对等，这种进退同步，在两人关系里是稀缺品。`
+        : `忙季或异地时，先觉得不对劲的多半是${dependLead}：TA的情感依赖更高，需要被持续接住。${dependFollow}的独立不是冷淡，是出厂设置——但独立的人不开口，不等于不需要。`,
+      metrics: [
+        { label: "情感依赖", a: dependencyA, b: dependencyB },
+        { label: "印星强度", a: aGod.resource.score, b: bGod.resource.score },
+      ],
     },
   ];
+  // 人物使用说明书：与 TA 相处的 Do/Don't，按结构信号强度取前三。
+  // 话术合规：全部为指令式相处建议（可以做/别做），不断言现实、不预言事件。
+  const manualFor = (profile: UserProfile, name: string, novelty: number, exclude: Set<string>) => {
+    const style = profile.socialProfile.attachment_style;
+    const conflictScore = deepScore(profile, "conflict_expression");
+    const autonomyScore = deepScore(profile, "autonomy");
+    const dependency = deepScore(profile, "dependency");
+    const vigilance = deepScore(profile, "vigilance");
+    const expressScore = traitScore(profile, "expressiveness");
+    const rules: { id: string; weight: number; d: string; x: string }[] = [];
+    if (style === "avoidant" || autonomyScore >= 62) rules.push({
+      id: "space", weight: autonomyScore + (style === "avoidant" ? 20 : 0),
+      d: `${name}退开时，给出明确的等待期、到点再谈——有期限的空间对TA是尊重，无期限的追问更像围堵。`,
+      x: `别在${name}沉默时连环追问。这类结构的沉默多半是在消化，不是冷战的开场。`,
+    });
+    if (style === "anxious" || dependency >= 62) rules.push({
+      id: "reassure", weight: dependency + (style === "anxious" ? 20 : 0),
+      d: `忙碌前先向${name}报一个时间点，说到就准点出现——可预期本身就是这类结构的安全感。`,
+      x: `别忽冷忽热。信息空白对${name}不是留白，容易被自动补成负面剧本。`,
+    });
+    if (style === "secure" && profile.personality.stability >= 58) rules.push({
+      id: "secure", weight: profile.personality.stability,
+      d: `定期主动问一句${name}没说出口的部分——稳定的人不是没需求，只是不为需求吵闹。`,
+      x: `别把${name}的稳定当成免维护。这类结构的委屈，倾向于按静默计息。`,
+    });
+    if (conflictScore >= 60) rules.push({
+      id: "sharp", weight: conflictScore,
+      d: `冲突时先回应${name}说的事实本身，语气问题留到事后复盘再谈。`,
+      x: `别当场纠正${name}的措辞——锋利被纠正得越多，往后的真话往往越少。`,
+    });
+    else if (conflictScore <= 42) rules.push({
+      id: "mild", weight: 100 - conflictScore,
+      d: `重要议题隔天再和${name}确认一次——延迟出现的答案往往更接近真实想法。`,
+      x: `别把${name}当场的「没事」当成结案，那更可能是还没想好怎么说。`,
+    });
+    if (expressScore <= 48) rules.push({
+      id: "doer", weight: 100 - expressScore,
+      d: `把${name}的行动计入情感账：接送、代办、记挂，都是这类结构的表达方式。`,
+      x: `别用「你从来不说」去审判行动派。把想听的话说清规格，比等TA开窍实际。`,
+    });
+    if (novelty >= 60) rules.push({
+      id: "novel", weight: novelty,
+      d: `每月留一次新体验的主导权给${name}——这类结构的热情靠更新喂养。`,
+      x: `别把${name}提议新花样读成对现状不满，那更接近TA投入的方式。`,
+    });
+    else if (novelty <= 42) rules.push({
+      id: "ritual", weight: 100 - novelty,
+      d: `守住几个和${name}雷打不动的小仪式——重复对这类结构不是无聊，是地基。`,
+      x: `别频繁打乱${name}的惯例。熟悉感是TA安全感的主要来源。`,
+    });
+    if (vigilance >= 62) rules.push({
+      id: "trans", weight: vigilance,
+      d: `生活里新出现的高频联系人，主动和${name}提一嘴——透明是最便宜的安心。`,
+      x: `别让${name}从别处得知你的近况。信息差在高警觉结构里容易发酵。`,
+    });
+    if (profile.personality.control >= 62) rules.push({
+      id: "border", weight: profile.personality.control,
+      d: `规则和${name}共同拟定、各让一条——一起定的边界，不容易被读成控制。`,
+      x: `别先斩后奏。对${name}来说，被越过往往比结果本身更难受。`,
+    });
+    const fallbacks: { id: string; weight: number; d: string; x: string }[] = [
+      { id: "fb1", weight: 1, d: `分歧过后主动和${name}确认一次关系状态——一句轻的收尾，省掉之后十倍的猜。`, x: `别攒账。小别扭当天清，过夜就开始计息。` },
+      { id: "fb2", weight: 0, d: `重要的话当面或语音说给${name}，文字留给日常。`, x: `别用「随便/都行」回应TA认真提出的选择题。` },
+      { id: "fb3", weight: -1, d: `每月至少一次，把注意力完整地给${name}一个晚上。`, x: `别把对方的付出翻译成理所当然——被看见是所有结构共同的需求。` },
+    ];
+    const picked = [...rules.sort((x, y) => y.weight - x.weight), ...fallbacks].filter((rule) => !exclude.has(rule.id)).slice(0, 3);
+    picked.forEach((rule) => exclude.add(rule.id)); // 跨人去重：同一条说明书规则只给信号更强的一方
+    return { person: name, dos: picked.map((rule) => rule.d), donts: picked.map((rule) => rule.x) };
+  };
   // 双方性情释读：以命盘结构为据，给出行为倾向与相处要领
   const dispositionFor = (profile: UserProfile, name: string, partner: string) => {
     const style = profile.socialProfile.attachment_style;
     const conflictScore = deepScore(profile, "conflict_expression");
     const autonomyScore = deepScore(profile, "autonomy");
     const expressScore = traitScore(profile, "expressiveness");
-    const stats = profile === a ? aGod : bGod;
     const items: RelationshipAnalysis["guide"]["dispositions"] = [];
     if (style === "avoidant" || autonomyScore >= 65) items.push({
       person: name, trait: "边界清晰的自立派",
-      reading: `${name}比劫与偏印结构偏重（自主空间需求 ${autonomyScore}），亲密并不改变其独处回血的底层设定。沉默多半是在消化，不是疏远；退开是充电，不是离场。`,
+      reading: `${name}比劫与偏印结构偏重、自主空间需求高，亲密并不改变其独处回血的底层设定。沉默多半是在消化，不是疏远；退开是充电，不是离场。`,
       approach: vary(`disp-avoidant-${name}`, [
         `相处时建议给出明确的等待期，而不是连续追问。对这类人，克制比热情更能积累信任。`,
         `${partner}可以把TA的独处当成固定日程而不是突发事故：有预告的退开不用过度解读，按约定时间等它结束就好。`,
@@ -1546,7 +1941,7 @@ export function analyzeRelationship(a: UserProfile, b: UserProfile, relationType
     });
     if (style === "anxious") items.push({
       person: name, trait: "想得深的安静派",
-      reading: `${name}印星与情感结构偏旺（情感强度 ${profile.personality.emotion}，印星权重 ${stats.resource.count}），对回应的连续性高度敏感，信息空白会被自动补全为负面剧本。`,
+      reading: `${name}印星与情感结构偏旺，对回应的连续性高度敏感，信息空白会被自动补全为负面剧本。`,
       approach: vary(`disp-anxious-${name}`, [
         `固定的联系节奏胜过长篇解释；提前预告忙碌、说到就准点出现，是对这类结构最实际的安抚。`,
         `回应贵在准时，不在长度。${partner}最好养成先报时间点、再谈内容的习惯，能省下大量无谓消耗。`,
@@ -1555,7 +1950,7 @@ export function analyzeRelationship(a: UserProfile, b: UserProfile, relationType
     });
     if (style === "secure") items.push({
       person: name, trait: "稳而不争的定心丸",
-      reading: `${name}结构安稳（情绪稳定 ${profile.personality.stability}，印星权重 ${stats.resource.count}），少有主动索取，习惯自我消化。但安全型不是没有需求，只是不为需求吵闹。`,
+      reading: `${name}结构安稳、情绪稳定托底，少有主动索取，习惯自我消化。但安全型不是没有需求，只是不为需求吵闹。`,
       approach: vary(`disp-secure-${name}`, [
         `建议定期主动问问TA没说出口的部分，别把稳定当成免维护——免维护的下一站，是无声的撤退。`,
         `${partner}要主动把关注送到位，而不是等${name}开口。懂事的人，最不该被亏欠。`,
@@ -1564,7 +1959,7 @@ export function analyzeRelationship(a: UserProfile, b: UserProfile, relationType
     });
     if (conflictScore >= 65) items.push({
       person: name, trait: "说话带锋的直球手",
-      reading: `${name}伤官偏旺（冲突表达 ${conflictScore}，伤官权重 ${profile.tenGodCounts["伤官"]}），言辞锐度与在乎程度成正比——对无关之人，${name}向来只有客气。`,
+      reading: `${name}伤官偏旺、冲突表达外放，言辞锐度与在乎程度成正比——对无关之人，${name}向来只有客气。`,
       approach: vary(`disp-sharp-${name}`, [
         `冲突中建议先接住事实层，再谈表达方式。锋利被当场纠正的次数越多，以后的真话就越少。`,
         `${partner}可以把话锋的锐度理解成分量而不是敌意：说得越重，说明这件事在${name}心里越重。`,
@@ -1573,7 +1968,7 @@ export function analyzeRelationship(a: UserProfile, b: UserProfile, relationType
     });
     else if (conflictScore <= 40) items.push({
       person: name, trait: "温和的慢表达者",
-      reading: `${name}冲突表达收敛（${conflictScore}，食神权重 ${profile.tenGodCounts["食神"]}），不满往往延迟出现；当下的"没事"多半是还没想好怎么说，不是真的没事。`,
+      reading: `${name}冲突表达收敛、食神当家，不满往往延迟出现；当下的"没事"多半是还没想好怎么说，不是真的没事。`,
       approach: vary(`disp-mild-${name}`, [
         `重要议题建议留出二次确认的余地：隔天再提一次，往往才能得到真实的答案。`,
         `${partner}多看行动、少只听话面：情绪的真相，写在之后两天的行为温度里。`,
@@ -1582,7 +1977,7 @@ export function analyzeRelationship(a: UserProfile, b: UserProfile, relationType
     });
     if (expressScore <= 45 && items.length < 2) items.push({
       person: name, trait: "把爱做进事里的务实派",
-      reading: `${name}语言表达偏敛（表达意愿 ${expressScore}，财星权重 ${stats.wealth.count}），情感输出以行动为主——接送、记挂、替你把事办了，都是TA的表达。`,
+      reading: `${name}语言表达偏敛、财星务实，情感输出以行动为主——接送、记挂、替你把事办了，都是TA的表达。`,
       approach: vary(`disp-doer-${name}`, [
         `把TA的行动计入情感账目，同时明确提出对语言表达的最低需求；需求不说出口，等于没有。`,
         `${partner}可以练习翻译：把每一次绕路和代办，如实读成一句没说出口的在乎。`,
@@ -1595,6 +1990,8 @@ export function analyzeRelationship(a: UserProfile, b: UserProfile, relationType
     {
       value: Math.abs(({ slow: 0, medium: 1, fast: 2 })[paceA] - ({ slow: 0, medium: 1, fast: 2 })[paceB]) * 30,
       scene: "推进速度错位",
+      metrics: [{ label: "信任建立", a: deepScore(a, "trust_speed"), b: deepScore(b, "trust_speed") }],
+      source: "来源：信任建立节奏的行为结构差异",
       risk: `${userName}偏${({ slow: "慢热确认", medium: "自然推进", fast: "快速靠近" } as const)[paceA]}，${partnerName}偏${({ slow: "慢热确认", medium: "自然推进", fast: "快速靠近" } as const)[paceB]}。快的一方将连续互动理解为确定，慢的一方将不被催促理解为安全——双方都自觉进展顺利，直至快的一方要求定义关系。`,
       playbook: vary("play-pace", [
         `把发起权和确认权分开：快的一方负责发起，慢的一方负责在每次相处结束时定下一次的时间。分工明确之后，试探和逼问都没有必要了。`,
@@ -1605,7 +2002,9 @@ export function analyzeRelationship(a: UserProfile, b: UserProfile, relationType
     {
       value: diff("control"),
       scene: "规则与自由的拉锯",
-      risk: `边界控制 ${a.personality.control}:${b.personality.control}。一方需要明确的规则与回应以获得安全感，另一方被规定得越死越想脱身——求规则者在寻安全，避规则者在保自由，两边皆非恶意。`,
+      metrics: [{ label: "边界控制", a: a.personality.control, b: b.personality.control }],
+      source: (() => { const controlDyn = branchDynamics.find((item) => item.type === "天干克"); return controlDyn ? `结构来源：${controlDyn.title}（详见叁章）` : "来源：边界控制的行为结构差异"; })(),
+      risk: `一方需要明确的规则与回应以获得安全感，另一方被规定得越死越想脱身——求规则者在寻安全，避规则者在保自由，两边皆非恶意。`,
       playbook: vary("play-control", [
         `底线规则要少而明确：压缩到三条以内，其余一概放行。规则越少，越有约束力。`,
         `规则最好共同拟定：各自列出最在意的三件事，交换后各让一条，剩下的就是共同章程——一起定的规则，不会被当成单方面的控制。`,
@@ -1615,7 +2014,9 @@ export function analyzeRelationship(a: UserProfile, b: UserProfile, relationType
     {
       value: Math.abs(deepScore(a, "autonomy") - deepScore(b, "autonomy")),
       scene: "空间需求不同频",
-      risk: `空间需求 ${deepScore(a, "autonomy")}:${deepScore(b, "autonomy")}。需求高者退开充电时，需求低者读到的是被推开；一方追近解释，另一方退得更远——典型的依恋追逃循环。`,
+      metrics: [{ label: "空间需求", a: deepScore(a, "autonomy"), b: deepScore(b, "autonomy") }],
+      source: (() => { const clashDyn = branchDynamics.find((item) => item.type === "冲"); return clashDyn ? `结构来源：${clashDyn.title}（详见叁章）` : "来源：自主空间需求的行为结构差异"; })(),
+      risk: `需求高者退开充电时，需求低者读到的是被推开；一方追近解释，另一方退得更远——典型的依恋追逃循环。`,
       playbook: vary("play-autonomy", [
         `把独处制度化：预留固定的各自时间，写进两个人的默认日程。提前预留的空间，不会被误读成逃离。`,
         `退开要有预告，回来要有时间点；有始有终的独处，不会触发追逃循环。`,
@@ -1625,7 +2026,9 @@ export function analyzeRelationship(a: UserProfile, b: UserProfile, relationType
     {
       value: Math.abs(noveltyA - noveltyB),
       scene: "新鲜感与稳定感的配比",
-      risk: `新鲜感需求 ${noveltyA}:${noveltyB}。一方视"老地方老节目"为安心，另一方视之为停滞；提议新花样的人接连受挫之后，探索欲便会向关系之外寻找出口。`,
+      metrics: [{ label: "新鲜感需求", a: noveltyA, b: noveltyB }],
+      source: "来源：新鲜感需求的行为结构差异",
+      risk: `一方视"老地方老节目"为安心，另一方视之为停滞；提议新花样的人接连受挫之后，探索欲便会向关系之外寻找出口。`,
       playbook: vary("play-novelty", [
         `日常和新意按八二配比：多数时间维持惯例来喂养稳定，每月由求新的一方主导一次新体验，另一方只有参与的义务，没有否决的权力。`,
         `可以共同维护一份"想试清单"，每月挑一条执行；想变的有出口，求稳的有预期，谁都不用改本性。`,
@@ -1635,7 +2038,9 @@ export function analyzeRelationship(a: UserProfile, b: UserProfile, relationType
     {
       value: diff("emotion"),
       scene: "情绪音量不一致",
-      risk: `情感强度 ${a.personality.emotion}:${b.personality.emotion}。音量高的一方需要情绪先被接住，音量低的一方习惯直接分析问题——于是同一场争执里，一方在要安慰，另一方在讲道理，各说各话。`,
+      metrics: [{ label: "情感强度", a: a.personality.emotion, b: b.personality.emotion }],
+      source: a.dominantPersona.god !== b.dominantPersona.god ? `结构来源：主轴十神不同（${a.dominantPersona.god}×${b.dominantPersona.god}），情绪的默认出口不同` : "来源：情感强度的行为结构差异",
+      risk: `音量高的一方需要情绪先被接住，音量低的一方习惯直接分析问题——于是同一场争执里，一方在要安慰，另一方在讲道理，各说各话。`,
       playbook: vary("play-emotion", [
         `处理分歧按"先承接、后解决"的顺序来：情绪没被确认之前，任何道理都会被当成攻击。`,
         `情绪音量低的一方先表明"我在听"，再进入分析；顺序反了，事倍功半。`,
@@ -1647,24 +2052,28 @@ export function analyzeRelationship(a: UserProfile, b: UserProfile, relationType
     verdict,
     philosophy: relationshipScore >= 80
       ? vary("philosophy-high", [
-        `${relationshipScore} 分意味着你们的默认相处方式摩擦很小——但低成本关系最大的风险，是把默契当成免维护。这份指南告诉你们哪里不能偷懒。`,
-        `${relationshipScore} 分说明你们大部分相处是顺的。顺的关系最容易输给理所当然：下面这些位置，是你们仅剩的、也最值得花力气的地方。`,
-        `${relationshipScore} 分：你们的底层节奏咬合得不错。接下来要防的不是冲突，而是惰性——下面每一条都在标注"别在这里睡着"。`,
+        `这个总分意味着你们的默认相处方式摩擦很小——但低成本关系最大的风险，是把默契当成免维护。这份指南告诉你们哪里不能偷懒。`,
+        `这个总分说明你们大部分相处是顺的。顺的关系最容易输给理所当然：下面这些位置，是你们仅剩的、也最值得花力气的地方。`,
+        `你们的底层节奏咬合得不错。接下来要防的不是冲突，而是惰性——下面每一条都在标注"别在这里睡着"。`,
       ])
       : relationshipScore >= 65
         ? vary("philosophy-mid", [
-          `${relationshipScore} 分属于"有差异的吸引"：扣掉的分数全部扣在磨合成本上，而不是可能性上。下面每一条都对应一个具体成本和它的绕行方案。`,
-          `${relationshipScore} 分的含义：你们互相吸引的地方和互相消耗的地方一样具体。好消息是消耗点全部可命名、可绕行——它们就列在下面。`,
-          `${relationshipScore} 分不高不低，说明这段关系值得做、但需要方法。分数扣在哪里，下面的场景就写到哪里，一条对一条。`,
+          `这个总分属于"有差异的吸引"：扣掉的分数全部扣在磨合成本上，而不是可能性上。下面每一条都对应一个具体成本和它的绕行方案。`,
+          `这个总分的含义：你们互相吸引的地方和互相消耗的地方一样具体。好消息是消耗点全部可命名、可绕行——它们就列在下面。`,
+          `总分不高不低，说明这段关系值得做、但需要方法。分数扣在哪里，下面的场景就写到哪里，一条对一条。`,
         ])
         : vary("philosophy-low", [
-          `先把话说清楚：${relationshipScore} 分不是"不合适"的判决。这个分数衡量的是两套默认相处方式之间的摩擦成本——如果你们已经互有好感，真实的相处永远比模型重要，这份报告是使用说明书，不是预言。成本高只意味着更需要照着说明书操作，所以下面的内容也写得更具体。`,
-          `${relationshipScore} 分需要正确地读：它衡量的是两套默认习惯之间的摩擦成本，不是感情的上限。互有好感的两个人拿到这个分数，正确反应是把说明书读厚一点，而不是把关系判轻一点。`,
-          `别被 ${relationshipScore} 分吓到——模型只能看到你们的出厂设置，看不到你们愿意为对方调整多少。成本确实偏高，所以下面每一条都写得更细：路窄，就把地图画大。`,
+          `先把话说清楚：这个总分不是"不合适"的判决。它衡量的是两套默认相处方式之间的摩擦成本——如果你们已经互有好感，真实的相处永远比模型重要，这份报告是使用说明书，不是预言。成本高只意味着更需要照着说明书操作，所以下面的内容也写得更具体。`,
+          `这个总分需要正确地读：它衡量的是两套默认习惯之间的摩擦成本，不是感情的上限。互有好感的两个人拿到这个分数，正确反应是把说明书读厚一点，而不是把关系判轻一点。`,
+          `别被总分吓到——模型只能看到你们的出厂设置，看不到你们愿意为对方调整多少。成本确实偏高，所以下面每一条都写得更细：路窄，就把地图画大。`,
         ]),
     initiator: {
       name: initiatorName,
-      why: `${initiatorName}关系主动性 ${initiatorIsUser ? initiativeA : initiativeB}、${relationType === "恋爱" ? "浪漫主动" : "破冰主动"} ${initiatorIsUser ? romanceA : romanceB}，综合高于${responderName}；且其主轴为${initiatorProfile.dominantPersona.god}，财星权重 ${initiatorGodStats.wealth.count}——这类结构由自己发起最自然，被动等待反而容易积累怨气。主动权明确归属，比轮流试探更省损耗。`,
+      why: `${initiatorName}的关系主动性与${relationType === "恋爱" ? "浪漫主动" : "破冰主动"}综合高于${responderName}；且其主轴为${initiatorProfile.dominantPersona.god}、财星务实——这类结构由自己发起最自然，被动等待反而容易积累怨气。主动权明确归属，比轮流试探更省损耗。`,
+      metrics: [
+        { label: "关系主动性", a: initiativeA, b: initiativeB },
+        { label: relationType === "恋爱" ? "浪漫主动" : "破冰主动", a: romanceA, b: romanceB },
+      ],
       firstMove: responderPace === "slow"
         ? vary("firstmove-slow", [
           `建议由${initiatorName}发起一次时长可控、退出成本低的见面，发出之后不追问。${responderName}是慢热结构，第一步的全部目标是让下一次自然发生，而不是推进关系定义。`,
@@ -1679,15 +2088,16 @@ export function analyzeRelationship(a: UserProfile, b: UserProfile, relationType
     },
     behaviors,
     dispositions: [...dispositionFor(b, partnerName, userName), ...dispositionFor(a, userName, partnerName)],
-    hotspots: gapCandidates.slice(0, 3).map((item) => ({ scene: item.scene, risk: item.risk, playbook: item.playbook })),
+    manuals: (() => { const used = new Set<string>(); return [manualFor(a, userName, noveltyA, used), manualFor(b, partnerName, noveltyB, used)]; })(),
+    hotspots: gapCandidates.slice(0, 3).map((item) => ({ scene: item.scene, risk: item.risk, playbook: item.playbook, metrics: item.metrics, source: item.source })),
     longRun: Math.min(noveltyA, noveltyB) >= 55
       ? vary("longrun-high", [
-        `长线要则：双方新鲜感需求俱高（${noveltyA}:${noveltyB}），此关系的保鲜之道不在互相盯紧，而在共同更新——共同的计划、新的场景、阶段性的目标。停滞才是你们唯一真正的敌人。`,
+        `长线要则：双方新鲜感需求俱高，此关系的保鲜之道不在互相盯紧，而在共同更新——共同的计划、新的场景、阶段性的目标。停滞才是你们唯一真正的敌人。`,
         `长线要则：你们的热度由"共同的下一件事"维持。手中宜常留一个进行中的计划——旅行、课程、任何目标皆可——计划断档之时，往往即是关系降温之始。`,
-        `长线要则：对新鲜感需求 ${noveltyA}:${noveltyB} 的两张盘而言，最好的纪念日礼物是新计划而非旧回忆。每季度保有一个"第一次"，这段关系便不会陈旧。`,
+        `长线要则：对新鲜感需求俱高的两张盘而言，最好的纪念日礼物是新计划而非旧回忆。每季度保有一个"第一次"，这段关系便不会陈旧。`,
       ])
       : vary("longrun-low", [
-        `长线要则：你们中至少一方（新鲜感需求 ${Math.min(noveltyA, noveltyB)}）以熟悉感积累安全。仪式感——固定的日子、重复的小习惯——对这段关系不是老套，而是地基；先把地基打稳，再谈偶尔的惊喜。`,
+        `长线要则：你们中至少一方以熟悉感积累安全。仪式感——固定的日子、重复的小习惯——对这段关系不是老套，而是地基；先把地基打稳，再谈偶尔的惊喜。`,
         `长线要则：这段关系的安全感建立在重复之上。守住几个雷打不动的小仪式，这些看似寻常的重复，即是关系的承重之墙。`,
         `长线要则：求稳的一方定节奏，求变的一方添花样，配比约为八比二。先令日子可预期，再令日子有惊喜——次序不可颠倒。`,
       ]),
@@ -1696,7 +2106,7 @@ export function analyzeRelationship(a: UserProfile, b: UserProfile, relationType
     score: relationshipScore,
     relationType,
     headline: relationshipScore >= 80 ? "高互补，也需要认真接住彼此" : relationshipScore >= 65 ? "有吸引力的差异，值得慢慢验证" : "节奏并不天然一致，但仍有可经营空间",
-    scoreSummary: `${relationType}场景采用加权评分：${scoreBreakdown.map((item) => `${item.label}${item.weight}%`).join("、")}。分数只衡量互动成本与互补空间，不判断关系成败。`,
+    scoreSummary: `${relationType}场景采用加权评分，六维之中更看重${[...scoreBreakdown].sort((x, y) => y.weight - x.weight).slice(0, 2).map((item) => item.label).join("与")}。分数只衡量互动成本与互补空间，不判断关系成败。`,
     spine: buildRelationshipSpine(a, b, scoreBreakdown, branchDynamics, relationType),
     scoreBreakdown,
     cards,
@@ -1738,8 +2148,8 @@ export function buildRelationshipSpine(
 
   return {
     thesis: `一段由「${resource.label}」驱动、被「${tension.label}」考验的${relationType}`,
-    primaryResource: { key: resource.key, label: resource.label, why: `六维最高（${resource.score} 分）：${resource.summary}` },
-    primaryTension: { key: tension.key, label: tension.label, why: `六维最低（${tension.score} 分）：${tension.summary}${strongestDynamic && strongestDynamic.scoreImpact < 0 ? `命盘结构上「${strongestDynamic.title}」加重此题。` : ""}` },
+    primaryResource: { key: resource.key, label: resource.label, why: `六维之中最高：${resource.summary}` },
+    primaryTension: { key: tension.key, label: tension.label, why: `六维之中最低：${tension.summary}${strongestDynamic && strongestDynamic.scoreImpact < 0 ? `命盘结构上「${strongestDynamic.title}」加重此题。` : ""}` },
     elementSynergy: { tone, sides: [synergyA.text, synergyB.text] },
   };
 }
@@ -1792,7 +2202,7 @@ export function buildRelationshipFacts(a: UserProfile, b: UserProfile, analysis:
         frictions: "伍·摩擦与化解",
         initiator: "陆·长线经营", longRun: "陆·长线经营",
       },
-      rule: "事实只在主场章节完整展开（结论+依据+数字）；其他章节只可短引名称，不得复述数字与依据；每章开头须回扣 spine 主线。",
+      rule: "事实只在主场章节完整展开（结论+依据；数字一律由图表呈现，正文不写数字对比）；其他章节只可短引名称，不得复述依据；每章开头须回扣 spine 主线。",
     },
   };
 }

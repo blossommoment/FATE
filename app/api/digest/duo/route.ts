@@ -53,7 +53,7 @@ export async function POST(request: Request) {
             { role: "system", content: system },
             {
               role: "user",
-              content: attempt === 0 ? user : `${user}\n\n（上一次输出未通过校验：五章齐全、正文禁数字禁命理术语、评述禁对话引语、字数达标、以名字互称。请严格重来。）`,
+              content: attempt === 0 ? user : `${user}\n\n（上一次输出未通过校验：五章齐全、正文禁数字禁命理术语、评述禁对话引语（不写任何人说的原话）、正文直接开场不写章节名、headline 不得取自判词原文、字数达标、以名字互称。请严格重来。）`,
             },
           ],
         }),
@@ -67,7 +67,7 @@ export async function POST(request: Request) {
     }
     try {
       const parsed = JSON.parse(content.replace(/^```json\s*|```$/g, ""));
-      const valid = validateDuoPayload(parsed);
+      const valid = validateDuoPayload(parsed, facts.verdict);
       if (valid) return NextResponse.json({ source: "ai", pairId, digest: valid, facts });
     } catch { /* 内容问题（截断/格式）：带纠正提示重试一次 */ }
   }

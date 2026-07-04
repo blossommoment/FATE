@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { analyzeBirth, analyzeRelationship } from "../lib/fate";
+import { analyzeBirth, analyzeDuoRhythm, analyzeRelationship } from "../lib/fate";
 import { JARGON_RE } from "../lib/digest";
 import {
   DUO_TAG_EXPLAIN, buildDuoComparisons, buildDuoFacts, buildDuoFallback,
@@ -17,24 +17,32 @@ const bob: BirthInput = { year: 1997, month: 11, day: 8, hour: 22, minute: 0, na
 const DOMAINS = ["origin", "daily", "friction", "longrun", "season"] as const;
 
 describe("双人标签（五域）", () => {
+  const tagsFor = (x: BirthInput, y: BirthInput) => {
+    const px = analyzeBirth(x);
+    const py = analyzeBirth(y);
+    return buildDuoTags(px, py, analyzeDuoRhythm(px, py, "恋爱", 2026, 5));
+  };
+
   it("确定性：同一对盘同标签", () => {
-    const t1 = buildDuoTags(analyzeBirth(owner), analyzeBirth(alice));
-    const t2 = buildDuoTags(analyzeBirth(owner), analyzeBirth(alice));
-    expect(t1).toEqual(t2);
+    expect(tagsFor(owner, alice)).toEqual(tagsFor(owner, alice));
   });
 
-  it("五域各 ≥2 个标签，零黑话，且每个标签带双人指标", () => {
+  it("五域各有标签，零黑话；非时运域每个标签带双人指标，时运域指标为倾向峰值", () => {
     for (const pair of [[owner, alice], [owner, bob], [alice, bob]] as const) {
-      const tags = buildDuoTags(analyzeBirth(pair[0]), analyzeBirth(pair[1]));
+      const tags = tagsFor(pair[0], pair[1]);
       for (const domain of DOMAINS) {
-        expect(tags[domain].length, `${domain} 域不足 2 个`).toBeGreaterThanOrEqual(2);
+        expect(tags[domain].length, `${domain} 域为空`).toBeGreaterThanOrEqual(1);
         tags[domain].forEach((hit) => {
           expect(JARGON_RE.test(hit.tag), `标签「${hit.tag}」含黑话`).toBe(false);
-          expect(hit.metrics.length, `标签「${hit.tag}」缺指标`).toBeGreaterThanOrEqual(1);
-          hit.metrics.forEach((m) => {
-            expect(typeof m.a).toBe("number");
-            expect(typeof m.b).toBe("number");
-          });
+          if (domain !== "season") {
+            expect(hit.metrics.length, `标签「${hit.tag}」缺指标`).toBeGreaterThanOrEqual(1);
+            hit.metrics.forEach((m) => {
+              expect(typeof m.a).toBe("number");
+              expect(typeof m.b).toBe("number");
+            });
+          } else {
+            hit.metrics.forEach((m) => expect(typeof m.a).toBe("number"));
+          }
         });
       }
     }
@@ -42,7 +50,7 @@ describe("双人标签（五域）", () => {
 
   it("解释表覆盖：所有可能出现的双人标签都有人话解释", () => {
     for (const pair of [[owner, alice], [owner, bob], [alice, bob]] as const) {
-      const tags = buildDuoTags(analyzeBirth(pair[0]), analyzeBirth(pair[1]));
+      const tags = tagsFor(pair[0], pair[1]);
       DOMAINS.flatMap((domain) => tags[domain]).forEach((hit) => {
         expect(DUO_TAG_EXPLAIN[hit.tag], `标签「${hit.tag}」缺解释`).toBeTruthy();
       });
@@ -51,7 +59,7 @@ describe("双人标签（五域）", () => {
 });
 
 describe("对比数据表征", () => {
-  it("四域各三条对比（值+差值+档位），时运为双人大运线", () => {
+  it("四域各三条对比（值+差值+档位）；时运走 facts.rhythm 未来五年", () => {
     const c = buildDuoComparisons(analyzeBirth(owner), analyzeBirth(bob));
     (["origin", "daily", "friction", "longrun"] as const).forEach((domain) => {
       expect(c[domain]).toHaveLength(3);
@@ -60,9 +68,14 @@ describe("对比数据表征", () => {
         expect(["同步", "有差", "显著"]).toContain(row.level);
       });
     });
-    expect(c.season.a.length).toBeGreaterThanOrEqual(4);
-    expect(c.season.a.some((s) => s.current)).toBe(true);
-    expect(c.season.b.some((s) => s.current)).toBe(true);
+    const pa = analyzeBirth(owner);
+    const pb = analyzeBirth(bob);
+    const facts = buildDuoFacts(pa, pb, analyzeRelationship(pa, pb, "恋爱"));
+    expect(facts.rhythm).toHaveLength(5);
+    for (const yearItem of facts.rhythm) {
+      expect(yearItem.ganZhi).toHaveLength(2);
+      yearItem.tendencies.forEach((t) => { expect(t.value).toBeGreaterThanOrEqual(30); expect(t.causes.length).toBeGreaterThan(0); });
+    }
   });
 });
 

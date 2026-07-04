@@ -211,6 +211,9 @@ export type MatchResult = {
   }[];
 };
 
+// 双人对比指标：正文只写定性结论，数字一律走此结构由图表呈现（b 缺省时为单值指标）
+export type PairMetric = { label: string; a: number; b?: number };
+
 export type RelationshipAnalysis = {
   score: number;
   relationType: string;
@@ -236,7 +239,7 @@ export type RelationshipAnalysis = {
     label: string;
     summary: string;
     why: string;
-    evidence: string;
+    metrics: PairMetric[];
     advice: string;
     logic: string[];
   }[];
@@ -255,12 +258,15 @@ export type RelationshipAnalysis = {
     advice: string;
   }[];
   guide: {
-    verdict: { title: string; quip: string; tagline: string; basis: string };
+    verdict: { title: string; quip: string; tagline: string; basis: string; metrics: PairMetric[] };
     philosophy: string;
-    initiator: { name: string; why: string; firstMove: string };
-    behaviors: { label: string; conclusion: string; basis: string }[];
+    initiator: { name: string; why: string; firstMove: string; metrics: PairMetric[] };
+    behaviors: { label: string; conclusion: string; basis: string; metrics: PairMetric[] }[];
     dispositions: { person: string; trait: string; reading: string; approach: string }[];
-    hotspots: { scene: string; risk: string; playbook: string }[];
+    // 人物使用说明书：每人 Do×3 + Don't×3，按结构信号强度选取（贰章主场）
+    manuals: { person: string; dos: string[]; donts: string[] }[];
+    // 摩擦点结构溯源：source 标明来自哪组命盘结构（详见叁章）或行为结构差异，不硬编（伍章主场）
+    hotspots: { scene: string; risk: string; playbook: string; metrics: PairMetric[]; source: string }[];
     longRun: string;
   };
 };

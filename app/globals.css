@@ -1286,3 +1286,108 @@ a.fb-cta { display:inline-block; text-decoration:none; color:#fff; }
 .fb-duo-metric .fb-pair { display:grid; gap:4px; }
 .fb-gap-chip { font:9px "DM Mono",ui-monospace,monospace; font-style:normal; color:#5c6b64; background:#f0efe9; border-radius:999px; padding:4px 6px; text-align:center; }
 .fb-duo-season h5 { margin:10px 0 7px; font:400 12px Georgia,"Songti SC",serif; color:#39433e; }
+
+/* 双人对比条（PairBars）：正文只写定性结论，数字一律由此图形呈现。绿=甲方、粉=乙方，与对镜图同语言 */
+.pair-bars { display:grid; gap:8px; margin-top:12px; }
+.pair-bars-legend { display:flex; gap:16px; font-size:10.5px; letter-spacing:.05em; color:#8a8578; }
+.pair-bars-legend span { display:inline-flex; align-items:center; gap:6px; }
+.pair-bars-legend span::before { content:""; width:14px; height:5px; border-radius:3px; }
+.pair-bars-legend .legend-a::before { background:linear-gradient(90deg,#4b9a82,#7fc3ad); }
+.pair-bars-legend .legend-b::before { background:linear-gradient(90deg,#d47c88,#e8a7b0); }
+.pair-bar-row { display:grid; grid-template-columns:76px 1fr; gap:12px; align-items:center; }
+.pair-bar-row > span { font-size:11.5px; color:#6f6b5e; }
+.pair-lines { display:grid; gap:4px; }
+.pair-line { display:grid; grid-template-columns:1fr 30px; gap:8px; align-items:center; }
+.pair-line .pair-track { position:relative; display:block; height:5px; background:#eceadf; border-radius:3px; overflow:hidden; }
+.pair-line .pair-track b { position:absolute; left:0; top:0; bottom:0; border-radius:3px; }
+.pair-line .pair-fill-a { background:linear-gradient(90deg,#4b9a82,#7fc3ad); }
+.pair-line .pair-fill-b { background:linear-gradient(90deg,#d47c88,#e8a7b0); }
+.pair-line em { font:10.5px "DM Mono",ui-monospace,monospace; font-style:normal; color:#7a766a; text-align:right; }
+/* 判词首屏为深色渐变底：轨道与文字换白系 */
+.match-hero-verdict .pair-bars { max-width:420px; }
+.match-hero-verdict .pair-bar-row > span { color:rgba(255,255,255,.78); }
+.match-hero-verdict .pair-line .pair-track { background:rgba(255,255,255,.24); }
+.match-hero-verdict .pair-line em { color:rgba(255,255,255,.9); }
+.match-hero-verdict .pair-bars-legend { color:rgba(255,255,255,.75); }
+/* 单值指标（关系级，非个人）：中性色，避免与甲方绿混淆 */
+.pair-line .pair-fill-solo { background:linear-gradient(90deg,#8f8a7a,#bdb7a4); }
+/* 叁章结构修正方向 chip：增益绿 / 压力红，幅度由结构强度条呈现 */
+.dynamic-source .impact-pos { color:#3d7f6c; }
+.dynamic-source .impact-neg { color:#b05f6d; }
+
+/* 柒·未来三年：逐年节律卡（压力粉/窗口绿，与全站对比条同语言） */
+.rhythm-note { font-size:12px; color:#8a8578; margin-bottom:14px; }
+.rhythm-year { background:#fff; border-radius:14px; padding:18px 20px; margin-bottom:14px; border-left:3px solid #d8d4c6; }
+.rhythm-year.tone-boost { border-left-color:#4b9a82; }
+.rhythm-year.tone-drain { border-left-color:#b05f6d; }
+.rhythm-year.tone-mixed { border-left-color:#c8a35a; }
+.rhythm-head { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+.rhythm-head i { font:400 17px Georgia,"Songti SC",serif; font-style:normal; width:46px; height:46px; border-radius:50%; background:#f4f2ea; display:flex; align-items:center; justify-content:center; color:#39433e; }
+.rhythm-head span { font:11px "DM Mono",ui-monospace,monospace; color:#8a8578; letter-spacing:.06em; }
+.rhythm-head h4 { margin:2px 0 0; font-size:16px; }
+.rhythm-bars { margin:6px 0 10px; }
+.rhythm-fill-pressure { background:linear-gradient(90deg,#d47c88,#e8a7b0); }
+.rhythm-fill-window { background:linear-gradient(90deg,#4b9a82,#7fc3ad); }
+.rhythm-signals { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+.rhythm-signals span { font-size:10.5px; color:#5c6b64; background:#f0efe9; border-radius:999px; padding:4px 9px; }
+.rhythm-year > p { font-size:13px; line-height:1.75; color:#3f3c33; }
+.rhythm-advice { margin-top:10px; font-size:12.5px; color:#4a544f; background:#f7f5ee; border-radius:10px; padding:10px 12px; }
+.rhythm-advice b { display:block; font-size:10.5px; color:#8a8578; letter-spacing:.08em; margin-bottom:4px; }
+/* 倾向条按倾向类型配色：变动金 / 动荡红 / 推进绿 / 外缘粉 / 耗损灰褐 */
+.tendency-block { margin-bottom:10px; }
+.tendency-block .rhythm-signals { margin:4px 0 0 88px; }
+.pair-line .tend-change { background:linear-gradient(90deg,#c8a35a,#dcc08a); }
+.pair-line .tend-turbulence { background:linear-gradient(90deg,#b05f6d,#d48a96); }
+.pair-line .tend-advance { background:linear-gradient(90deg,#4b9a82,#7fc3ad); }
+.pair-line .tend-attraction { background:linear-gradient(90deg,#d47c88,#e8a7b0); }
+.pair-line .tend-drain { background:linear-gradient(90deg,#8f8a7a,#bdb7a4); }
+
+/* 贰·人物使用说明书：Do/Don't 双栏 */
+.nature-manuals { display:grid; gap:14px; margin-top:16px; }
+.nature-manuals article { background:#fff; border-radius:14px; padding:18px 20px; }
+.nature-manuals h4 { margin:0 0 12px; font-size:15px; }
+.nature-manuals h4 small { display:block; font-weight:400; font-size:11px; color:#8a8578; margin-top:3px; }
+.manual-cols { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+@media (max-width:640px) { .manual-cols { grid-template-columns:1fr; } }
+.manual-tag { display:inline-block; font-size:10.5px; letter-spacing:.08em; border-radius:999px; padding:3px 10px; margin-bottom:8px; }
+.manual-do { color:#2c5f53; background:#e8f2ed; }
+.manual-dont { color:#8e4a55; background:#f7e9eb; }
+.manual-cols ul { margin:0; padding:0; list-style:none; display:grid; gap:8px; }
+.manual-cols li { font-size:12.5px; line-height:1.7; color:#3f3c33; padding-left:14px; position:relative; }
+.manual-cols > div:first-child li::before { content:"+"; position:absolute; left:0; color:#4b9a82; }
+.manual-cols > div:last-child li::before { content:"—"; position:absolute; left:0; color:#b05f6d; }
+
+/* 伍·冲突推演剧本：起因→升级→僵局 */
+.hotspot-script { display:grid; gap:8px; margin:10px 0; border-left:2px solid #e3dfd2; padding-left:12px; }
+.hotspot-script > div { display:grid; grid-template-columns:34px 1fr; gap:10px; align-items:start; }
+.hotspot-script i { font:10.5px "DM Mono",ui-monospace,monospace; font-style:normal; color:#8a8578; background:#f0efe9; border-radius:6px; padding:3px 0; text-align:center; margin-top:2px; }
+.hotspot-script p { margin:0; font-size:12.5px; line-height:1.7; color:#4a463c; }
+.hotspot-window { margin-top:12px; font-size:12px; color:#6f6b5e; background:#f7f5ee; border-radius:10px; padding:10px 12px; }
+
+/* 贰·差异三处 */
+.nature-diffs { display:grid; gap:12px; margin-top:16px; }
+.nature-diffs > h4, .nature-manuals h4, .voyage-plan h4, .voyage-path h4 { margin:0 0 4px; font-size:15px; }
+.nature-diffs > h4 small, .voyage-plan h4 small, .voyage-path h4 small { display:block; font-weight:400; font-size:11px; color:#8a8578; margin-top:3px; }
+.nature-diffs article { background:#fff; border-radius:14px; padding:16px 18px; }
+.diff-cols { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:10px; }
+@media (max-width:640px) { .diff-cols { grid-template-columns:1fr; } }
+.diff-cols b { display:block; font-size:12px; color:#39433e; margin-bottom:4px; }
+.diff-cols p { margin:0; font-size:12px; line-height:1.7; color:#6f6b5e; }
+
+/* 陆·五年排期 */
+.voyage-plan { display:grid; gap:8px; margin-top:16px; }
+.voyage-plan-row { display:grid; grid-template-columns:44px 34px 76px 1fr; gap:10px; align-items:baseline; background:#fff; border-radius:10px; padding:10px 14px; }
+.voyage-plan-row i { font:11px "DM Mono",ui-monospace,monospace; font-style:normal; color:#8a8578; }
+.voyage-plan-row b { font:400 13px Georgia,"Songti SC",serif; color:#39433e; }
+.plan-chip { font-size:10.5px; border-radius:999px; padding:3px 8px; text-align:center; background:#f0efe9; color:#5c6b64; }
+.plan-advance { background:#e8f2ed; color:#2c5f53; }
+.plan-turbulence { background:#f7e9eb; color:#8e4a55; }
+.plan-change { background:#f6efdd; color:#8a6d2f; }
+.plan-drain { background:#efede6; color:#6f6b5e; }
+.plan-attraction { background:#f9edf0; color:#a05468; }
+.voyage-plan-row p { margin:0; font-size:12.5px; line-height:1.65; color:#4a463c; }
+@media (max-width:640px) { .voyage-plan-row { grid-template-columns:44px 34px 1fr; } .voyage-plan-row p { grid-column:1 / -1; } }
+/* 伍·摩擦来源标注（结构溯源） */
+.hotspot-source { display:inline-block; font-size:10.5px; color:#8a6d2f; background:#f6efdd; border-radius:999px; padding:3px 10px; margin:4px 0 2px; }
+/* 壹·分数构成说明 */
+.dim-formula { display:block; font:10.5px "DM Mono",ui-monospace,monospace; color:#9a9587; margin:6px 0 2px; letter-spacing:.02em; }

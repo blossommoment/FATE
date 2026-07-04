@@ -20,7 +20,6 @@ const ADVICE_LABEL: Record<DuoDomain, string> = {
   origin: "一起做", daily: "一起做", friction: "拆法", longrun: "经营", season: "时间窗",
 };
 
-const TONE_WIDTH: Record<string, number> = { boost: 74, mixed: 52, neutral: 46, drain: 32 };
 
 type CachedDuo = { digest: DuoDigestPayload; source: "ai" | "fallback"; facts: DuoFacts };
 
@@ -29,7 +28,7 @@ export default function DuoReport({ a, b, relationType, pairId }: { a: BirthInpu
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
   const [unlocked] = useState(!PAYWALL_ENABLED);
-  const cacheKey = `fate-duo-report-v3-${pairId}`;
+  const cacheKey = `fate-duo-report-v6-${pairId}`;
 
   useEffect(() => {
     try {
@@ -95,14 +94,11 @@ export default function DuoReport({ a, b, relationType, pairId }: { a: BirthInpu
       </div>)}
     </div>}
     {page.key === "season" && <div className="fb-data">
-      <span className="fb-mono">DATA · 两人的大运补耗（当前段高亮）</span>
-      {[{ name: pa.name, line: facts.comparisons.season.a, cls: "fb-fill-a" }, { name: pb.name, line: facts.comparisons.season.b, cls: "fb-fill-b" }].map((side) => <div key={side.name} className="fb-duo-season">
-        <h5>{side.name}</h5>
-        {side.line.map((step) => <div className={`fb-metric${step.current ? " fb-current" : ""}`} key={`${side.name}-${step.range}`}>
-          <label>{step.range}{step.current ? " ●" : ""}</label>
-          <div className="fb-track"><i className={`fb-fill ${side.cls}`} style={{ width: `${TONE_WIDTH[step.tone] ?? 46}%`, opacity: step.current ? 1 : 0.3 }} /></div>
-          <em>{step.label}</em>
-        </div>)}
+      <span className="fb-mono">DATA · 未来五年流年倾向</span>
+      {facts.rhythm.map((entry) => <div className="fb-metric" key={entry.year}>
+        <label>{entry.year} {entry.ganZhi}</label>
+        <div className="fb-track"><i className="fb-fill fb-fill-a" style={{ width: `${Math.max(6, Math.min(100, entry.tendencies[0]?.value ?? 8))}%` }} /></div>
+        <em>{entry.tendencies[0] ? `${entry.tendencies[0].label}倾向` : "平稳"}</em>
       </div>)}
     </div>}
     <div className="fb-essay-tag">评述 · 基于 FATE 模型 2.0</div>

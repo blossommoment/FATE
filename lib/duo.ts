@@ -3,8 +3,9 @@
 // 正文契约同个人版：标签零命理黑话；总分永不外显（拍板#3）。
 
 import type { Elements, RelationshipAnalysis, UserProfile } from "./types";
+import { analyzeDuoRhythm, type DuoYearOutlook } from "./fate";
 
-export type DuoMetric = { label: string; a: number; b: number };
+export type DuoMetric = { label: string; a: number; b?: number };
 export type DuoTagHit = { tag: string; metrics: DuoMetric[] };
 export type DuoDomain = "origin" | "daily" | "friction" | "longrun" | "season";
 export type DuoTags = Record<DuoDomain, DuoTagHit[]>;
@@ -40,12 +41,6 @@ function synergyTone(a: UserProfile, b: UserProfile): "mutual" | "oneway" | "cos
   return "neutral";
 }
 
-// 当前/下一步大运补耗（无 verdict 时按 neutral）
-const phaseTone = (p: UserProfile, offset = 0): string => {
-  const idx = p.luckCycles.periods.findIndex((x) => x.isCurrent);
-  return p.luckCycles.periods[idx + offset]?.verdict?.tone ?? "neutral";
-};
-const toneScore = (tone: string) => ({ boost: 75, mixed: 55, neutral: 45, drain: 30 })[tone] ?? 45;
 
 export const DUO_TAG_EXPLAIN: Record<string, string> = {
   双向奔赴: "两个人都愿意先走一步", 一追一逃: "一个在靠近，一个在校准距离",
@@ -73,9 +68,9 @@ export const DUO_TAG_EXPLAIN: Record<string, string> = {
   慢热但绑定深: "进场慢，退场更慢", 双强并行线: "两条事业线，日程是第三者",
   互为军师: "聊得深想得多，行动要互相推", 搭伙创作组: "一起做点东西是最好的黏合剂",
   需要共同项目: "感情靠共同目标供氧", 细水长流候选: "没有烈火，有长明灯",
-  双补给期: "都在顺风段，敢想就敢做", 一人扛周期: "一方顺风时多拉另一方一把",
-  双蓄力期: "都在逆风段，抱团取暖别互相索取", 逆风同行: "环境不给力，但你们都扛造",
-  时来运转组: "熬过这段，下一程一起顺", 补给期将至: "顺风窗口在路上，大动作等一等",
+  推进窗口在望: "五年里有顺手的年份，大事往那儿放", 变动期穿行: "位置与安排会动，预案先行",
+  高压段在途: "有的年份外部变量偏多，少排大决定", 外缘活跃段: "曝光上升的年份，透明是解法",
+  蓄力区间: "有电量偏低的年份，按省电模式过", 平流五年: "无强信号，日子怎么过关系就怎么长",
   各有各的节奏: "周期不同步，理解比同步更重要", 慢慢对焦中: "吸引在细节里，不在第一眼",
   搭伙过日子型: "不腻歪，但缺谁都不行", 摩擦耐受良好: "冲突不是你们的常客",
   时间站你们这边: "没有硬伤，耐心是最大的资产", 按自己的表走: "两套时钟，对表就好",
@@ -83,7 +78,7 @@ export const DUO_TAG_EXPLAIN: Record<string, string> = {
 
 // ── 五域双人标签（规则表映射，确定性）────────────────────────────
 
-export function buildDuoTags(a: UserProfile, b: UserProfile): DuoTags {
+export function buildDuoTags(a: UserProfile, b: UserProfile, rhythm?: DuoYearOutlook[]): DuoTags {
   const M = (label: string, va: number, vb: number): DuoMetric => ({ label, a: Math.round(va), b: Math.round(vb) });
   const d = (x: number, y: number) => Math.abs(x - y);
   const pick = (rules: { tag: string; hit: boolean; margin: number; m: DuoMetric[] }[], fallback: DuoTagHit[]): DuoTagHit[] => {
@@ -171,17 +166,20 @@ export function buildDuoTags(a: UserProfile, b: UserProfile): DuoTags {
     { tag: "需要共同项目", hit: novA >= 50 && novB >= 50 && d(a.personality.control, b.personality.control) <= 15, margin: 8, m: [M("新鲜感需求", novA, novB)] },
   ], [{ tag: "细水长流候选", metrics: [M("情绪稳定", a.personality.stability, b.personality.stability)] }, { tag: "时间站你们这边", metrics: [M("关系适应力", adaA, adaB)] }]);
 
-  const tA = phaseTone(a), tB = phaseTone(b);
-  const nextA = phaseTone(a, 1), nextB = phaseTone(b, 1);
-  const boostish = (t: string) => t === "boost" || t === "mixed";
-  const season = pick([
-    { tag: "双补给期", hit: tA === "boost" && tB === "boost", margin: 30, m: [M("当前段补耗", toneScore(tA), toneScore(tB))] },
-    { tag: "一人扛周期", hit: (tA === "boost" && tB === "drain") || (tA === "drain" && tB === "boost"), margin: 26, m: [M("当前段补耗", toneScore(tA), toneScore(tB))] },
-    { tag: "双蓄力期", hit: tA === "drain" && tB === "drain", margin: 24, m: [M("当前段补耗", toneScore(tA), toneScore(tB))] },
-    { tag: "逆风同行", hit: tA === "drain" && tB === "drain" && resA >= 60 && resB >= 60, margin: 28, m: [M("当前段补耗", toneScore(tA), toneScore(tB)), M("压力韧性", resA, resB)] },
-    { tag: "时来运转组", hit: (tA === "drain" || tB === "drain") && boostish(nextA) && boostish(nextB), margin: 22, m: [M("下一段补耗", toneScore(nextA), toneScore(nextB))] },
-    { tag: "补给期将至", hit: boostish(nextA) && boostish(nextB) && !(tA === "boost" && tB === "boost"), margin: 18, m: [M("下一段补耗", toneScore(nextA), toneScore(nextB))] },
-  ], [{ tag: "各有各的节奏", metrics: [M("当前段补耗", toneScore(tA), toneScore(tB))] }, { tag: "按自己的表走", metrics: [M("下一段补耗", toneScore(nextA), toneScore(nextB))] }]);
+  // 时运标签：由未来五年流年倾向峰值导出（大运不再参与时运）
+  const season: DuoTagHit[] = rhythm && rhythm.length
+    ? (() => {
+      const kindTag: Record<string, string> = { advance: "推进窗口在望", change: "变动期穿行", turbulence: "高压段在途", attraction: "外缘活跃段", drain: "蓄力区间" };
+      const peaks = new Map<string, { value: number; year: number; label: string }>();
+      for (const y of rhythm) for (const t of y.tendencies) {
+        const prev = peaks.get(t.key);
+        if (!prev || t.value > prev.value) peaks.set(t.key, { value: t.value, year: y.year, label: t.label });
+      }
+      const ranked = [...peaks.entries()].sort((x, y) => y[1].value - x[1].value).slice(0, 2);
+      if (!ranked.length) return [{ tag: "平流五年", metrics: [] }];
+      return ranked.map(([kind, peak]) => ({ tag: kindTag[kind] ?? "平流五年", metrics: [{ label: `${peak.year}年${peak.label}倾向峰值`, a: peak.value }] }));
+    })()
+    : [{ tag: "各有各的节奏", metrics: [] }, { tag: "按自己的表走", metrics: [] }];
 
   return { origin, daily, friction, longrun, season };
 }
@@ -196,12 +194,6 @@ function comparison(label: string, a: number, b: number): DuoComparison {
 }
 
 export function buildDuoComparisons(a: UserProfile, b: UserProfile) {
-  const luckLine = (p: UserProfile) => p.luckCycles.periods.slice(0, 5).map((period) => ({
-    range: `${period.startAge}—${period.endAge} 岁`,
-    label: period.verdict?.label ?? "—",
-    tone: period.verdict?.tone ?? "neutral",
-    current: period.isCurrent,
-  }));
   return {
     origin: [
       comparison("浪漫倾向", deep(a, "romance"), deep(b, "romance")),
@@ -223,7 +215,6 @@ export function buildDuoComparisons(a: UserProfile, b: UserProfile) {
       comparison("自主空间", deep(a, "autonomy"), deep(b, "autonomy")),
       comparison("关系适应力", trait(a, "adaptability"), trait(b, "adaptability")),
     ],
-    season: { a: luckLine(a), b: luckLine(b) },
   };
 }
 
@@ -232,6 +223,7 @@ export function buildDuoComparisons(a: UserProfile, b: UserProfile) {
 export type DuoFacts = ReturnType<typeof buildDuoFacts>;
 
 export function buildDuoFacts(a: UserProfile, b: UserProfile, analysis: RelationshipAnalysis) {
+  const rhythm = analyzeDuoRhythm(a, b, analysis.relationType, new Date().getFullYear(), 5);
   const person = (p: UserProfile) => ({
     name: p.birth.name ?? "TA",
     dayPillar: p.bazi.dayPillar,
@@ -244,8 +236,9 @@ export function buildDuoFacts(a: UserProfile, b: UserProfile, analysis: Relation
     persons: [person(a), person(b)],
     verdict: analysis.guide.verdict,       // 判词承载结论；总分永不外显（拍板#3）
     spine: analysis.spine,
-    duoTags: buildDuoTags(a, b),
+    duoTags: buildDuoTags(a, b, rhythm),
     comparisons: buildDuoComparisons(a, b),
+    rhythm: rhythm.map((y) => ({ year: y.year, ganZhi: y.ganZhi, tendencies: y.tendencies.map((t) => ({ key: t.key, label: t.label, value: t.value, causes: t.causes.map((c) => `${c.who}·${c.label}`) })), advice: y.advice })),
     behaviors: analysis.guide.behaviors,
     frictions: analysis.guide.hotspots.map(({ scene, risk, playbook }) => ({ scene, risk, playbook })),
     initiator: { name: analysis.guide.initiator.name, firstMove: analysis.guide.initiator.firstMove },
@@ -264,26 +257,27 @@ export type DuoDigestPayload = {
   pages: { origin: DuoPageText; daily: DuoPageText; friction: DuoPageText; longrun: DuoPageText; season: DuoPageText };
 };
 
-const DUO_STYLE_ORIGIN = "你们的开场不是烟花，是对焦。一个习惯先观察再靠近，把每条信号都过一遍雷达；一个信任给得快，已经把对方写进了周末计划。这不是温差，是两种出厂设置刚好互相踩中了开关——慢的那位提供确定感，快的那位提供推进力。真正的吸引藏在第三次见面之后：当快的开始愿意等，慢的开始愿意提前一点点，这段关系就成立了。";
-const DUO_STYLE_FRICTION = "你们的吵架从来不是同一场吵架。一个的版本是：话都说到这儿了，为什么不回应；另一个的版本是：正因为要回应，才需要先退出去想。于是一个越追越急，一个越退越远——追的人觉得对方冷，退的人觉得对方在逼。其实你们要的是同一件事：确认这段关系稳不稳。只是一个靠当场把话说完来确认，一个靠先退出去想清楚来确认。看懂这一层，一半的战争会自己消失。";
+const DUO_STYLE_ORIGIN = "（范文中的名字请替换为清单里两人的名字）阿明的靠近是有流程的：先观察几周、核对每条信号，才允许自己上心；小夏不一样，第二次见面就把阿明排进了周末计划。开场看起来不同步，其实是分工——小夏负责推进度，阿明负责验真伪。等到阿明开始主动提前十分钟到场，小夏开始学会不催，这段关系就算正式立项了。";
+const DUO_STYLE_FRICTION = "冷战的时候，两个人做的是完全相反的动作：小夏会追进房间把话说完，消息一条接一条地发；阿明会先把手机调成静音，出门走一圈，等心跳降下来再回。追的人把沉默读成冷漠，退的人把追问读成逼迫——其实两个人都在给关系降温，只是小夏靠说完降温，阿明靠走开降温。谁先迈半步不重要，重要的是认出对方的动作不是针对自己。";
 
 export function buildDuoPrompt(facts: DuoFacts): { system: string; user: string } {
   return {
     system: [
       "你是 FATE 双人深度解读报告的撰稿人。输入是 FATE 模型 2.0 已算好的双人事实清单（JSON），你负责写成五章报告正文。",
       "输出严格为 JSON（不要 markdown 代码块）：",
-      `{"headline":"关系一句话判词，15字以内","pages":{"origin":{"essay":"缘起章：你们为什么互相吸引，180~240字","advice":"两个人一起能做的一件事，40~70字"},"daily":{"essay":"相处章：日常样态，180~240字","advice":"同上"},"friction":{"essay":"摩擦章：最容易在哪起冲突、怎么拆，180~240字","advice":"同上"},"longrun":{"essay":"长线章：这段关系怎么经营，160~220字","advice":"同上"},"season":{"essay":"时运章：两人各自的时段与共同节奏，160~220字，可提年龄段与年份","advice":"同上"}}}`,
+      `{"headline":"关系一句话判词，15字以内","pages":{"origin":{"essay":"缘起章：你们为什么互相吸引，180~240字","advice":"两个人一起能做的一件事，40~70字"},"daily":{"essay":"相处章：日常样态，180~240字","advice":"同上"},"friction":{"essay":"摩擦章：最容易在哪起冲突、怎么拆，180~240字","advice":"同上"},"longrun":{"essay":"长线章：这段关系怎么经营，160~220字","advice":"同上"},"season":{"essay":"时运章：未来五年的流年节律——哪一年什么倾向、大事怎么排，160~220字，可提年份","advice":"同上"}}}`,
       "铁律：",
       "1. 事实只能来自清单；每章围绕 duoTags 对应域的标签展开，并回扣 spine 主线。",
       "2. 正文与建议【禁止出现任何数字与指标名】（数据已由图表呈现；仅 season 章可写年龄段与年份）。",
-      "3. 禁止命理术语与吉凶断言；禁止「注定/命中」。",
+      "3. 禁止命理术语与吉凶断言；禁止「注定/命中」；禁止绝对化断言与现实断言（必然/一定/十有八九/大概率/肯定会），推演一律用「往往/更容易/倾向于」，涉及读者现实的说法用「可以对照观察」句式。",
       `4. 以名字称呼两人（${facts.persons[0].name}、${facts.persons[1].name}），写「你们」的具体场景（谁先发消息、饭桌氛围、冷战谁破冰）；禁止各写一段拼成两份个人报告。`,
       "5. 每章 advice 必须是两个人一起能做的一件具体的事。",
+      "6. essay 直接以正文开场：禁止出现「缘起章」「相处章」等章节名，禁止复述章节说明，禁止以设问开头——第一句就进入两人的具体画面。",
       "写作要求（付费报告，读者要的是被看穿的感觉）：",
-      "a. 每章至少一个具体生活场景——微信里谁先发消息、回复节奏、饭桌上的氛围、周末怎么定。场景只写到【行为模式】为止（如：一方追问时，另一方会先沉默）。【严禁虚构对话与台词】：不得编造两人说过或会说的任何一句话，评述里不得出现引号台词。",
+      "a. 每章至少一个具体生活场景。句子的主语用两人的名字（某某会怎么做，某某则会怎么做），谓语落在【可观察的行为动作】上：回复变慢、先离开现场、把周末计划提前排好、消息一条接一条地发、追问频率上升。严禁编造台词（不写两人说了什么），也不要停在抽象状态形容（如在校准距离、在试探边界这类悬空修辞）。少用一个如何另一个如何的无主语句式。",
       "b. 清单里的 behaviors、frictions（含 playbook）、initiator.firstMove 是现成素材库：改写成行为模式描写（其中的数字一律丢弃，禁止照抄进正文）。advice 栏例外：可以给一句让两人照着说的话。",
       "c. 每章要有一句值得截图转发的精辟短句。",
-      "d. headline 参考 verdict.quip 的幽默感重写，不要照抄 verdict.title。",
+      "d. headline 参考 verdict.quip 的幽默感【另写一句】：不得照抄 verdict.title，也不得摘抄 quip 中的任何原句（读者在结果页已经看过判词，付费封面必须是新的一句话）。",
       `风格样例一（缘起章）：${DUO_STYLE_ORIGIN}`,
       `风格样例二（摩擦章）：${DUO_STYLE_FRICTION}`,
     ].join("\n"),
@@ -294,10 +288,20 @@ export function buildDuoPrompt(facts: DuoFacts): { system: string; user: string 
 const DUO_DIGIT_RE = /[0-9０-９]/;
 const DUO_JARGON_RE = /食神|伤官|比肩|劫财|正印|偏印|正官|七杀|正财|偏财|日主|喜用|忌神|身弱|身强|从弱|从强|禄|刃|藏干|十神|用神/;
 
-export function validateDuoPayload(raw: unknown): DuoDigestPayload | null {
+export function validateDuoPayload(raw: unknown, verdict?: { title: string; quip: string }): DuoDigestPayload | null {
   if (!raw || typeof raw !== "object") return null;
   const d = raw as Partial<DuoDigestPayload>;
   if (typeof d.headline !== "string" || d.headline.length === 0 || d.headline.length > 24) return null;
+  if (verdict) {
+    // 封面判词不得与结果页判词撞文：等于 title，或与 quip 存在 ≥8 字连续重合（滑窗，防少字漏字的近抄）
+    const strip = (text: string) => text.replace(/[，。！？；：、“”「」\s—–-]/g, "");
+    const bare = strip(d.headline);
+    const quipBare = strip(verdict.quip);
+    if (bare.length === 0 || bare === strip(verdict.title)) return null;
+    for (let start = 0; start + 8 <= bare.length; start++) {
+      if (quipBare.includes(bare.slice(start, start + 8))) return null;
+    }
+  }
   const pages = d.pages;
   if (!pages) return null;
   const keys = ["origin", "daily", "friction", "longrun", "season"] as const;
@@ -305,8 +309,11 @@ export function validateDuoPayload(raw: unknown): DuoDigestPayload | null {
     const page = pages[key];
     if (!page || typeof page.essay !== "string" || typeof page.advice !== "string") return null;
     if (page.essay.length < 90 || page.advice.length < 15) return null;
+    if (/^[^。！？]{0,6}章[:：]/.test(page.essay)) return null; // 拦章节名开头（模型爱复述 schema 说明）
     if (key !== "season" && DUO_DIGIT_RE.test(page.essay + page.advice)) return null;
-    if (/[“”]/.test(page.essay)) return null; // 评述禁对话引语（模拟话术红线；advice 可给照着说的话）
+    // 评述禁虚构台词：只拦「对话动词+引号」的剧本模式，放行概念/标签引用（模拟话术红线）。
+    // 注意：来/发/回 是中文最高频字，做触发词会误杀『回到「老地方」』类概念引用——真台词由 一句/那句 分支兜住。
+    if (/(?:说|问|答|喊|甩出|憋出|冒出)[^。“”「」]{0,6}[“「]|(?:一句|那句)[^。“”「」]{0,3}[“「]/.test(page.essay)) return null;
   }
   const everything = [d.headline, ...keys.flatMap((k) => [pages[k]!.essay, pages[k]!.advice])].join("");
   if (DUO_JARGON_RE.test(everything)) return null;
@@ -320,18 +327,13 @@ export function buildDuoFallback(facts: DuoFacts): DuoDigestPayload {
   const ex = (tag: string) => DUO_TAG_EXPLAIN[tag] ?? "";
   const names = (domain: DuoDomain) => t[domain].map((h) => h.tag).join("、");
   const first = (domain: DuoDomain) => t[domain][0]?.tag ?? "";
-  const curA = facts.comparisons.season.a.find((s) => s.current);
-  const curB = facts.comparisons.season.b.find((s) => s.current);
-  const seasonAdviceMap: Record<string, string> = {
-    双补给期: "把想了很久的共同计划排上日程——旅行、搬家、新阶段，这段时间敢想就敢做。",
-    一人扛周期: "顺风的一方多扛事、多兜底；逆风的一方负责把状态照顾好——分工说破，就不是牺牲。",
-    双蓄力期: "一起把日子过小：固定的散步路线、固定的做饭日——蓄力期的感情靠低成本的重复喂养。",
-    逆风同行: "每周留一个不谈难处的晚上，只做让两个人都省电的事。",
-    时来运转组: "把大决定推迟到下一段一起做，现在只做准备清单。",
-    补给期将至: "列一张「等窗口打开就做」的清单，贴在两个人都看得见的地方。",
-  };
+  const rhythmLine = facts.rhythm.map((y) => `${y.year} 年偏${y.tendencies[0]?.label ?? "平稳"}`).join("、");
+  const pushYear = facts.rhythm.find((y) => y.tendencies[0]?.key === "advance");
+  const calmYear = facts.rhythm.find((y) => !y.tendencies.length);
+  const heavyYear = facts.rhythm.find((y) => ["turbulence", "change", "drain"].includes(y.tendencies[0]?.key ?? ""));
   return {
-    headline: facts.verdict.title,
+    headline: `${facts.spine.primaryResource.label}为帆，${facts.spine.primaryTension.label}为锚`, // 封面判词不与结果页判词撞文：兜底由 spine 两轴合成
+
     pages: {
       origin: {
         essay: `${pa.name}和${pb.name}的开场写着「${names("origin")}」。${ex(first("origin"))}——吸引不是错觉，是两种结构刚好互相踩中了开关。${facts.spine.thesis}，这条主线从你们第一次说话就埋下了：一方提供的，恰好是另一方缺的那种确定感或推进力。后面所有的故事，都是这个开关被反复按下的回声。`,
@@ -350,8 +352,8 @@ export function buildDuoFallback(facts: DuoFacts): DuoDigestPayload {
         advice: "每季度安排一件只属于你们俩的「第一次」，提前写进两个人的日历。",
       },
       season: {
-        essay: `时运上，${pa.name}正走 ${curA?.range ?? "当前"} 的${curA?.label ?? "平"}段，${pb.name}是 ${curB?.range ?? "当前"} 的${curB?.label ?? "平"}段——你们是「${names("season")}」。${ex(first("season"))}。周期不是宿命，是天气预报：知道谁在顺风谁在逆风，担待就有了方向，等待就有了期限。`,
-        advice: seasonAdviceMap[first("season")] ?? "把两个人的节奏摊开对表：谁该冲、谁该稳，说清楚就不拧巴。",
+        essay: `把未来五年摊开看：${rhythmLine}。节律不是命令，是天气预报——${heavyYear ? `${heavyYear.year} 年前后外部变量偏多，重大决定放慢、低成本的陪伴加密；` : ""}${pushYear ? `想推进的大事，优先排在 ${pushYear.year} 年这类顺手的年份；` : calmYear ? `${calmYear.year} 年这类平稳年份，适合把平时绕着走的小分歧谈透；` : ""}其余时间把日子过小。起伏看得见，就不值得慌——${pa.name}和${pb.name}要做的，只是别在同一年里互相要求满格。`,
+        advice: facts.rhythm.find((y) => y.tendencies[0])?.advice ?? "把两个人的节奏摊开对表：谁该冲、谁该稳，说清楚就不拧巴。",
       },
     },
   };
