@@ -30,6 +30,7 @@ const GOD_CAT: Record<string, { cat: string; catEn: string; color: string }> = {
 };
 
 const T = (lang: "zh" | "en", zh: string, en: string) => lang === "en" ? en : zh;
+const levelOf = (v: number) => v >= 82 ? "强倾向" : v >= 65 ? "偏高" : v >= 45 ? "中段" : v >= 28 ? "偏低" : "弱倾向";
 
 type ChapterText = { essay: string; advice: string };
 export type DeepDigest = { source: "ai" | "fallback"; headline: string; pages: { love: ChapterText; career: ChapterText; social: ChapterText; season: ChapterText } };
@@ -219,11 +220,11 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
     chapter(T(lang, "行为模式", "Behaviour Patterns"), "How This Chart Acts");
     para(T(lang, "把命盘折算成可观察的行为倾向，每一条都附命盘依据——分数越高，该模式越稳定鲜明。", "The chart translated into observable behavioural tendencies, each with its chart-based evidence. The higher the score, the more consistently the pattern shows."), SUB, 10.5);
     doc.moveDown(0.3);
-    const tMax = Math.max(...profile.traitAnalysis.map((t) => t.score), 100);
+    const tMax = 100;
     for (const t of profile.traitAnalysis) {
       ensure(40);
-      const color = t.score >= 66 ? "#4f9d6b" : t.score >= 40 ? "#bf9a4e" : "#9a9587";
-      colorBar(t.label, t.score, tMax, color, { labelW: 120 });
+      const color = t.displayScore >= 66 ? "#4f9d6b" : t.displayScore >= 40 ? "#bf9a4e" : "#9a9587";
+      colorBar(t.label, t.displayScore, tMax, color, { labelW: 120 });
       if (t.basis) para(`　${t.basis}`, FAINT, 9);
       doc.moveDown(0.15);
     }
@@ -289,10 +290,10 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
   const pt = (i: number, r: number) => { const a = -Math.PI / 2 + i * Math.PI * 2 / dims.length; return [cx + Math.cos(a) * r, cy + Math.sin(a) * r] as const; };
   [0.25, 0.5, 0.75, 1].forEach((f) => { doc.polygon(...dims.map((_, i) => pt(i, R * f) as [number, number])).lineWidth(0.5).strokeColor("#d8d2c0").stroke(); });
   dims.forEach((_, i) => { const [x, y] = pt(i, R); doc.moveTo(cx, cy).lineTo(x, y).lineWidth(0.4).strokeColor("#e0dac8").stroke(); });
-  doc.polygon(...dims.map((d, i) => pt(i, R * d.score / 100) as [number, number])).fillOpacity(0.28).fill(CINNABAR);
+  doc.polygon(...dims.map((d, i) => pt(i, R * d.displayScore / 100) as [number, number])).fillOpacity(0.28).fill(CINNABAR);
   doc.fillOpacity(1);
-  doc.polygon(...dims.map((d, i) => pt(i, R * d.score / 100) as [number, number])).lineWidth(1.2).strokeColor(CINNABAR).stroke();
-  dims.forEach((d, i) => { const [x, y] = pt(i, R * d.score / 100); doc.circle(x, y, 2.2).fill(CAT_COLOR[d.category] ?? CINNABAR); });
+  doc.polygon(...dims.map((d, i) => pt(i, R * d.displayScore / 100) as [number, number])).lineWidth(1.2).strokeColor(CINNABAR).stroke();
+  dims.forEach((d, i) => { const [x, y] = pt(i, R * d.displayScore / 100); doc.circle(x, y, 2.2).fill(CAT_COLOR[d.category] ?? CINNABAR); });
   dims.forEach((d, i) => { const [x, y] = pt(i, R + 16); doc.font("hei").fontSize(7.5).fillColor(SUB).text(d.label, x - 30, y - 4, { width: 60, align: "center" }); });
   doc.y = cy + R + 34; doc.x = ML;
 
@@ -317,13 +318,13 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
     // 类目 banner（首维更醒目）
     if (isFirstOfCat) { doc.roundedRect(ML, ty, 4, 13, 1).fillColor(accent).fill(); }
     doc.font("hei").fontSize(10).fillColor(accent).text(`${d.category}　${catSeq[d.category]}/${catCount}`, ML + (isFirstOfCat ? 10 : 0), ty, { width: W - 90 });
-    doc.font("en").fontSize(34).fillColor(accent).text(String(d.score), ML + W - 84, ty - 4, { width: 84, align: "right", lineBreak: false });
+    doc.font("en").fontSize(34).fillColor(accent).text(String(d.displayScore), ML + W - 84, ty - 4, { width: 84, align: "right", lineBreak: false });
     doc.font("kai").fontSize(24).fillColor(INK).text(d.label, ML, doc.y + 2, { width: W - 90 });
-    doc.font("hei").fontSize(12).fillColor(accent).text(`${d.descriptor} · ${d.level}`, ML, doc.y + 2, { width: W });
+    doc.font("hei").fontSize(12).fillColor(accent).text(`${d.descriptor} · ${levelOf(d.displayScore)}`, ML, doc.y + 2, { width: W });
     doc.moveDown(0.5); doc.x = ML;
     // 醒目分数条
     doc.roundedRect(ML, doc.y, W, 8, 4).fillColor(TRACK).fill();
-    doc.roundedRect(ML, doc.y, Math.max(6, W * d.score / 100), 8, 4).fillColor(accent).fill();
+    doc.roundedRect(ML, doc.y, Math.max(6, W * d.displayScore / 100), 8, 4).fillColor(accent).fill();
     doc.y += 18;
     if (d.keywords.length) chips(d.keywords, accent);
     doc.moveDown(0.2);
@@ -359,15 +360,15 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
   if (profile.specialtyAnalysis.length) {
     for (const s of profile.specialtyAnalysis) {
       doc.addPage();
-      const accent = s.score >= 66 ? "#4f9d6b" : s.score >= 40 ? "#bf9a4e" : "#9a9587";
+      const accent = s.displayScore >= 66 ? "#4f9d6b" : s.displayScore >= 40 ? "#bf9a4e" : "#9a9587";
       mono(T(lang, "专长与天赋", "Special Aptitude"));
       const ty = doc.y;
-      doc.font("en").fontSize(34).fillColor(accent).text(String(s.score), ML + W - 84, ty - 4, { width: 84, align: "right", lineBreak: false });
+      doc.font("en").fontSize(34).fillColor(accent).text(String(s.displayScore), ML + W - 84, ty - 4, { width: 84, align: "right", lineBreak: false });
       doc.font("kai").fontSize(24).fillColor(INK).text(s.label, ML, ty, { width: W - 90 });
-      doc.font("hei").fontSize(12).fillColor(accent).text(`${s.descriptor} · ${s.level}`, ML, doc.y + 2, { width: W });
+      doc.font("hei").fontSize(12).fillColor(accent).text(`${s.descriptor} · ${levelOf(s.displayScore)}`, ML, doc.y + 2, { width: W });
       doc.moveDown(0.5); doc.x = ML;
       doc.roundedRect(ML, doc.y, W, 8, 4).fillColor(TRACK).fill();
-      doc.roundedRect(ML, doc.y, Math.max(6, W * s.score / 100), 8, 4).fillColor(accent).fill();
+      doc.roundedRect(ML, doc.y, Math.max(6, W * s.displayScore / 100), 8, 4).fillColor(accent).fill();
       doc.y += 18;
       para(s.summary, INK, 12);
       doc.moveDown(0.2);

@@ -13,6 +13,28 @@ const stemElements: (keyof Elements)[] = ["wood", "wood", "fire", "fire", "earth
 const branchElements: (keyof Elements)[] = ["water", "earth", "wood", "wood", "earth", "fire", "fire", "earth", "metal", "metal", "earth", "water"];
 
 const clamp = (value: number) => Math.max(0, Math.min(100, Math.round(value)));
+
+// 展示分标定：原始分压在中段（十二维实测约 18–86、行为特质约 17–57），拿 0–100 的条画显得人人平庸。
+// 按每维实测 [p2, p98] 线性拉伸到 2–100，让展示分真正用满量程（原始分仍供内部合盘算分，不受影响）。
+// 锚点来自 2500 份随机盘采样，见 tests/_score_dist（临时脚本）。
+const CALIB_DEEP: Record<string, [number, number]> = {
+  ambition: [29, 80], vigilance: [21, 79], autonomy: [26, 81], social_openness: [23, 72],
+  trust_speed: [34, 82], dependency: [20, 66], responsibility: [32, 85], romance: [28, 79],
+  empathy_deep: [27, 78], resilience: [30, 82], conflict_expression: [22, 76], novelty: [28, 81],
+};
+const CALIB_TRAIT: Record<string, [number, number]> = {
+  extroversion: [20, 52], stability: [19, 54], control: [18, 48], emotion: [26, 52],
+  expressiveness: [17, 51], empathy: [20, 57], initiative: [21, 45], adaptability: [25, 46],
+};
+const CALIB_SPEC: Record<string, [number, number]> = {
+  intuition: [29, 88], love_structure: [42, 83], attraction: [35, 74], creative_sensitivity: [35, 74],
+};
+const calibrateScore = (raw: number, anchor?: [number, number]): number => {
+  if (!anchor) return raw;
+  const [lo, hi] = anchor;
+  return Math.max(2, Math.min(100, Math.round((raw - lo) / (hi - lo || 1) * 98 + 2)));
+};
+
 const pillar = (index: number) => stems[((index % 10) + 10) % 10] + branches[((index % 12) + 12) % 12];
 
 function toSolarBirth(birth: BirthInput): BirthInput {
@@ -681,7 +703,8 @@ export function analyzeBirth(birth: BirthInput): UserProfile {
     const meta = deepMeta[item.key];
     return {
       ...item,
-      score,
+      score, // 原始分：内部合盘算分与 band/descriptor 仍用它，保持既有行为与快照
+      displayScore: calibrateScore(score, CALIB_DEEP[item.key]), // 展示分：按该维真实分布拉伸到 0-100
       level: level(score),
       category: meta.category,
       descriptor: meta.descriptors[band],
@@ -873,7 +896,7 @@ export function analyzeBirth(birth: BirthInput): UserProfile {
   ) => {
     const score = clamp(raw);
     const band = score >= 68 ? 0 : score >= 42 ? 1 : 2;
-    return { key, label, score, level: specialtyLevel(score), descriptor: descriptors[band], summary: summaries[band], evidence, caution };
+    return { key, label, score, displayScore: calibrateScore(score, CALIB_SPEC[key]), level: specialtyLevel(score), descriptor: descriptors[band], summary: summaries[band], evidence, caution };
   };
   const specialtyAnalysis: UserProfile["specialtyAnalysis"] = [
     specialty("intuition", "玄学感知力",
@@ -901,15 +924,16 @@ export function analyzeBirth(birth: BirthInput): UserProfile {
       [`伤官 ${g("伤官")}×8，食神 ${g("食神")}×7`, `偏印 ${g("偏印")}×8，华盖 ${huagaiCount}×7`, `木元素 ${bazi.elements.wood}×3`],
       "高灵感不等于高产出；完成度仍依赖训练、时间和反馈。"),
   ];
+  const traitRow = (key: string, label: string, score: number, basis: string) => ({ key, label, score, displayScore: calibrateScore(score, CALIB_TRAIT[key]), basis });
   const traitAnalysis = [
-    { key: "extroversion", label: "社交外向", score: relationScores.extroversion, basis: `食伤 ${tenGodAnalysis[4].count} 权重 + 财星 ${tenGodAnalysis[2].count} 权重，结合火木外放性` },
-    { key: "stability", label: "情绪稳定", score: relationScores.stability, basis: `印星 ${tenGodAnalysis[1].count} 提供安全感，官杀 ${tenGodAnalysis[0].count} 提供秩序，结合土金强度` },
-    { key: "control", label: "边界意识", score: relationScores.control, basis: `官杀 ${tenGodAnalysis[0].count} 为主要依据；比劫 ${tenGodAnalysis[3].count} 反映自我立场` },
-    { key: "emotion", label: "情感强度", score: relationScores.emotion, basis: `印星 ${tenGodAnalysis[1].count} 的内在感受，加上食伤 ${tenGodAnalysis[4].count} 的情绪流动` },
-    { key: "expressiveness", label: "表达意愿", score: relationScores.expressiveness, basis: `食神、伤官合计权重 ${tenGodAnalysis[4].count}；食神温和分享，伤官直接表达` },
-    { key: "empathy", label: "共情能力", score: relationScores.empathy, basis: `正偏印合计权重 ${tenGodAnalysis[1].count}，结合水元素与情感强度` },
-    { key: "initiative", label: "关系主动性", score: relationScores.initiative, basis: `财星 ${tenGodAnalysis[2].count} 表示投入，比劫 ${tenGodAnalysis[3].count} 表示参与和行动` },
-    { key: "adaptability", label: "关系适应力", score: relationScores.adaptability, basis: `印星 ${tenGodAnalysis[1].count} 的理解力与食伤 ${tenGodAnalysis[4].count} 的表达调节共同作用` },
+    traitRow("extroversion", "社交外向", relationScores.extroversion, `食伤 ${tenGodAnalysis[4].count} 权重 + 财星 ${tenGodAnalysis[2].count} 权重，结合火木外放性`),
+    traitRow("stability", "情绪稳定", relationScores.stability, `印星 ${tenGodAnalysis[1].count} 提供安全感，官杀 ${tenGodAnalysis[0].count} 提供秩序，结合土金强度`),
+    traitRow("control", "边界意识", relationScores.control, `官杀 ${tenGodAnalysis[0].count} 为主要依据；比劫 ${tenGodAnalysis[3].count} 反映自我立场`),
+    traitRow("emotion", "情感强度", relationScores.emotion, `印星 ${tenGodAnalysis[1].count} 的内在感受，加上食伤 ${tenGodAnalysis[4].count} 的情绪流动`),
+    traitRow("expressiveness", "表达意愿", relationScores.expressiveness, `食神、伤官合计权重 ${tenGodAnalysis[4].count}；食神温和分享，伤官直接表达`),
+    traitRow("empathy", "共情能力", relationScores.empathy, `正偏印合计权重 ${tenGodAnalysis[1].count}，结合水元素与情感强度`),
+    traitRow("initiative", "关系主动性", relationScores.initiative, `财星 ${tenGodAnalysis[2].count} 表示投入，比劫 ${tenGodAnalysis[3].count} 表示参与和行动`),
+    traitRow("adaptability", "关系适应力", relationScores.adaptability, `印星 ${tenGodAnalysis[1].count} 的理解力与食伤 ${tenGodAnalysis[4].count} 的表达调节共同作用`),
   ];
   return {
     id: `${birth.year}${String(birth.month).padStart(2, "0")}${String(birth.day).padStart(2, "0")}${String(birth.hour).padStart(2, "0")}${String(birth.minute ?? 0).padStart(2, "0")}`,

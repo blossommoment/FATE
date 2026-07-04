@@ -88,6 +88,7 @@ export type UserProfile = {
     key: string;
     label: string;
     score: number;
+    displayScore: number;
     basis: string;
   }[];
   tenGodAnalysis: {
@@ -164,6 +165,7 @@ export type UserProfile = {
     label: string;
     category: "亲密与安全" | "沟通与连接" | "边界与冲突" | "成长与行动";
     score: number;
+    displayScore: number;
     level: string;
     descriptor: string;
     keywords: string[];
@@ -188,6 +190,7 @@ export type UserProfile = {
     key: "intuition" | "love_structure" | "attraction" | "creative_sensitivity";
     label: string;
     score: number;
+    displayScore: number;
     level: string;
     descriptor: string;
     summary: string;
