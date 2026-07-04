@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { analyzeBirth, validateBirth } from "./fate";
-import { buildDigestPrompt, buildFallbackDigest, buildPersonalFacts, validateDigestPayload } from "./digest";
+import { buildDigestPrompt, buildFallbackDigest, buildPersonaTags, buildPersonalFacts, validateDigestPayload, type PersonaTags } from "./digest";
 import { translateBatch } from "./duoGenerate";
 import { buildDeepReportPdf, type DeepDigest } from "./deepReportPdf";
 import type { BirthInput, UserProfile } from "./types";
@@ -103,15 +103,20 @@ export async function buildDeepReport(input: DeepReportInput): Promise<{ reportI
   const generatedAt = new Date().toISOString().replace("T", " ").slice(0, 16) + " UTC";
 
   let digest = await generatePersonalDigest(facts);
+  let tags = buildPersonaTags(profile);
   let rendered = profile;
 
   if (input.lang === "en") {
-    const prose = collectProse(profile, digest);
+    // 翻译池含综合评定标签名与指标 label
+    const tagStrings = new Set<string>();
+    (Object.values(tags) as PersonaTags[keyof PersonaTags][]).forEach((hits) => hits.forEach((h) => { tagStrings.add(h.tag); h.metrics.forEach((m) => tagStrings.add(m.label)); }));
+    const prose = [...collectProse(profile, digest), ...tagStrings];
     const translations = await translateBatch(prose);
     const map = new Map<string, string>();
     prose.forEach((zh, i) => { if (translations[i]) map.set(zh, translations[i]); });
     const tr = (s: string) => map.get((s ?? "").trim()) || s;
     rendered = translateProfile(profile, tr);
+    tags = Object.fromEntries(Object.entries(tags).map(([k, hits]) => [k, hits.map((h) => ({ tag: tr(h.tag), metrics: h.metrics.map((m) => ({ ...m, label: tr(m.label) })) }))])) as PersonaTags;
     digest = { source: digest.source, headline: tr(digest.headline), pages: {
       love: { essay: tr(digest.pages.love.essay), advice: tr(digest.pages.love.advice) },
       career: { essay: tr(digest.pages.career.essay), advice: tr(digest.pages.career.advice) },
@@ -120,6 +125,6 @@ export async function buildDeepReport(input: DeepReportInput): Promise<{ reportI
     } };
   }
 
-  const pdf = await buildDeepReportPdf(rendered, { lang: input.lang, reportId, generatedAt, digest });
+  const pdf = await buildDeepReportPdf(rendered, { lang: input.lang, reportId, generatedAt, digest, tags });
   return { reportId, pdf };
 }

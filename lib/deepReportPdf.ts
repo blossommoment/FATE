@@ -1,6 +1,7 @@
 import PDFDocument from "pdfkit";
 import { existsSync } from "node:fs";
 import type { UserProfile } from "./types";
+import type { PersonaTags } from "./digest";
 
 // 单人深度报告 PDF：把命理算法如实亮出来——五行力量占比+计分痕迹、十神分布+出处、
 // 日主强弱推导、十二维深度。全部规则引擎数据（零 AI，秒出），彩色标注让人信服"有真东西"。
@@ -35,7 +36,7 @@ const levelOf = (v: number) => v >= 82 ? "强倾向" : v >= 65 ? "偏高" : v >=
 type ChapterText = { essay: string; advice: string };
 export type DeepDigest = { source: "ai" | "fallback"; headline: string; pages: { love: ChapterText; career: ChapterText; social: ChapterText; season: ChapterText } };
 
-export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "en"; reportId: string; generatedAt: string; digest?: DeepDigest }): Promise<Buffer> {
+export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "en"; reportId: string; generatedAt: string; digest?: DeepDigest; tags?: PersonaTags }): Promise<Buffer> {
   const lang = opts.lang;
   const hei = HEI.find((c) => c && existsSync(c));
   const kai = KAI.find((c) => c && existsSync(c));
@@ -107,6 +108,44 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
   doc.font("kai").fontSize(12).fillColor(SUB).text(profile.combinedPersona.name, ML + 40, doc.y, { width: W - 80, align: "center", lineGap: 4 });
   doc.y = PH - 120;
   doc.font("en").fontSize(8.5).fillColor(FAINT).text(`${opts.reportId}   ·   ${opts.generatedAt}`, ML, doc.y, { width: W, align: "center" });
+
+  // ── 综合评定（第二页：四域标签 + 分数 + 阈值刻度）──
+  if (opts.tags) {
+    const domains: [keyof PersonaTags, string, string, string][] = [
+      ["love", "感情", "Love", "#c96f7d"], ["career", "事业", "Career", "#bf9a4e"],
+      ["social", "人际", "Social", "#4f9d6b"], ["energy", "能量·时运", "Energy", "#4a7fb0"],
+    ];
+    chapter(T(lang, "综合评定", "Overall Assessment"), "Persona Tags at a Glance");
+    para(T(lang, "把命盘一次性读成四个领域的人话标签，每个标签下方给出触发它的指标分数——刻度线是命中阈值，条越过线，标签才成立。", "The chart read at a glance into tags across four domains. Under each tag are the metric scores that triggered it — the tick marks the threshold; the bar crossing it is why the tag holds."), SUB, 10);
+    doc.moveDown(0.2);
+    for (const [key, zh, en, color] of domains) {
+      const hits = opts.tags[key];
+      if (!hits?.length) continue;
+      ensure(30);
+      doc.font("kai").fontSize(14).fillColor(color).text(T(lang, zh, en), ML, doc.y, { width: W });
+      doc.moveDown(0.3);
+      for (const hit of hits) {
+        ensure(20 + hit.metrics.length * 15);
+        // 标签名（药丸）
+        const tw = doc.font("hei").fontSize(10.5).widthOfString(hit.tag) + 18;
+        doc.roundedRect(ML, doc.y, tw, 17, 5).fillColor(color).fill();
+        doc.fillColor("#fff").fontSize(10.5).text(hit.tag, ML + 9, doc.y + 3, { lineBreak: false });
+        doc.x = ML; doc.y += 22;
+        // 指标条（带阈值刻度）
+        for (const m of hit.metrics) {
+          ensure(15); const y = doc.y, lw = 96, barLeft = ML + lw, barW = W - lw - 40;
+          doc.font("hei").fontSize(9).fillColor(SUB).text(m.label, ML + 8, y + 1, { width: lw - 12, lineBreak: false });
+          doc.roundedRect(barLeft, y + 2, barW, 6, 3).fillColor(TRACK).fill();
+          doc.roundedRect(barLeft, y + 2, Math.max(4, barW * Math.min(100, m.value) / 100), 6, 3).fillColor(color).fill();
+          if (m.t !== undefined) { const tx = barLeft + barW * Math.min(100, m.t) / 100; doc.moveTo(tx, y).lineTo(tx, y + 10).lineWidth(1).strokeColor(INK).stroke(); }
+          doc.font("en").fontSize(8.5).fillColor(color).text(String(m.value), barLeft + barW + 6, y, { width: 30, lineBreak: false });
+          doc.x = ML; doc.y = y + 14;
+        }
+        doc.moveDown(0.25);
+      }
+      doc.moveDown(0.2);
+    }
+  }
 
   // ── 壹 四柱命盘 ──────────────────────────────
   chapter(T(lang, "四柱命盘", "The Four Pillars"), "The Natal Chart");
