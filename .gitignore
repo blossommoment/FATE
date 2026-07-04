@@ -15,3 +15,6 @@ out/
 .tef_dist/*
   
 .vercel
+
+# agent 报告产物
+.reports/

@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { analyzeBirth, analyzeRelationship, validateBirth } from "@/lib/fate";
-import { buildDuoFacts, buildDuoFallback, buildDuoPrompt, validateDuoPayload } from "@/lib/duo";
+import { buildDuoFacts } from "@/lib/duo";
+import { UpstreamTimeoutError, generateDuoDigest } from "@/lib/duoGenerate";
 import type { BirthInput } from "@/lib/types";
 
 export const maxDuration = 240; // SiliconFlow DeepSeek-V3.2 实测单次 ~50-110s，上游慢时给足重试余量
 
 // 双人深度解读报告生成端点（REQ_DUO_REPORT B2）
-// 契约：AI 只组织语言，标签与事实全部来自规则引擎；校验不过重试一次，再不过走确定性兜底。
+// 生成逻辑在 lib/duoGenerate.ts（与 agent 报告管线共用）。
 
 export async function POST(request: Request) {
   let body: { a: BirthInput; b: BirthInput; relationType?: string };
@@ -26,52 +27,16 @@ export async function POST(request: Request) {
   const relationType = body.relationType ?? "恋爱";
   const analysis = analyzeRelationship(profileA, profileB, relationType);
   const facts = buildDuoFacts(profileA, profileB, analysis);
-  const fallback = buildDuoFallback(facts);
   const pairId = `${profileA.id}-${profileB.id}-${relationType}`;
 
-  const apiKey = process.env.DEEPSEEK_API_KEY;
-  if (!apiKey) return NextResponse.json({ source: "fallback", pairId, digest: fallback, facts });
-
-  const baseUrl = (process.env.DEEPSEEK_BASE_URL ?? "https://api.deepseek.com").replace(/\/$/, "");
-  const model = process.env.DEEPSEEK_MODEL ?? "deepseek-v4-flash";
-  const isSiliconFlow = baseUrl.includes("siliconflow.cn");
-  const { system, user } = buildDuoPrompt(facts);
-
-  for (let attempt = 0; attempt < 2; attempt++) {
-    let content = "";
-    try {
-      const response = await fetch(`${baseUrl}/chat/completions`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-        body: JSON.stringify({
-          model,
-          ...(isSiliconFlow ? { enable_thinking: false } : { thinking: { type: "disabled" } }),
-          temperature: 0.45,
-          max_tokens: 2800, // 五章成册全文，给足余量防 JSON 截断
-          response_format: { type: "json_object" },
-          messages: [
-            { role: "system", content: system },
-            {
-              role: "user",
-              content: attempt === 0 ? user : `${user}\n\n（上一次输出未通过校验：五章齐全、正文禁数字禁命理术语、评述禁对话引语（不写任何人说的原话）、正文直接开场不写章节名、headline 不得取自判词原文、字数达标、以名字互称。请严格重来。）`,
-            },
-          ],
-        }),
-        signal: AbortSignal.timeout(attempt === 0 ? 120000 : 90000),
-      });
-      if (!response.ok) throw new Error(`DeepSeek ${response.status}`);
-      const data = await response.json() as { choices?: { message?: { content?: string } }[] };
-      content = data.choices?.[0]?.message?.content?.trim() ?? "";
-    } catch {
+  try {
+    const { source, digest } = await generateDuoDigest(facts);
+    return NextResponse.json({ source, pairId, digest, facts });
+  } catch (error) {
+    if (error instanceof UpstreamTimeoutError) {
       // 网络/超时类失败：如实返回超时，让前端提示重试——不拿兜底模板冒充 AI 报告（用户拍板）。
-      // 校验不过的内容问题仍走重试→确定性兜底（那是质量托底，不是超时遮羞）。
-      return NextResponse.json({ error: "上游生成超时，请稍后重试。" }, { status: 504 });
+      return NextResponse.json({ error: error.message }, { status: 504 });
     }
-    try {
-      const parsed = JSON.parse(content.replace(/^```json\s*|```$/g, ""));
-      const valid = validateDuoPayload(parsed, facts.verdict);
-      if (valid) return NextResponse.json({ source: "ai", pairId, digest: valid, facts });
-    } catch { /* 内容问题（截断/格式）：带纠正提示重试一次 */ }
+    throw error;
   }
-  return NextResponse.json({ source: "fallback", pairId, digest: fallback, facts });
 }
