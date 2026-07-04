@@ -54,6 +54,72 @@ export async function generateDuoDigest(facts: DuoFacts): Promise<{ source: "ai"
   return { source: "fallback", digest: fallback };
 }
 
+// 批量翻译：整份报告全内容双语（用户拍板「做全套」）。
+// 韧性优先：分小块、限并发、每块多次重试；个别块最终失败也【不拖垮全局】——
+// 该块对应段落留空英文（PDF 渲染器会跳过空英文，报告一定出得来）。返回与输入等长、保序。
+export async function translateBatch(texts: string[]): Promise<string[]> {
+  const out = new Array<string>(texts.length).fill("");
+  if (!texts.length) return out;
+  const apiKey = process.env.DEEPSEEK_API_KEY;
+  if (!apiKey) return out; // 无 key：整份留中文，不抛错
+  const baseUrl = (process.env.DEEPSEEK_BASE_URL ?? "https://api.deepseek.com").replace(/\/$/, "");
+  const model = process.env.DEEPSEEK_MODEL ?? "deepseek-v4-flash";
+  const isSiliconFlow = baseUrl.includes("siliconflow.cn");
+
+  // 分块：≤1100 字或 ≤10 段一块（块更小→单块更快→超时概率更低）
+  const chunks: { start: number; items: string[] }[] = [];
+  let current: string[] = [];
+  let currentLen = 0, start = 0;
+  texts.forEach((text, index) => {
+    if (current.length && (currentLen + text.length > 1100 || current.length >= 10)) {
+      chunks.push({ start, items: current });
+      current = []; currentLen = 0; start = index;
+    }
+    current.push(text);
+    currentLen += text.length;
+  });
+  if (current.length) chunks.push({ start, items: current });
+
+  const SYS = `You translate a Chinese relationship report into natural, warm, editorial English. Input is JSON {"s": [array of Chinese strings]}. Output strictly JSON {"t": [array of English translations]} with the SAME length and order. Keep personal names as-is. Do not add or omit information. Traditional-calendar terms: 婚姻宫=marriage palace, 日支=day branch, 驿马=travel star, 桃花=peach-blossom (charm) star, 喜用=favorable element, 忌神=unfavorable element, 大运=decade luck cycle, 流年=annual cycle, 十神=Ten Gods, 食伤=Output stars, 官杀=Authority stars, 印星=Resource stars, 财星=Wealth stars, 日主=Day Master.`;
+
+  const translateChunk = async (items: string[]): Promise<string[] | null> => {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const response = await fetch(`${baseUrl}/chat/completions`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+          body: JSON.stringify({
+            model,
+            ...(isSiliconFlow ? { enable_thinking: false } : { thinking: { type: "disabled" } }),
+            temperature: 0.2, max_tokens: 2600, response_format: { type: "json_object" },
+            messages: [{ role: "system", content: SYS }, { role: "user", content: JSON.stringify({ s: items }) }],
+          }),
+          signal: AbortSignal.timeout(70000),
+        });
+        if (!response.ok) throw new Error(`DeepSeek ${response.status}`);
+        const data = await response.json() as { choices?: { message?: { content?: string } }[] };
+        const content = data.choices?.[0]?.message?.content?.trim() ?? "";
+        const parsed = JSON.parse(content.replace(/^```json\s*|```$/g, "")) as { t?: string[] };
+        if (Array.isArray(parsed.t) && parsed.t.length === items.length && parsed.t.every((e) => typeof e === "string" && e.length > 0)) return parsed.t;
+      } catch { /* 重试 */ }
+    }
+    return null; // 该块放弃：对应段落留空英文
+  };
+
+  // 限并发 5：翻译是 I/O 密集，多开几路让整批墙钟≈最慢单块，而非串行累加
+  const CONCURRENCY = 5;
+  let cursor = 0;
+  const workers = Array.from({ length: Math.min(CONCURRENCY, chunks.length) }, async () => {
+    while (cursor < chunks.length) {
+      const chunk = chunks[cursor++];
+      const translated = await translateChunk(chunk.items);
+      if (translated) translated.forEach((text, offset) => { out[chunk.start + offset] = text; });
+    }
+  });
+  await Promise.all(workers);
+  return out;
+}
+
 // 小型翻译调用：只翻执行摘要与目录级文本（Hermes 双语需求），失败如实抛错
 export async function translateToEnglish(chineseText: string): Promise<string> {
   const apiKey = process.env.DEEPSEEK_API_KEY;
