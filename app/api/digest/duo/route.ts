@@ -3,7 +3,7 @@ import { analyzeBirth, analyzeRelationship, validateBirth } from "@/lib/fate";
 import { buildDuoFacts, buildDuoFallback, buildDuoPrompt, validateDuoPayload } from "@/lib/duo";
 import type { BirthInput } from "@/lib/types";
 
-export const maxDuration = 150; // SiliconFlow DeepSeek-V3.2 实测单次 ~50-80s
+export const maxDuration = 240; // SiliconFlow DeepSeek-V3.2 实测单次 ~50-110s，上游慢时给足重试余量
 
 // 双人深度解读报告生成端点（REQ_DUO_REPORT B2）
 // 契约：AI 只组织语言，标签与事实全部来自规则引擎；校验不过重试一次，再不过走确定性兜底。
@@ -57,13 +57,15 @@ export async function POST(request: Request) {
             },
           ],
         }),
-        signal: AbortSignal.timeout(attempt === 0 ? 90000 : 60000),
+        signal: AbortSignal.timeout(attempt === 0 ? 120000 : 90000),
       });
       if (!response.ok) throw new Error(`DeepSeek ${response.status}`);
       const data = await response.json() as { choices?: { message?: { content?: string } }[] };
       content = data.choices?.[0]?.message?.content?.trim() ?? "";
     } catch {
-      break; // 网络/超时类失败：重试大概率同样失败，直接落兜底
+      // 网络/超时类失败：如实返回超时，让前端提示重试——不拿兜底模板冒充 AI 报告（用户拍板）。
+      // 校验不过的内容问题仍走重试→确定性兜底（那是质量托底，不是超时遮羞）。
+      return NextResponse.json({ error: "上游生成超时，请稍后重试。" }, { status: 504 });
     }
     try {
       const parsed = JSON.parse(content.replace(/^```json\s*|```$/g, ""));

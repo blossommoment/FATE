@@ -40,12 +40,13 @@ export async function askDeepSeek(
           { role: "user", content: question },
         ],
       }),
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(45000),
     });
     if (!response.ok) throw new Error(`DeepSeek ${response.status}`);
     const data = await response.json() as { choices?: { message?: { content?: string } }[] };
-    return data.choices?.[0]?.message?.content?.trim() || "DeepSeek 暂时没有返回内容。";
+    return data.choices?.[0]?.message?.content?.trim() || "AI 这次没有返回内容——稍等几秒，重新点一次即可。";
   } catch {
-    return `DeepSeek 暂时不可用，已切换本地规则回答。\n\n${explainQuestion(question, contextTitle, contextSummary, evidence)}`;
+    // 超时/网络失败：如实报错，不拿规则文冒充 AI 答案（用户拍板）
+    return "AI 助手这次没能连上（上游超时）。你的问题没有丢——稍等几秒，重新点一次按钮就好。";
   }
 }
