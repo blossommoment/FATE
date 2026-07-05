@@ -1,0 +1,21 @@
+/* ============================================================
+   紫微星海 · 报告页亮色壳(2026-07-05 深夜拍板:封面星空,内页纸色)
+   原则:不覆盖 globals 的任何版式/字号/卡片——原设计为亮色而生,
+   只做三件事:顶部血统色带、品牌铭牌、轻微整体放大。
+   ============================================================ */
+.zwxl{min-height:100vh;background:#f4f2ed}
+.zwxl-band{position:sticky;top:0;z-index:40;height:5px;
+  background:linear-gradient(90deg,#a5402e,#bf9a4e 42%,#8a6fb8 72%,#4a7fb0)}
+@media(min-width:701px){.zwxl-body{zoom:1.08}}
+/* 品牌铭牌(亮色版) */
+.zwxl-brandmark{position:fixed;right:22px;bottom:20px;z-index:8;display:flex;align-items:baseline;gap:10px;
+  padding:9px 16px;border:1px solid #d8cdb2;border-radius:999px;
+  background:rgba(255,253,246,.92);backdrop-filter:blur(6px);pointer-events:none;
+  box-shadow:0 6px 18px rgba(80,70,50,.12)}
+.zwxl-brandmark b{font-family:"Kaiti SC","KaiTi","STKaiti","Songti SC",serif;font-size:13px;letter-spacing:.08em;color:#a5402e;font-weight:400}
+.zwxl-brandmark span{font-family:Consolas,monospace;font-size:9px;letter-spacing:.22em;color:#8d8570}
+@media(max-width:700px){.zwxl-brandmark{display:none}}
+/* 十二维雷达图例(结果页新增元素,globals 无此类) */
+.zwxl .deep-radar-legend{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:18px}
+.zwxl .deep-radar-legend span{display:flex;align-items:center;gap:7px;font-size:11px;color:#cbdad6;letter-spacing:.06em}
+.zwxl .deep-radar-legend i{width:8px;height:8px;border-radius:50%;display:block}
