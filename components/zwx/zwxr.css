@@ -1245,3 +1245,37 @@
 .zwxr .deep-scene-preview b{color:var(--zx-gold2);font-family:var(--zx-kai)}
 .zwxr .deep-scene-preview span{color:#cfc9bb}
 .zwxr .deep-note{font-family:var(--zx-mono);font-size:11px;letter-spacing:.12em;color:#6f6a82}
+
+/* ============ 四拍(2026-07-06):数轴净化 + 目录指标五线 + AI 总结拉通 ============ */
+.zwxr .tendency-axis .zx-mscale{margin-top:8px}
+.zwxr .zx-dirlines{display:block}
+.zwxr .zx-dirmetric{display:block;text-decoration:none;transition:.25s}
+.zwxr .zx-dirmetric:hover{background:rgba(191,154,78,.07)}
+.zwxr .zx-dirmetric .zx-mfill{transition:none}
+/* AI 总结成册页全面对齐样例制式 */
+.zwxr .fb-cover,.zwxr .fb-page,.zwxr .fb-toc{background:var(--zx-panel);border:1px solid var(--zx-line);border-radius:10px;margin-bottom:26px}
+.zwxr .fb-cover{padding:52px 46px}
+.zwxr .fb-page{padding:46px 44px}
+.zwxr .fb-cover h1{font-family:var(--zx-kai);font-weight:400;letter-spacing:.06em;color:var(--zx-ink)}
+.zwxr .fb-mono{font-family:var(--zx-mono);font-size:11px;letter-spacing:.4em;color:var(--zx-gold2)}
+.zwxr .fb-meta strong{font-family:var(--zx-kai);color:var(--zx-ink)}
+.zwxr .fb-meta small{color:var(--zx-mut)}
+.zwxr .fb-page header h2{font-family:var(--zx-kai);font-weight:400;letter-spacing:.2em;color:var(--zx-ink)}
+.zwxr .fb-page header h2 small{font-family:var(--zx-mono);letter-spacing:.4em;color:var(--zx-gold2)}
+.zwxr .fb-no{font-family:var(--zx-kai);color:rgba(232,206,154,.16)}
+.zwxr .fb-stamp{border:1px solid rgba(232,206,154,.3);border-radius:999px;background:rgba(191,154,78,.07)}
+.zwxr .fb-stamp b{font-family:var(--zx-kai);color:var(--zx-gold)}
+.zwxr .fb-stamp span{color:var(--zx-mut)}
+.zwxr .fb-track{height:8px;border:1px solid var(--zx-line);
+  background:repeating-linear-gradient(90deg,transparent 0,transparent calc(25% - 1px),rgba(232,206,154,.22) calc(25% - 1px),rgba(232,206,154,.22) 25%)}
+.zwxr .fb-fill{background:linear-gradient(90deg,rgba(232,206,154,.12),var(--zx-gold2))}
+.zwxr .fb-tick{background:var(--zx-gold)}
+.zwxr .fb-essay{font-family:var(--zx-kai);font-size:15px;line-height:2.05;color:#d5cfc2}
+.zwxr .fb-essay-tag{font-family:var(--zx-mono);font-size:10px;letter-spacing:.25em;color:var(--zx-gold2)}
+.zwxr .fb-aside div{background:rgba(10,8,24,.6);border:1px solid var(--zx-line);border-radius:6px}
+.zwxr .fb-aside small{color:var(--zx-gold2);font-family:var(--zx-kai)}
+.zwxr .fb-aside p{color:#cfc9bb}
+.zwxr .fb-pagenav a{border:1px solid var(--zx-line);border-radius:999px;background:rgba(191,154,78,.06);color:var(--zx-ink);font-family:var(--zx-kai)}
+.zwxr .fb-pagenav a b{color:var(--zx-gold)}
+.zwxr .fb-cta{border:1px solid rgba(232,206,154,.5);background:linear-gradient(135deg,rgba(191,154,78,.28),rgba(191,154,78,.08));color:var(--zx-gold);font-family:var(--zx-kai);letter-spacing:.2em}
+.zwxr .fb-note{color:#6f6a82;font-family:var(--zx-mono);letter-spacing:.12em}

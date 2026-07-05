@@ -498,20 +498,16 @@ export async function ResultContent({
                 <h4>{mod.no} · {mod.title}</h4>
                 <span>{mod.subtitle}</span>
               </div>
-              <div className="zx-gifts">
-                {group?.items.map((item) => <Link className="zx-gift" key={item.key} href={`/?${baseQuery}&view=deep&module=${mod.key}&detail=${item.key}#deep-card-${item.key}`}>
-                  <h6>{item.label}</h6>
-                  <div className="zx-gval">{item.score}</div>
-                  <div className="zx-gbar"><i style={{ width: `${Math.min(100, item.score)}%` }} /></div>
-                  <span className="zx-gtag">{item.descriptor}</span>
-                  <p>{item.summary}</p>
+              <div className={mod.key === "social" ? "zx-gifts" : "zx-dirlines"}>
+                {group?.items.map((item) => <Link className="zx-metric zx-dirmetric" key={item.key} style={{ "--mc": dimCatColor[item.category] ?? "var(--zx-gold2)" } as CSSProperties} href={`/?${baseQuery}&view=deep&module=${mod.key}&detail=${item.key}#deep-card-${item.key}`}>
+                  <div className="zx-mtop"><span className="zx-mname">{item.label}</span><span className="zx-mnote">{item.descriptor}</span><span className="zx-mval">{item.score}</span></div>
+                  <div className="zx-mtrack"><i className="zx-mfill" style={{ width: `${Math.min(100, item.score)}%` }} /><b className="zx-mmean" /></div>
+                  <div className="zx-mscale"><span>0</span><span>25</span><span><em>50 · 常模</em></span><span>75</span><span>100</span></div>
                 </Link>)}
-                {mod.key === "special" && profile.specialtyAnalysis.map((item) => <Link className="zx-gift" key={item.key} href={href}>
-                  <h6>{item.label}</h6>
-                  <div className="zx-gval">{item.score}</div>
-                  <div className="zx-gbar"><i style={{ width: `${Math.min(100, item.score)}%` }} /></div>
-                  <span className="zx-gtag">{item.descriptor}</span>
-                  <p>{item.summary}</p>
+                {mod.key === "special" && profile.specialtyAnalysis.map((item) => <Link className="zx-metric zx-dirmetric" key={item.key} style={{ "--mc": "var(--zx-gold2)" } as CSSProperties} href={href}>
+                  <div className="zx-mtop"><span className="zx-mname">{item.label}</span><span className="zx-mnote">{item.descriptor}</span><span className="zx-mval">{item.score}</span></div>
+                  <div className="zx-mtrack"><i className="zx-mfill" style={{ width: `${Math.min(100, item.score)}%` }} /><b className="zx-mmean" /></div>
+                  <div className="zx-mscale"><span>0</span><span>25</span><span><em>50 · 常模</em></span><span>75</span><span>100</span></div>
                 </Link>)}
                 {mod.key === "social" && socialModelItems.map((item) => <Link className="zx-gift" key={item.key} href={href}>
                   <h6>{item.label}</h6>
@@ -551,8 +547,8 @@ export async function ResultContent({
                     <div className="deep-factor-tags">{factorTagsFor(item.key).map((factor) => <span className={`factor-${factor.tone}`} key={`${factor.label}-${factor.tone}`}><i style={{ "--factor": `${factor.value}%` } as CSSProperties} /><b>{factor.label}</b><small>{factor.value}%</small></span>)}</div>
                     <p className="deep-summary">{item.summary}</p>
                     <div className="tendency-axis" aria-label={`${item.label}分段数轴，命主位于${item.score}分`}>
-                      <div className="axis-labels"><span>弱 0—27</span><span>偏低 28—44</span><span>中段 45—64</span><span>偏高 65—81</span><span>强 82—100</span></div>
-                      <div className="axis-track"><b className="zx-axisfill" style={{ width: `${item.score}%` }} /><i style={{ left: `${item.score}%` }} /></div>
+                                            <div className="axis-track"><b className="zx-axisfill" style={{ width: `${item.score}%` }} /><i style={{ left: `${item.score}%` }} /></div>
+                      <div className="zx-mscale"><span>0</span><span>25</span><span><em>50 · 常模</em></span><span>75</span><span>100</span></div>
                       <p><strong>{band.label}</strong>{band.detail}</p>
                     </div>
                     <div className="deep-scene-preview">
@@ -578,8 +574,8 @@ export async function ResultContent({
                 <header><div><small>0{index + 1} / SPECIAL TEST</small><h4>{item.label}</h4><b>{item.descriptor}</b></div><strong>{item.score}<span>{item.level}</span></strong></header>
                 <p>{item.summary}</p>
                 <div className="tendency-axis" aria-label={`${item.label}分段数轴，命主位于${item.score}分`}>
-                  <div className="axis-labels"><span>弱 0—27</span><span>偏低 28—44</span><span>中段 45—64</span><span>偏高 65—81</span><span>强 82—100</span></div>
-                  <div className="axis-track"><b className="zx-axisfill" style={{ width: `${item.score}%` }} /><i style={{ left: `${item.score}%` }} /></div>
+                                    <div className="axis-track"><b className="zx-axisfill" style={{ width: `${item.score}%` }} /><i style={{ left: `${item.score}%` }} /></div>
+                      <div className="zx-mscale"><span>0</span><span>25</span><span><em>50 · 常模</em></span><span>75</span><span>100</span></div>
                   <p><strong>{band.label}</strong>{band.detail}</p>
                 </div>
                 <div className="specialty-evidence">{item.evidence.map((evidence) => <span key={evidence}>{evidence}</span>)}</div>
