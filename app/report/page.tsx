@@ -1,6 +1,7 @@
 import Link from "next/link";
 import FateReport from "@/components/FateReport";
 import ShareButton from "@/components/ShareButton";
+import ZwxReportShell from "@/components/zwx/ZwxReportShell";
 import { validateBirth } from "@/lib/fate";
 import type { BirthInput } from "@/lib/types";
 
@@ -26,14 +27,14 @@ export default async function ReportPage({ searchParams }: {
     isLeapMonth: String(birth.isLeapMonth ?? false),
   }).toString();
   if (error) {
-    return <main className="report-page"><p className="report-error">{error}</p><Link href="/">← 返回首页</Link></main>;
+    return <ZwxReportShell><main className="report-page"><p className="report-error">{error}</p><Link href="/">← 返回首页</Link></main></ZwxReportShell>;
   }
   const profileId = `${birth.year}${String(birth.month).padStart(2, "0")}${String(birth.day).padStart(2, "0")}${String(birth.hour).padStart(2, "0")}${String(birth.minute ?? 0).padStart(2, "0")}`;
-  return <main className="report-page">
+  return <ZwxReportShell><main className="report-page">
     <div className="report-topbar">
       <Link href={`/?${backQuery}&view=deep#deep-report`}>← 返回深度分析</Link>
       <ShareButton title="FATE° 深度解读报告 · 东方人格建模" />
     </div>
     <FateReport birth={birth} profileId={profileId} />
-  </main>;
+  </main></ZwxReportShell>;
 }

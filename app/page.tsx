@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import Landing from "@/components/Landing";
+import ZwxLanding from "@/components/zwx/ZwxLanding";
+import ZwxReportShell from "@/components/zwx/ZwxReportShell";
 import InviteLanding from "@/components/InviteLanding";
 import { ResultContent } from "@/app/result/page";
 import type { BirthInput } from "@/lib/types";
@@ -26,8 +27,8 @@ export async function generateMetadata({ searchParams }: {
       : "四柱、五行、十神与十二维关系人格——出生数据变成一种理解关系的新语言。";
     return { title, description, openGraph: { title, description, images: [ogImage] } };
   }
-  const title = "FATE° — 遇见与你相互成全的人";
-  const description = "不是算命，而是一种理解关系的新语言。输入出生时间，生成可解释的八字关系画像与双人合盘。";
+  const title = "FATE° — 星垂万古，照见一人";
+  const description = "八字为经，星宿为纬。输入出生时间，FATE 模型 2.0 为你织就一册可解释的深度人格命书。";
   return { title, description, openGraph: { title, description, images: [ogImage] } };
 }
 
@@ -45,7 +46,7 @@ export default async function Home({ searchParams }: {
       calendarType: query.inviteCalendarType === "lunar" ? "lunar" : "solar",
       isLeapMonth: query.inviteIsLeapMonth === "true",
     };
-    return <InviteLanding inviter={inviter} relationType={String(query.relationType ?? "恋爱")} />;
+    return <ZwxReportShell><InviteLanding inviter={inviter} relationType={String(query.relationType ?? "恋爱")} /></ZwxReportShell>;
   }
   const birth: BirthInput = {
     year: Number(query.year), month: Number(query.month),
@@ -67,8 +68,8 @@ export default async function Home({ searchParams }: {
   // 排盘后结果页顶部直接是日主信息卡；落地页只在没有生辰参数时出现
   return (
     <>
-      {!hasBirth && <Landing />}
-      {hasBirth && <ResultContent birth={birth} view={view} partnerBirth={partnerBirth} relationType={String(query.relationType ?? "恋爱")} detail={String(query.detail ?? "")} assistantQuestion={String(query.ask ?? "")} flowYear={Number(query.flowYear ?? new Date().getFullYear())} moduleKey={typeof query.module === "string" ? query.module : ""} />}
+      {!hasBirth && <ZwxLanding />}
+      {hasBirth && <ZwxReportShell><ResultContent birth={birth} view={view} partnerBirth={partnerBirth} relationType={String(query.relationType ?? "恋爱")} detail={String(query.detail ?? "")} assistantQuestion={String(query.ask ?? "")} flowYear={Number(query.flowYear ?? new Date().getFullYear())} moduleKey={typeof query.module === "string" ? query.module : ""} /></ZwxReportShell>}
     </>
   );
 }

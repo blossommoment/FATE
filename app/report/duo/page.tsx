@@ -1,6 +1,7 @@
 import Link from "next/link";
 import DuoReport from "@/components/DuoReport";
 import ShareButton from "@/components/ShareButton";
+import ZwxReportShell from "@/components/zwx/ZwxReportShell";
 import { validateBirth } from "@/lib/fate";
 import type { BirthInput } from "@/lib/types";
 
@@ -32,7 +33,7 @@ export default async function DuoReportPage({ searchParams }: {
   const relationType = String(query.relationType ?? "恋爱");
   const error = validateBirth(a) ?? validateBirth(b);
   if (error) {
-    return <main className="report-page"><p className="report-error">{error}</p><Link href="/">← 返回首页</Link></main>;
+    return <ZwxReportShell><main className="report-page"><p className="report-error">{error}</p><Link href="/">← 返回首页</Link></main></ZwxReportShell>;
   }
   const backQuery = new URLSearchParams({
     year: String(a.year), month: String(a.month), day: String(a.day), hour: String(a.hour),
@@ -44,11 +45,11 @@ export default async function DuoReportPage({ searchParams }: {
     partnerIsLeapMonth: String(b.isLeapMonth ?? false), relationType,
   }).toString();
   const pairId = `${profileId(a)}-${profileId(b)}-${relationType}`;
-  return <main className="report-page">
+  return <ZwxReportShell><main className="report-page">
     <div className="report-topbar">
       <Link href={`/?${backQuery}&view=match#match-report`}>← 返回关系剧本</Link>
       <ShareButton title={`FATE° 双人深度解读 · ${a.name ?? "我"} × ${b.name ?? "TA"}`} />
     </div>
     <DuoReport a={a} b={b} relationType={relationType} pairId={pairId} />
-  </main>;
+  </main></ZwxReportShell>;
 }
