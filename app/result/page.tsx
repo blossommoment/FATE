@@ -8,7 +8,7 @@ import ShareCard from "@/components/ShareCard";
 import HistoryRecorder from "@/components/HistoryRecorder";
 import PillarLinks from "@/components/PillarLinks";
 import PlotPanel, { PlotTrigger } from "@/components/PlotPanel";
-import ZwxDimAstrolabe from "@/components/zwx/ZwxDimAstrolabe";
+import ZwxDimLine from "@/components/zwx/ZwxDimLine";
 import { askDeepSeek } from "@/lib/deepseek";
 
 const labels = { extroversion: "外向表达", stability: "情绪稳定", control: "边界控制", emotion: "情感感知" };
@@ -435,7 +435,7 @@ export async function ResultContent({
 
         <section className="dominant-persona">
           <div className="persona-god"><span>主轴 · {profile.dominantPersona.weight}分 · {profile.dominantBasis}</span><strong>{profile.dominantPersona.god}</strong><small>{profile.dominantPersona.name}</small></div>
-          <div className={`persona-god secondary${profile.tertiaryPersona ? " dual" : ""}`}><span>{profile.tertiaryPersona ? `双副轴 · ${profile.secondaryPersona.weight}/${profile.tertiaryPersona.weight}分` : `副轴 · ${profile.secondaryPersona.weight}分`}</span><strong>{profile.secondaryPersona.god}{profile.tertiaryPersona ? `·${profile.tertiaryPersona.god}` : ""}</strong><small>{profile.secondaryPersona.name}{profile.tertiaryPersona ? ` × ${profile.tertiaryPersona.name}` : ""}</small></div>
+          <div className={`persona-god secondary${profile.tertiaryPersona ? " dual" : ""}`}><span>{profile.tertiaryPersona ? "双副轴" : "副轴"}</span><strong>{profile.secondaryPersona.god}{profile.tertiaryPersona ? `·${profile.tertiaryPersona.god}` : ""}</strong><small>{profile.secondaryPersona.name}{profile.tertiaryPersona ? ` × ${profile.tertiaryPersona.name}` : ""}</small></div>
           <div className="persona-combined"><span>组合人格</span><h3>{profile.combinedPersona.name}</h3><p>{profile.combinedPersona.summary}</p></div>
           <div><span>行为特征</span><p>{profile.dominantPersona.behavior}；同时带有{profile.secondaryPersona.behavior}的副轴倾向。</p></div>
           <div><span>关系表现</span><p>{profile.dominantPersona.relationship}；副轴表现为{profile.secondaryPersona.relationship}。</p></div>
@@ -448,12 +448,8 @@ export async function ResultContent({
               {Object.entries(dimCatColor).map(([cat, color]) => <span key={cat}><i style={{ background: color }} />{cat}</span>)}
             </div>
           </div>
-          {/* 2026-07-05 用户拍板 Option A「星盘辐辉」:罗盘刻度环+十二光辐,中心对接日主 */}
-          <ZwxDimAstrolabe
-            dims={profile.deepAnalysis.map(({ key, label, score, category }) => ({ key, label, score, category }))}
-            dayStem={profile.bazi.dayPillar[0]}
-            dayElement={profile.energy.dayMaster.element}
-          />
+          {/* 2026-07-05 终稿:十二维折线图(星盘辐辉已毙) */}
+          <ZwxDimLine dims={profile.deepAnalysis.map(({ key, label, score, category }) => ({ key, label, score, category }))} />
         </section>
         <section className="fate-book fate-book-intro">
           <span className="fb-mono">FATE° · 深度解读报告</span>

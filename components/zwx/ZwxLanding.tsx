@@ -229,9 +229,13 @@ gl_FragColor=vec4(col,1.);}`;
         {/* ============ HERO ============ */}
         <header className="zx-hero" id="top">
           <div className="zx-moon" aria-hidden="true" />
-          <span className="zx-meteor" style={{ top: "12%", right: "6%", "--mt": "11s", "--md": "2s" } as React.CSSProperties} aria-hidden="true" />
-          <span className="zx-meteor" style={{ top: "5%", right: "34%", "--mt": "17s", "--md": "9s" } as React.CSSProperties} aria-hidden="true" />
-          <span className="zx-meteor" style={{ top: "26%", right: "14%", "--mt": "23s", "--md": "15s" } as React.CSSProperties} aria-hidden="true" />
+          <span className="zx-meteor" style={{ top: "12%", right: "6%", "--mt": "9s", "--md": "1s" } as React.CSSProperties} aria-hidden="true" />
+          <span className="zx-meteor" style={{ top: "5%", right: "34%", "--mt": "13s", "--md": "5s" } as React.CSSProperties} aria-hidden="true" />
+          <span className="zx-meteor" style={{ top: "26%", right: "14%", "--mt": "17s", "--md": "8s" } as React.CSSProperties} aria-hidden="true" />
+          <span className="zx-meteor" style={{ top: "8%", right: "56%", "--mt": "15s", "--md": "3.5s" } as React.CSSProperties} aria-hidden="true" />
+          <span className="zx-meteor" style={{ top: "38%", right: "4%", "--mt": "19s", "--md": "11s" } as React.CSSProperties} aria-hidden="true" />
+          <span className="zx-meteor" style={{ top: "17%", right: "72%", "--mt": "21s", "--md": "14s" } as React.CSSProperties} aria-hidden="true" />
+          <span className="zx-meteor" style={{ top: "3%", right: "18%", "--mt": "12s", "--md": "6.5s" } as React.CSSProperties} aria-hidden="true" />
           <div className="zx-hring" aria-hidden="true">
             <svg viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
               <defs>

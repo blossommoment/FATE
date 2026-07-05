@@ -45,6 +45,10 @@ export default function ZwxReportShell({ children }: { children: React.ReactNode
       <div className="zx-galaxy" aria-hidden="true" />
       <div className="zwxr-stars" ref={starsRef} aria-hidden="true" />
       <div className="zwxr-vig" aria-hidden="true" />
+      <span className="zwxr-meteor" style={{ top: "8%", right: "10%", "--mt": "13s", "--md": "2s" } as React.CSSProperties} aria-hidden="true" />
+      <span className="zwxr-meteor" style={{ top: "4%", right: "44%", "--mt": "17s", "--md": "7s" } as React.CSSProperties} aria-hidden="true" />
+      <span className="zwxr-meteor" style={{ top: "22%", right: "24%", "--mt": "21s", "--md": "12s" } as React.CSSProperties} aria-hidden="true" />
+      <span className="zwxr-meteor" style={{ top: "14%", right: "66%", "--mt": "15s", "--md": "4.5s" } as React.CSSProperties} aria-hidden="true" />
       <div className="zwxr-body">{children}</div>
       <div className="zwxr-brandmark" aria-hidden="true">
         <b>FATE° 东方人格建模</b>

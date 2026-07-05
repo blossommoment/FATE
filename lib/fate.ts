@@ -840,7 +840,7 @@ export function analyzeBirth(birth: BirthInput): UserProfile {
   };
   const combinedPersona = {
     name: `${personaAdjectives[secondaryGodName]}${personaNouns[dominantGodName]}`,
-    summary: `以${dominantGodName}的${persona.drive.replaceAll(" / ", "、")}为主轴，同时带有${secondaryGodName}的${secondary.drive.replaceAll(" / ", "、")}。${tertiaryPersona ? `另外，${tertiaryPersona.god}（${tertiaryPersona.weight}分）与${secondaryGodName}（${secondaryPersona.weight}分）权重相近，副轴呈双轴并立——${tertiaryPersona.drive.replaceAll(" / ", "、")}的驱动同样清晰，不同场景会切换出面。` : ""}`,
+    summary: `以${dominantGodName}的${persona.drive.replaceAll(" / ", "、")}为主轴，同时带有${secondaryGodName}的${secondary.drive.replaceAll(" / ", "、")}。${tertiaryPersona ? `另外，${tertiaryPersona.god}的${tertiaryPersona.drive.replaceAll(" / ", "、")}同样清晰，与${secondaryGodName}并立为双副轴——不同场景，会切换出不同的那一面。` : ""}`,
   };
   const rawDeep = (key: string) => deepBase.find((item) => item.key === key)?.score ?? 50;
   // 社交行为模式：综合深维原始分、十神权重与人格四维定档

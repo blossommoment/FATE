@@ -1084,3 +1084,84 @@
 .zwxr .share-btn{border:1px solid rgba(232,206,154,.45);background:rgba(191,154,78,.10);color:#e8ce9a;
   font-family:"Kaiti SC","KaiTi","STKaiti",serif;font-size:13px;letter-spacing:.12em}
 .zwxr .share-btn:hover{background:rgba(191,154,78,.28);color:#f2e2be}
+
+/* ============ 阅读区宣纸化(2026-07-05 用户拍板:长文黑底费眼,文字卡改纸张古籍感) ============ */
+/* 节奏:章节头金字留在星空上;正文卡全部上宣纸——星空为幕,纸卡为书 */
+.zwxr .deep-card,.zwxr .specialty-card,.zwxr .dimension-grid article,.zwxr .logic-sheet{
+  background:linear-gradient(168deg,#f8f3e6,#efe7d3);
+  border:1px solid #d8cdb2;border-radius:10px;
+  box-shadow:0 16px 38px rgba(0,0,0,.38);
+  color:#2e2a20}
+/* 纸上正文与层级(压掉此前暗色主题的浅色字) */
+.zwxr .deep-card p,.zwxr .specialty-card p,.zwxr .dimension-grid article p{color:#3a352a;line-height:1.95}
+.zwxr .deep-card h4,.zwxr .specialty-card h4,.zwxr .dimension-grid article h4{color:#26241d}
+.zwxr .deep-card small,.zwxr .specialty-card small,.zwxr .dimension-grid article small{color:#8d8570}
+.zwxr .deep-card .deep-descriptor,.zwxr .specialty-card header b{color:#a5402e}
+.zwxr .deep-card .deep-score strong,.zwxr .specialty-card header strong{color:#26241d;font-family:"Kaiti SC","KaiTi","STKaiti",serif}
+.zwxr .deep-card .deep-score span,.zwxr .specialty-card header strong span{color:#a5402e}
+.zwxr .deep-card .deep-summary{color:#332f25}
+.zwxr .deep-card .deep-note{color:#6f6754}
+.zwxr .deep-keywords span{background:#ece2ca;color:#6d5f3f;border:1px solid #d5c8a6}
+.zwxr .deep-factor-tags span{background:#f1ead8;border:1px solid #ddd2b8;color:#5d5540}
+.zwxr .deep-factor-tags b{color:#4a4433}
+.zwxr .deep-factor-tags small{color:#8d8570}
+.zwxr .deep-scene-preview>div{background:#f1ead8;border:1px solid #ddd2b8}
+.zwxr .deep-scene-preview b{color:#a5402e}
+.zwxr .deep-scene-preview span{color:#4a4433}
+.zwxr .tendency-axis .axis-labels span{color:#8d8570}
+.zwxr .tendency-axis .axis-track{background:#e4dbc2;border:none}
+.zwxr .tendency-axis .axis-track i{background:#a5402e}
+.zwxr .tendency-axis .axis-track b{color:#fff}
+.zwxr .tendency-axis>p{color:#4a4433}
+.zwxr .tendency-axis>p strong{color:#a5402e}
+.zwxr .deep-card .logic-link,.zwxr .dimension-grid article .logic-link{color:#a5402e;border-color:#d8cdb2}
+.zwxr .deep-card .logic-link:hover{color:#7d2f22}
+/* 合盘六维卡(dimension-grid)同纸 */
+.zwxr .dimension-grid article .dimension-head strong{color:#26241d;font-family:"Kaiti SC","KaiTi","STKaiti",serif}
+.zwxr .dimension-grid article .dimension-bar{background:#e4dbc2}
+.zwxr .dimension-grid article .dim-formula{color:#8d8570}
+/* 逻辑弹层(长文)纸化 */
+.zwxr .logic-sheet h3,.zwxr .logic-sheet h4{color:#26241d}
+.zwxr .logic-sheet p,.zwxr .logic-sheet li{color:#3a352a}
+.zwxr .logic-sheet small{color:#8d8570}
+.zwxr .logic-block{background:#f1ead8;border:1px solid #ddd2b8;color:#3a352a}
+.zwxr .logic-steps{color:#3a352a}
+.zwxr .logic-factor-panel{background:#f1ead8;border:1px solid #ddd2b8}
+.zwxr .logic-factor-panel p{color:#4a4433}
+.zwxr .logic-disclaimer{color:#8d8570}
+/* 排版呼吸感 */
+.zwxr .deep-card{padding:34px 32px}
+.zwxr .deep-card-grid{gap:28px}
+.zwxr .specialty-card{padding:32px 30px}
+.zwxr .deep-card header{margin-bottom:14px}
+.zwxr .deep-keywords{margin:10px 0 14px}
+.zwxr .deep-scene-preview{margin:16px 0}
+
+/* ============ 十二维折线图 ============ */
+.zwxr .zxln svg{width:100%;height:auto;display:block}
+.zwxr .zxln-scale{font-family:Consolas,monospace;font-size:11px;fill:#6f6a82}
+.zwxr .zxln-norm{font-family:Consolas,monospace;font-size:10px;fill:#bf9a4e;letter-spacing:.15em}
+.zwxr .zxln-val{font-family:Consolas,monospace;font-size:15px;fill:#e8ce9a}
+.zwxr .zxln-lbl{font-family:"Kaiti SC","KaiTi","STKaiti",serif;font-size:15px;letter-spacing:.12em}
+
+/* ============ 壳层流星(报告页背景也要有星划过) ============ */
+.zwxr-meteor{position:fixed;width:170px;height:1.6px;pointer-events:none;opacity:0;border-radius:999px;z-index:0;
+  background:linear-gradient(90deg,rgba(242,246,255,.9),rgba(242,246,255,0));
+  transform:rotate(146deg);animation:zwxrMet var(--mt,13s) linear infinite;animation-delay:var(--md,0s)}
+.zwxr-meteor::before{content:"";position:absolute;left:-3px;top:-1.4px;width:4.5px;height:4.5px;border-radius:50%;
+  background:#fff;box-shadow:0 0 10px 3px rgba(242,246,255,.8)}
+@keyframes zwxrMet{0%{opacity:0;translate:0 0}2%{opacity:.95}11%{opacity:0;translate:-46vw 30vw}100%{opacity:0;translate:-46vw 30vw}}
+
+/* ---- 宣纸卡特异性补刀:压掉 tone 变体与弹层的暗色规则(必须在文件尾) ---- */
+.zwxr .deep-card.deep-tone-0,.zwxr .deep-card.deep-tone-1,.zwxr .deep-card.deep-tone-2,.zwxr .deep-card.deep-tone-3,
+.zwxr .specialty-card.specialty-tone-0,.zwxr .specialty-card.specialty-tone-1,
+.zwxr .specialty-card.specialty-tone-2,.zwxr .specialty-card.specialty-tone-3{
+  background:linear-gradient(168deg,#f8f3e6,#efe7d3);border:1px solid #d8cdb2;color:#2e2a20}
+.zwxr .deep-card .deep-score,.zwxr .deep-tone-1 .deep-score,.zwxr .deep-tone-2 .deep-score,.zwxr .deep-tone-3 .deep-score{
+  background:transparent;box-shadow:none}
+.zwxr .logic-overlay .logic-sheet,.zwxr .logic-sheet{
+  background:linear-gradient(168deg,#f8f3e6,#efe7d3);color:#2e2a20;
+  box-shadow:-20px 0 60px rgba(0,0,0,.55);border-left:1px solid #d8cdb2}
+@media(max-width:700px){
+  .zwxr .logic-sheet{background:linear-gradient(168deg,#f8f3e6,#efe7d3);border-top:1px solid #d8cdb2;border-left:0}
+}
