@@ -596,7 +596,7 @@
 /* ============ 可读性二修(2026-07-05:用户反馈"哪里的字都很小") ============ */
 /* 桌面端:内容层整体放大 15%(zoom 会真实重排,文字保持锐利) */
 @media(min-width:701px){
-  .zwxr .zwxr-body{zoom:1.15}
+  .zwxr .zwxr-body{zoom:1.25}
 }
 /* 手机端不用 zoom(防横向溢出),按元素抬字号 */
 @media(max-width:700px){
@@ -612,3 +612,460 @@
 .zwxr .deep-summary{font-size:15.5px}
 .zwxr .quote-life{font-size:17px}
 .zwxr .scene-analysis p,.zwxr .story p{font-size:14.5px}
+
+/* ============ 字体清晰度三修(2026-07-05:楷宋小字暗底发虚是根因) ============ */
+/* 正文全面黑体化;楷/宋只留给大字展示层(大字号下衬线才立得住) */
+.zwxr{font-family:"PingFang SC","Microsoft YaHei",sans-serif}
+.zwxr .pillar-glyph strong,.zwxr .luck-glyph,.zwxr .verdict-quip,.zwxr .verdict-seal,
+.zwxr .annual-seal strong,.zwxr .special-symbol strong,.zwxr .dynamic-mark strong,
+.zwxr .quote-life,.zwxr .persona-signature,.zwxr .signature strong,.zwxr .identity-orb,
+.zwxr .fate-book h1,.zwxr .fate-book h2,.zwxr .fate-book h3,
+.zwxr .result-hero h1,.zwxr .module-header h2,.zwxr h3{
+  font-family:"Kaiti SC","KaiTi","STKaiti","Songti SC","SimSun",serif}
+/* 深度解析正文再抬一档 */
+.zwxr .deep-summary{font-size:15.5px;line-height:2}
+.zwxr .deep-scene-preview,.zwxr .deep-note{font-size:14px;line-height:1.9}
+.zwxr .deep-card-grid p,.zwxr .dimension-grid p{font-size:14.5px;line-height:1.95}
+.zwxr .deep-descriptor{font-size:15px}
+.zwxr .scene-grid p{font-size:14px;line-height:1.9}
+
+/* ============ 方块图标去旧风(青绿渐变方块→星海制式) ============ */
+.zwxr .special-symbol,.zwxr .dynamic-mark{
+  background:linear-gradient(160deg,rgba(191,154,78,.30),rgba(15,13,34,.92));
+  border:1px solid rgba(232,206,154,.38);color:#e8ce9a}
+.zwxr .special-冲 .special-symbol,.zwxr .duo-dynamic-冲 .dynamic-mark{
+  background:linear-gradient(160deg,rgba(217,138,151,.32),rgba(15,13,34,.92));
+  border-color:rgba(217,138,151,.5);color:#e8b7bf}
+.zwxr .duo-dynamic-天干克 .dynamic-mark{
+  background:linear-gradient(160deg,rgba(169,143,214,.3),rgba(15,13,34,.92));
+  border-color:rgba(169,143,214,.5);color:#cdbce8}
+.zwxr .special-symbol span,.zwxr .dynamic-mark span{color:rgba(232,206,154,.8)}
+.zwxr .social-model-card{background:rgba(15,13,34,.6);border:1px solid rgba(232,206,154,.16);box-shadow:none}
+.zwxr .social-model-card>header h3{color:#e6e1d5}
+.zwxr .social-model-card>header small{color:#bf9a4e}
+.zwxr .social-model-card>header>p{color:#b5aec6;font-size:12px}
+.zwxr .social-model-grid article{background:rgba(10,8,24,.7);border:1px solid rgba(232,206,154,.14)}
+.zwxr .social-model-grid article>header i{
+  background:linear-gradient(160deg,rgba(191,154,78,.35),rgba(15,13,34,.92));
+  border:1px solid rgba(232,206,154,.42);color:#e8ce9a;
+  font-family:"Kaiti SC","KaiTi","STKaiti",serif}
+.zwxr .annual-seal{border:1px solid rgba(232,206,154,.28)}
+.zwxr .duo-branch-script article{background:rgba(10,8,24,.7);box-shadow:none;border:1px solid rgba(232,206,154,.12)}
+
+/* ============ 十二维雷达穿星海制式(2026-07-05,与落地页雷达同语言) ============ */
+.zwxr .deep-radar-overview{background:rgba(15,13,34,.6);border:1px solid rgba(232,206,154,.16);border-radius:12px}
+.zwxr .deep-radar-overview::before{background:radial-gradient(circle,rgba(232,206,154,.07),transparent 68%)}
+.zwxr .deep-radar-overview>div:first-child>span{color:#bf9a4e;font-size:11px;letter-spacing:.4em}
+.zwxr .deep-radar-overview h3{color:#e6e1d5}
+.zwxr .deep-radar-overview p{color:#b5aec6;font-size:13px}
+.zwxr .deep-radar-chart line{stroke:rgba(232,206,154,.12)}
+.zwxr .deep-radar-chart .radar-grid-line{fill:none;stroke:rgba(232,206,154,.14)}
+.zwxr .deep-radar-chart .radar-value{fill:rgba(191,154,78,.16);stroke:#bf9a4e;stroke-width:1.6}
+.zwxr .deep-radar-chart circle{stroke:rgba(7,6,19,.9);stroke-width:1.4}
+.zwxr .deep-radar-chart>span{background:transparent;width:84px;
+  font-family:"Kaiti SC","KaiTi","STKaiti",serif;font-size:11px;letter-spacing:.06em}
+.zwxr .deep-radar-chart>span b{color:#e8ce9a;font-family:Consolas,monospace;font-size:14px;margin-top:1px}
+.zwxr .deep-radar-legend{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:20px}
+.zwxr .deep-radar-legend span{display:flex;align-items:center;gap:7px;
+  font-family:"Kaiti SC","KaiTi","STKaiti",serif;font-size:12.5px;color:#b5aec6;letter-spacing:.08em}
+.zwxr .deep-radar-legend i{width:9px;height:9px;border-radius:50%;display:block}
+@media(max-width:700px){
+  .zwxr .deep-radar-chart>span{width:66px;font-size:9.5px}
+  .zwxr .deep-radar-chart>span b{font-size:12px}
+}
+
+/* ============ 星盘辐辉(十二维 Option A) ============ */
+.zwxr .zxal svg{width:100%;max-width:660px;height:auto;margin:0 auto;display:block}
+.zwxr .zxal-lbl{font-family:"Kaiti SC","KaiTi","STKaiti",serif;font-size:17px;letter-spacing:.05em}
+.zwxr .zxal-val{font-family:Consolas,monospace;font-size:13.5px;fill:#e8ce9a}
+.zwxr .zxal-stem{font-family:"Kaiti SC","KaiTi","STKaiti",serif;font-size:46px}
+.zwxr .zxal-stemsub{font-family:"Kaiti SC","KaiTi","STKaiti",serif;font-size:13px;fill:#b3adc4;letter-spacing:.25em}
+
+/* ============ 深度分析字号清剿(2026-07-05:8-12px 全面抬底) ============ */
+.zwxr .deep-factor-tags span,.zwxr .deep-factor-tags b,.zwxr .deep-factor-tags small{font-size:12px}
+.zwxr .deep-note,.zwxr .logic-disclaimer{font-size:12.5px;line-height:1.85}
+.zwxr .deep-profile-head>p{font-size:13.5px;line-height:1.85;max-width:430px}
+.zwxr .deep-profile-head>div>span{font-size:12px}
+.zwxr .deep-descriptor{font-size:15px}
+.zwxr .deep-keywords span{font-size:13px}
+.zwxr .deep-card>span,.zwxr .deep-card small{font-size:12px}
+.zwxr .deep-score small{font-size:11px}
+.zwxr .logic-block{font-size:13.5px;line-height:1.9}
+.zwxr .logic-block small,.zwxr .logic-sheet small{font-size:12px}
+.zwxr .logic-steps{font-size:13.5px;line-height:1.9}
+.zwxr .logic-steps small{font-size:12px}
+.zwxr .logic-result{font-size:13.5px}
+.zwxr .logic-result small{font-size:12px}
+.zwxr .logic-factor-panel p{font-size:13px;line-height:1.85}
+.zwxr .logic-link{font-size:12.5px}
+.zwxr .scene-analysis p,.zwxr .scene-analysis{font-size:13.5px;line-height:1.9}
+.zwxr .specialty-analysis p,.zwxr .specialty-card p{font-size:13.5px;line-height:1.9}
+.zwxr .specialty-evidence,.zwxr .specialty-caution{font-size:12.5px;line-height:1.85}
+.zwxr .summary-dims,.zwxr .summary-dim-row{font-size:13px}
+.zwxr .scene-grid p{font-size:14px}
+
+/* ============ 全量字号地板(脚本生成:globals 所有≤12px 规则统一抬底) ============ */
+.zwxr .annual-detail p{font-size:12.5px}
+.zwxr .annual-detail>div:nth-child(2)>span{font-size:12.5px}
+.zwxr .annual-element-pills span{font-size:12.5px}
+.zwxr .annual-flag{font-size:12.5px}
+.zwxr .annual-flow>header small{font-size:12.5px}
+.zwxr .annual-flow>header span{font-size:12.5px}
+.zwxr .annual-relations article span{font-size:13px}
+.zwxr .annual-relations p{font-size:13.5px}
+.zwxr .annual-relations-empty{font-size:13.5px}
+.zwxr .annual-relations>small{font-size:12.5px}
+.zwxr .annual-seal small{font-size:12.5px}
+.zwxr .annual-specials b{font-size:13px}
+.zwxr .annual-specials p{font-size:13.5px}
+.zwxr .annual-year-strip>a small{font-size:12.5px}
+.zwxr .assistant-context p{font-size:12.5px}
+.zwxr .assistant-context span{font-size:12.5px}
+.zwxr .assistant-fab span{font-size:13.5px}
+.zwxr .assistant-messages .typing{font-size:12.5px}
+.zwxr .assistant-messages>div{font-size:13.5px}
+.zwxr .assistant-panel>form input{font-size:13.5px}
+.zwxr .assistant-panel>header small{font-size:12.5px}
+.zwxr .assistant-suggestions a{font-size:12.5px}
+.zwxr .axis-labels span{font-size:12.5px}
+.zwxr .axis-track>i b{font-size:12.5px}
+.zwxr .bazi-chart article header{font-size:13.5px}
+.zwxr .bazi-chart article header small{font-size:12.5px}
+.zwxr .brand span{font-size:13.5px}
+.zwxr .calendar-conversion{font-size:12.5px}
+.zwxr .calendar-switch legend{font-size:12.5px}
+.zwxr .calendar-switch small{font-size:12.5px}
+.zwxr .calendar-switch span{font-size:14px}
+.zwxr .candidate .date{font-size:13.5px}
+.zwxr .candidate .index{font-size:13.5px}
+.zwxr .compact-person span{font-size:12.5px}
+.zwxr .compact-pillars p{font-size:12.5px}
+.zwxr .compact-pillars>div>span{font-size:12.5px}
+.zwxr .connect-button{font-size:13.5px}
+.zwxr .contrast-head{font-size:14px}
+.zwxr .contrast-head span{font-size:12.5px}
+.zwxr .contrast-row>span{font-size:13.5px}
+.zwxr .coordinate-head span{font-size:13px}
+.zwxr .daily-card>p{font-size:13px}
+.zwxr .daily-card>span{font-size:12.5px}
+.zwxr .deep-card header small{font-size:13px}
+.zwxr .deep-category>header p{font-size:13px}
+.zwxr .deep-category>header span{font-size:13px}
+.zwxr .deep-descriptor{font-size:13.5px}
+.zwxr .deep-factor-tags b{font-size:12.5px}
+.zwxr .deep-factor-tags small{font-size:12.5px}
+.zwxr .deep-keywords span{font-size:12.5px}
+.zwxr .deep-note{font-size:12.5px}
+.zwxr .deep-profile-head>div>span{font-size:13px}
+.zwxr .deep-profile-head>p{font-size:13.5px}
+.zwxr .deep-radar-chart>span{font-size:12.5px}
+.zwxr .deep-radar-chart>span b{font-size:14px}
+.zwxr .deep-radar-overview p{font-size:13.5px}
+.zwxr .deep-radar-overview>div:first-child>span{font-size:12.5px}
+.zwxr .deep-scene-preview b{font-size:12.5px}
+.zwxr .deep-scene-preview span{font-size:13px}
+.zwxr .deep-score span{font-size:12.5px}
+.zwxr .detail-duo p{font-size:13.5px}
+.zwxr .detail-duo span{font-size:12.5px}
+.zwxr .diff-cols b{font-size:14px}
+.zwxr .diff-cols p{font-size:14px}
+.zwxr .dim-formula{font-size:13.5px}
+.zwxr .dimension-grid article>p{font-size:13.5px}
+.zwxr .dimension-head small{font-size:12.5px}
+.zwxr .dimension-viz{font-size:12.5px}
+.zwxr .dominant-persona p{font-size:14px}
+.zwxr .dominant-persona>div>span{font-size:12.5px}
+.zwxr .duo-bazi-comparison>header small{font-size:12.5px}
+.zwxr .duo-bazi-comparison>header span{font-size:12.5px}
+.zwxr .duo-branch-script>header small{font-size:12.5px}
+.zwxr .duo-branch-script>header span{font-size:12.5px}
+.zwxr .duo-dynamic-empty{font-size:13px}
+.zwxr .duo-guide>header small{font-size:12.5px}
+.zwxr .duo-guide>header span{font-size:12.5px}
+.zwxr .duo-legend{font-size:12.5px}
+.zwxr .duo-radar-chart>span{font-size:12.5px}
+.zwxr .duo-radar-chart>span b{font-size:12.5px}
+.zwxr .duo-radar-panel>header span{font-size:12.5px}
+.zwxr .dynamic-body aside{font-size:12.5px}
+.zwxr .dynamic-body aside b{font-size:12.5px}
+.zwxr .dynamic-body>p{font-size:13px}
+.zwxr .dynamic-mark span{font-size:12.5px}
+.zwxr .dynamic-roles i{font-size:12.5px}
+.zwxr .dynamic-roles span{font-size:12.5px}
+.zwxr .dynamic-source b{font-size:12.5px}
+.zwxr .dynamic-source span{font-size:12.5px}
+.zwxr .dynamic-strength small{font-size:12.5px}
+.zwxr .element-radar-copy p{font-size:12.5px}
+.zwxr .element-radar>span{font-size:12.5px}
+.zwxr .element-weight-note span{font-size:12.5px}
+.zwxr .elements span{font-size:14px}
+.zwxr .error{font-size:14px}
+.zwxr .evidence-chain>b{font-size:13px}
+.zwxr .evidence-chain>span{font-size:12.5px}
+.zwxr .eyebrow{font-size:13.5px}
+.zwxr .fate-book .fb-mono{font-size:12.5px}
+.zwxr .fate-book .fb-note{font-size:12.5px}
+.zwxr .fate-book-intro p{font-size:14px}
+.zwxr .fate-display small{font-size:14px}
+.zwxr .fb-aside p{font-size:14px}
+.zwxr .fb-aside small{font-size:12.5px}
+.zwxr .fb-cta{font-size:14px}
+.zwxr .fb-duo-legend{font-size:12.5px}
+.zwxr .fb-duo-metric label{font-size:13.5px}
+.zwxr .fb-essay-tag{font-size:12.5px}
+.zwxr .fb-gap-chip{font-size:12.5px}
+.zwxr .fb-meta small{font-size:12.5px}
+.zwxr .fb-metric em{font-size:13.5px}
+.zwxr .fb-metric label{font-size:13.5px}
+.zwxr .fb-page h2 small{font-size:12.5px}
+.zwxr .fb-pagenav a{font-size:13px}
+.zwxr .fb-stamp span{font-size:12.5px}
+.zwxr .fb-tick::after{font-size:12.5px}
+.zwxr .fb-toc-preview span{font-size:13.5px}
+.zwxr .feature-locked a{font-size:13.5px}
+.zwxr .feed-loader{font-size:12.5px}
+.zwxr .five-orbit span{font-size:14px}
+.zwxr .guide-ai{font-size:14px}
+.zwxr .guide-behaviors article>span{font-size:13px}
+.zwxr .guide-behaviors h4 small{font-size:12.5px}
+.zwxr .guide-behaviors p{font-size:13.5px}
+.zwxr .guide-fold>summary i{font-size:14px}
+.zwxr .guide-fold>summary small{font-size:12.5px}
+.zwxr .guide-hotspots aside{font-size:13.5px}
+.zwxr .guide-hotspots aside b{font-size:12.5px}
+.zwxr .guide-hotspots h4 small{font-size:12.5px}
+.zwxr .guide-hotspots p{font-size:13.5px}
+.zwxr .guide-initiator aside{font-size:13.5px}
+.zwxr .guide-initiator aside b{font-size:12.5px}
+.zwxr .guide-initiator p{font-size:13.5px}
+.zwxr .guide-longrun{font-size:13.5px}
+.zwxr .guide-philosophy{font-size:14px}
+.zwxr .guide-translation-grid header span{font-size:13px}
+.zwxr .guide-translation-grid p{font-size:13.5px}
+.zwxr .guide-translation-grid p strong{font-size:12.5px}
+.zwxr .guide-translations h4 small{font-size:12.5px}
+.zwxr .guide-verdict>div p{font-size:14px}
+.zwxr .guide-verdict>div small{font-size:12.5px}
+.zwxr .hero-cta span small{font-size:12.5px}
+.zwxr .hidden-stems i{font-size:12.5px}
+.zwxr .history-chips small{font-size:12.5px}
+.zwxr .history-strip button{font-size:12.5px}
+.zwxr .history-strip-label{font-size:13px}
+.zwxr .hot-topics b{font-size:13px}
+.zwxr .hot-topics small{font-size:12.5px}
+.zwxr .hot-topics span{font-size:13.5px}
+.zwxr .hotspot-script i{font-size:13.5px}
+.zwxr .hotspot-script p{font-size:14px}
+.zwxr .hotspot-source{font-size:13.5px}
+.zwxr .hotspot-window{font-size:14px}
+.zwxr .identity-orb small{font-size:12.5px}
+.zwxr .identity-tags span{font-size:13.5px}
+.zwxr .inspire-grid p{font-size:13px}
+.zwxr .inspire-logic{font-size:13.5px}
+.zwxr .inspire-topics b{font-size:12.5px}
+.zwxr .inspire-topics span{font-size:13px}
+.zwxr .inspire-why{font-size:12.5px}
+.zwxr .interaction-advice{font-size:13px}
+.zwxr .interaction-evidence{font-size:13px}
+.zwxr .interaction-grid article>p{font-size:14px}
+.zwxr .interaction-grid header span{font-size:12.5px}
+.zwxr .interaction-why{font-size:13px}
+.zwxr .invite-hero small{font-size:13px}
+.zwxr .invite-share button{font-size:13.5px}
+.zwxr .invite-share p{font-size:13.5px}
+.zwxr .invite-share>div>span{font-size:12.5px}
+.zwxr .leap-check>span:last-child{font-size:13.5px}
+.zwxr .leap-field .check-row{font-size:13.5px}
+.zwxr .logic-block p{font-size:14px}
+.zwxr .logic-block span{font-size:12.5px}
+.zwxr .logic-disclaimer{font-size:12.5px}
+.zwxr .logic-factor-panel p{font-size:12.5px}
+.zwxr .logic-keywords span{font-size:12.5px}
+.zwxr .logic-link{font-size:13px}
+.zwxr .logic-result p{font-size:14px}
+.zwxr .logic-result span{font-size:12.5px}
+.zwxr .logic-sheet>header span{font-size:12.5px}
+.zwxr .logic-steps>div{font-size:13.5px}
+.zwxr .logic-steps>div>b{font-size:13px}
+.zwxr .logic-steps>div>span{font-size:13px}
+.zwxr .logic-steps>div>strong{font-size:13.5px}
+.zwxr .luck-age{font-size:12.5px}
+.zwxr .luck-current p{font-size:13px}
+.zwxr .luck-current span{font-size:12.5px}
+.zwxr .luck-current>i{font-size:13.5px}
+.zwxr .luck-cycles>footer{font-size:12.5px}
+.zwxr .luck-cycles>header>div:first-child span{font-size:12.5px}
+.zwxr .luck-node span{font-size:12.5px}
+.zwxr .luck-start small{font-size:12.5px}
+.zwxr .luck-start span{font-size:13px}
+.zwxr .luck-start strong{font-size:13px}
+.zwxr .luck-years{font-size:12.5px}
+.zwxr .manual-cols li{font-size:14px}
+.zwxr .manual-tag{font-size:13.5px}
+.zwxr .match-fold>summary span{font-size:12.5px}
+.zwxr .match-hero-score>span{font-size:13px}
+.zwxr .match-hero-verdict .hero-basis{font-size:12.5px}
+.zwxr .match-hero-verdict p{font-size:14px}
+.zwxr .match-hero-verdict>small{font-size:12.5px}
+.zwxr .match-inspire>header small{font-size:12.5px}
+.zwxr .match-inspire>header span{font-size:12.5px}
+.zwxr .match-intro span{font-size:13px}
+.zwxr .match-intro>p{font-size:14px}
+.zwxr .match-keypoints p{font-size:13px}
+.zwxr .match-keypoints span{font-size:12.5px}
+.zwxr .match-score-method>header small{font-size:12.5px}
+.zwxr .match-score-method>header span{font-size:12.5px}
+.zwxr .mobile-bottom-nav .nav-plot{font-size:12.5px}
+.zwxr .mobile-bottom-nav .nav-plot span{font-size:12.5px}
+.zwxr .mobile-bottom-nav a{font-size:12.5px}
+.zwxr .module-directory>header small{font-size:12.5px}
+.zwxr .module-directory>header span{font-size:12.5px}
+.zwxr .module-grid p{font-size:13px}
+.zwxr .module-grid span{font-size:12.5px}
+.zwxr .module-header p{font-size:13.5px}
+.zwxr .module-header span{font-size:12.5px}
+.zwxr .module-pager{font-size:14px}
+.zwxr .module-pager .pager-home{font-size:13px}
+.zwxr .module-topbar{font-size:13.5px}
+.zwxr .module-topbar span{font-size:13px}
+.zwxr .music-card span{font-size:12.5px}
+.zwxr .music-card strong{font-size:14px}
+.zwxr .nature-bars small{font-size:13px}
+.zwxr .nature-bars span{font-size:13px}
+.zwxr .nature-basis{font-size:13px}
+.zwxr .nature-card>header b{font-size:12.5px}
+.zwxr .nature-card>header span{font-size:12.5px}
+.zwxr .nature-diffs > h4 small{font-size:13.5px}
+.zwxr .nature-manuals h4 small{font-size:13.5px}
+.zwxr .nature-stats span{font-size:12.5px}
+.zwxr .nature-tags span{font-size:12.5px}
+.zwxr .nav-links{font-size:13.5px}
+.zwxr .orbit b{font-size:12.5px}
+.zwxr .overview-insights p{font-size:13px}
+.zwxr .overview-insights span{font-size:12.5px}
+.zwxr .pair-bar-row > span{font-size:14px}
+.zwxr .pair-bars-legend{font-size:13.5px}
+.zwxr .pair-line em{font-size:13.5px}
+.zwxr .people-key{font-size:13px}
+.zwxr .person-node span{font-size:12.5px}
+.zwxr .persona-god small{font-size:12.5px}
+.zwxr .pillar-meta small{font-size:12.5px}
+.zwxr .pillar-meta>span{font-size:13.5px}
+.zwxr .pl-empty{font-size:14px}
+.zwxr .pl-label{font-size:12.5px}
+.zwxr .pl-legend{font-size:13px}
+.zwxr .pl-legend small{font-size:12.5px}
+.zwxr .pl-pair{font-size:13px}
+.zwxr .plan-chip{font-size:13.5px}
+.zwxr .plot-link{font-size:13.5px}
+.zwxr .plot-panel>header span{font-size:12.5px}
+.zwxr .post-card>footer button span{font-size:12.5px}
+.zwxr .post-card>footer small{font-size:12.5px}
+.zwxr .post-card>header button{font-size:12.5px}
+.zwxr .post-card>header span{font-size:12.5px}
+.zwxr .post-tags span{font-size:12.5px}
+.zwxr .profile-grid small{font-size:13px}
+.zwxr .profile-tabs a{font-size:13px}
+.zwxr .profile-tabs a span{font-size:12.5px}
+.zwxr .quote-life small{font-size:12.5px}
+.zwxr .radar-copy p{font-size:14px}
+.zwxr .radar-copy>span{font-size:13px}
+.zwxr .radar-label span{font-size:12.5px}
+.zwxr .radar-legend{font-size:13px}
+.zwxr .rec-score button{font-size:12.5px}
+.zwxr .rec-score>small{font-size:12.5px}
+.zwxr .recommendation-grid .role{font-size:14px}
+.zwxr .recommendation-grid li{font-size:13.5px}
+.zwxr .recommendation-top{font-size:13px}
+.zwxr .recommendation-top strong small{font-size:13px}
+.zwxr .relation-pulse small{font-size:12.5px}
+.zwxr .relation-row{font-size:13.5px}
+.zwxr .relationship-score>p{font-size:12.5px}
+.zwxr .relationship-score>span{font-size:13px}
+.zwxr .relationship-score>strong small{font-size:14px}
+.zwxr .report-topbar a{font-size:13.5px}
+.zwxr .result-page .hidden-stems i{font-size:12.5px}
+.zwxr .result-page .pillar-meta>span{font-size:12.5px}
+.zwxr .rhythm-advice{font-size:14px}
+.zwxr .rhythm-advice b{font-size:13.5px}
+.zwxr .rhythm-head span{font-size:13.5px}
+.zwxr .rhythm-note{font-size:14px}
+.zwxr .rhythm-signals span{font-size:13.5px}
+.zwxr .scene-analysis article p{font-size:13px}
+.zwxr .scene-analysis article span{font-size:13px}
+.zwxr .scene-analysis article>i{font-size:12.5px}
+.zwxr .scene-grid h3{font-size:14px}
+.zwxr .scene-grid i{font-size:12.5px}
+.zwxr .scene-grid span{font-size:13px}
+.zwxr .score small{font-size:13px}
+.zwxr .score-basis span{font-size:12.5px}
+.zwxr .score-breakdown-grid article>div span{font-size:13.5px}
+.zwxr .score-breakdown-grid article>div span small{font-size:12.5px}
+.zwxr .score-breakdown-grid article>p{font-size:12.5px}
+.zwxr .score-breakdown-grid article>small{font-size:12.5px}
+.zwxr .score-method-intro{font-size:12.5px}
+.zwxr .section-number{font-size:13.5px}
+.zwxr .share-btn{font-size:13.5px}
+.zwxr .share-card button{font-size:13.5px}
+.zwxr .share-card figcaption{font-size:13.5px}
+.zwxr .share-card p{font-size:13.5px}
+.zwxr .share-card>div>span{font-size:12.5px}
+.zwxr .signature small{font-size:13px}
+.zwxr .signature-keywords small{font-size:12.5px}
+.zwxr .simple-match-reasons p{font-size:13.5px}
+.zwxr .social-basis{font-size:12.5px}
+.zwxr .social-model-card>header small{font-size:12.5px}
+.zwxr .social-model-card>header>p{font-size:12.5px}
+.zwxr .social-model-grid article>header span{font-size:12.5px}
+.zwxr .social-model-grid article>p{font-size:13px}
+.zwxr .social-spectrum span{font-size:12.5px}
+.zwxr .social-stats span{font-size:13.5px}
+.zwxr .source-orb small{font-size:12.5px}
+.zwxr .source-orb strong{font-size:12.5px}
+.zwxr .source-visuals>b{font-size:12.5px}
+.zwxr .special-content aside{font-size:12.5px}
+.zwxr .special-content p{font-size:13px}
+.zwxr .special-content>div small{font-size:12.5px}
+.zwxr .special-empty{font-size:13px}
+.zwxr .special-gods span{font-size:12.5px}
+.zwxr .special-points>header small{font-size:12.5px}
+.zwxr .special-points>header span{font-size:12.5px}
+.zwxr .special-symbol span{font-size:12.5px}
+.zwxr .specialty-analysis>header p{font-size:13px}
+.zwxr .specialty-analysis>header span{font-size:12.5px}
+.zwxr .specialty-card>header div>b{font-size:13px}
+.zwxr .specialty-card>header small{font-size:12.5px}
+.zwxr .specialty-card>header>strong span{font-size:12.5px}
+.zwxr .specialty-card>p{font-size:13.5px}
+.zwxr .specialty-caution{font-size:12.5px}
+.zwxr .specialty-evidence span{font-size:12.5px}
+.zwxr .square-header p{font-size:13.5px}
+.zwxr .square-header>div>span{font-size:12.5px}
+.zwxr .story span{font-size:12.5px}
+.zwxr .summary-dim-row small{font-size:13.5px}
+.zwxr .summary-dim-row span{font-size:13.5px}
+.zwxr .summary-dims h4 small{font-size:12.5px}
+.zwxr .ten-god-grid article>small{font-size:12.5px}
+.zwxr .ten-god-grid p{font-size:13.5px}
+.zwxr .tendency-axis>p{font-size:12.5px}
+.zwxr .term-context{font-size:13.5px}
+.zwxr .topic-scroll span{font-size:13px}
+.zwxr .trait-basis{font-size:13.5px}
+.zwxr .verdict-seal small{font-size:12.5px}
+.zwxr .view-match .simple-match-reasons p{font-size:12.5px}
+.zwxr .voyage-path h4 small{font-size:13.5px}
+.zwxr .voyage-path p{font-size:13.5px}
+.zwxr .voyage-path span{font-size:12.5px}
+.zwxr .voyage-plan h4 small{font-size:13.5px}
+.zwxr .voyage-plan-row i{font-size:13.5px}
+.zwxr .voyage-plan-row p{font-size:14px}
+.zwxr .weight-copy p{font-size:13px}
+.zwxr .weight-copy>span{font-size:12.5px}
+.zwxr .weight-order b{font-size:12.5px}
+.zwxr .weight-order span{font-size:13px}
+.zwxr .weight-order strong{font-size:13px}
+.zwxr dd{font-size:13.5px}
+.zwxr dl div{font-size:14px}
+.zwxr footer small{font-size:12.5px}
+.zwxr form button{font-size:13.5px}
+.zwxr label span{font-size:13px}

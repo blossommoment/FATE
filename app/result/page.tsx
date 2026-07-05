@@ -8,6 +8,7 @@ import ShareCard from "@/components/ShareCard";
 import HistoryRecorder from "@/components/HistoryRecorder";
 import PillarLinks from "@/components/PillarLinks";
 import PlotPanel, { PlotTrigger } from "@/components/PlotPanel";
+import ZwxDimAstrolabe from "@/components/zwx/ZwxDimAstrolabe";
 import { askDeepSeek } from "@/lib/deepseek";
 
 const labels = { extroversion: "外向表达", stability: "情绪稳定", control: "边界控制", emotion: "情感感知" };
@@ -223,6 +224,8 @@ export async function ResultContent({
   const duoMine = duoDimensions.map((item, index) => polygonPoint(index, 6, duoRadius(item[1]))).join(" ");
   const duoTheirs = duoDimensions.map((item, index) => polygonPoint(index, 6, duoRadius(item[2]))).join(" ");
   const elementColors = { wood: "#58a878", fire: "#e66e5e", earth: "#d6a64f", metal: "#86a3ad", water: "#5b83bd" };
+  // 十二维四域配色(紫微星海制式,与落地页雷达一致)
+  const dimCatColor: Record<string, string> = { "成长与行动": "#d9b26c", "亲密与安全": "#d98a97", "边界与冲突": "#a98fd6", "沟通与连接": "#7fa9d9" };
   const elementRadar = (Object.entries(profile.bazi.elementStrength) as [keyof typeof elementLabels, number][]).map(([key, value]) => ({
     key, label: elementLabels[key], value, color: elementColors[key],
   }));
@@ -438,23 +441,19 @@ export async function ResultContent({
           <div><span>关系表现</span><p>{profile.dominantPersona.relationship}；副轴表现为{profile.secondaryPersona.relationship}。</p></div>
         </section>
         <section className="deep-radar-overview">
-          <div><span>十二维人格图谱</span><h3>一张图，看见你的关系轮廓</h3><p>分数越靠近外圈，代表该倾向在关系中越容易被观察到。</p></div>
-          <div className="deep-radar-chart">
-            <svg viewBox="0 0 320 320" role="img" aria-label="十二维人格多边形图">
-              <defs>
-                <linearGradient id="deepRadarFill" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#72e0bd" /><stop offset=".52" stopColor="#779ddd" /><stop offset="1" stopColor="#f0a0ba" /></linearGradient>
-                <filter id="deepRadarGlow"><feGaussianBlur stdDeviation="4" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
-              </defs>
-              {[112, 84, 56, 28].map((radius) => <polygon key={radius} points={deepGrid(radius)} className="radar-grid-line" />)}
-              {profile.deepAnalysis.map((_, index) => { const [x, y] = polygonPoint(index, 12, 112).split(","); return <line key={index} x1="160" y1="160" x2={x} y2={y} />; })}
-              <polygon points={deepValues} className="radar-value" />
-              {profile.deepAnalysis.map((item, index) => { const [x, y] = polygonPoint(index, 12, 112 * item.score / 100).split(","); return <circle key={item.key} cx={x} cy={y} r="3" />; })}
-            </svg>
-            {profile.deepAnalysis.map((item, index) => {
-              const angle = -Math.PI / 2 + index * Math.PI * 2 / 12;
-              return <span key={item.key} style={{ left: `${50 + Math.cos(angle) * 39}%`, top: `${50 + Math.sin(angle) * 39}%` }}>{item.label}<b>{item.score}</b></span>;
-            })}
+          <div>
+            <span>十二维人格图谱</span><h3>一张图，看见你的关系轮廓</h3><p>分数越靠近外圈，代表该倾向在关系中越容易被观察到。</p>
+            {/* 2026-07-05:雷达穿紫微星海制式(圆环细金格+四域彩点),与落地页同语言 */}
+            <div className="deep-radar-legend">
+              {Object.entries(dimCatColor).map(([cat, color]) => <span key={cat}><i style={{ background: color }} />{cat}</span>)}
+            </div>
           </div>
+          {/* 2026-07-05 用户拍板 Option A「星盘辐辉」:罗盘刻度环+十二光辐,中心对接日主 */}
+          <ZwxDimAstrolabe
+            dims={profile.deepAnalysis.map(({ key, label, score, category }) => ({ key, label, score, category }))}
+            dayStem={profile.bazi.dayPillar[0]}
+            dayElement={profile.energy.dayMaster.element}
+          />
         </section>
         <section className="fate-book fate-book-intro">
           <span className="fb-mono">FATE° · 深度解读报告</span>

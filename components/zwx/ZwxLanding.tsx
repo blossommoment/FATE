@@ -54,7 +54,7 @@ const RADAR = DIMS.map(([label, color], i) => {
     label, color,
     spoke: { x2: sx.toFixed(1), y2: sy.toFixed(1) },
     dot: { cx: dx.toFixed(1), cy: dy.toFixed(1) },
-    lbl: { x: lx.toFixed(1), y: (ly + 4).toFixed(1), anchor: Math.abs(cos) < .3 ? "middle" : cos > 0 ? "start" : "end" },
+    lbl: { x: lx.toFixed(1), y: (ly + 4).toFixed(1), anchor: (Math.abs(cos) < .3 ? "middle" : cos > 0 ? "start" : "end") as "middle" | "start" | "end" },
   };
 });
 const RADAR_POLY = DIMS.map((_, i) => polar(260, 260, DIM_VALS[i] / 100 * 170, i * 30).map((v) => v.toFixed(1)).join(",")).join(" ");
@@ -519,7 +519,7 @@ gl_FragColor=vec4(col,1.);}`;
                 ["wood", "木", "WOOD", 22.1, ""],
                 ["earth", "土", "EARTH", 11.3, ""],
                 ["metal", "金", "METAL", 3.8, ""],
-              ] as const).map(([el, zh, en, val, flag]) => (
+              ] as [string, string, string, number, string][]).map(([el, zh, en, val, flag]) => (
                 <div className="zx-wx" data-val={val} key={el}>
                   <span className={`zx-wxel ${el}`}>{zh}<i>{en}</i></span>
                   <div className="zx-wxtrack">
