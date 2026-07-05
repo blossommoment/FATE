@@ -8,7 +8,7 @@ import ShareCard from "@/components/ShareCard";
 import HistoryRecorder from "@/components/HistoryRecorder";
 import PillarLinks from "@/components/PillarLinks";
 import PlotPanel, { PlotTrigger } from "@/components/PlotPanel";
-import ZwxDimLine from "@/components/zwx/ZwxDimLine";
+
 import { askDeepSeek } from "@/lib/deepseek";
 
 const labels = { extroversion: "外向表达", stability: "情绪稳定", control: "边界控制", emotion: "情感感知" };
@@ -448,8 +448,23 @@ export async function ResultContent({
               {Object.entries(dimCatColor).map(([cat, color]) => <span key={cat}><i style={{ background: color }} />{cat}</span>)}
             </div>
           </div>
-          {/* 2026-07-05 终稿:十二维折线图(星盘辐辉已毙) */}
-          <ZwxDimLine dims={profile.deepAnalysis.map(({ key, label, score, category }) => ({ key, label, score, category }))} />
+          {/* 2026-07-05 终稿:恢复圆形雷达(折线/星盘均毙),原结构+星海配色 */}
+          <div className="deep-radar-chart">
+            <svg viewBox="0 0 320 320" role="img" aria-label="十二维人格图谱">
+              <defs>
+                <linearGradient id="zwxRadarFill" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#e8ce9a" /><stop offset=".5" stopColor="#a98fd6" /><stop offset="1" stopColor="#7fa9d9" /></linearGradient>
+                <filter id="zwxRadarGlow"><feGaussianBlur stdDeviation="4" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
+              </defs>
+              {[112, 84, 56, 28].map((radius) => <polygon key={radius} points={deepGrid(radius)} className="radar-grid-line" />)}
+              {profile.deepAnalysis.map((_, index) => { const [x, y] = polygonPoint(index, 12, 112).split(","); return <line key={index} x1="160" y1="160" x2={x} y2={y} />; })}
+              <polygon points={deepValues} className="radar-value" />
+              {profile.deepAnalysis.map((item, index) => { const [x, y] = polygonPoint(index, 12, 112 * item.score / 100).split(","); return <circle key={item.key} cx={x} cy={y} r="3.6" style={{ fill: dimCatColor[item.category] ?? "#e8ce9a" }} />; })}
+            </svg>
+            {profile.deepAnalysis.map((item, index) => {
+              const angle = -Math.PI / 2 + index * Math.PI * 2 / 12;
+              return <span key={item.key} style={{ left: `${50 + Math.cos(angle) * 40}%`, top: `${50 + Math.sin(angle) * 40}%` }}>{item.label}<b>{item.score}</b></span>;
+            })}
+          </div>
         </section>
         <section className="fate-book fate-book-intro">
           <span className="fb-mono">FATE° · 深度解读报告</span>

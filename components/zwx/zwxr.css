@@ -596,7 +596,7 @@
 /* ============ 可读性二修(2026-07-05:用户反馈"哪里的字都很小") ============ */
 /* 桌面端:内容层整体放大 15%(zoom 会真实重排,文字保持锐利) */
 @media(min-width:701px){
-  .zwxr .zwxr-body{zoom:1.25}
+  .zwxr .zwxr-body{zoom:1.15}
 }
 /* 手机端不用 zoom(防横向溢出),按元素抬字号 */
 @media(max-width:700px){
@@ -1165,3 +1165,28 @@
 @media(max-width:700px){
   .zwxr .logic-sheet{background:linear-gradient(168deg,#f8f3e6,#efe7d3);border-top:1px solid #d8cdb2;border-left:0}
 }
+
+/* ============ 返工三件(2026-07-05 深夜):数轴解挤 / 宣纸提质 / 雷达星海装 ============ */
+/* 数轴:五段标签紧凑单行,不挤不折行 */
+.zwxr .tendency-axis .axis-labels{display:flex;justify-content:space-between;gap:4px;margin-bottom:6px}
+.zwxr .tendency-axis .axis-labels span{font-size:10px;letter-spacing:0;white-space:nowrap;font-family:"PingFang SC","Microsoft YaHei",sans-serif}
+.zwxr .tendency-axis{margin:18px 0}
+.zwxr .tendency-axis>p{font-size:13px;margin-top:10px}
+/* 宣纸提质:去渐变去重影,纯净纸色+发丝边+朱砂顶线,古籍卡 */
+.zwxr .deep-card,.zwxr .deep-card.deep-tone-0,.zwxr .deep-card.deep-tone-1,.zwxr .deep-card.deep-tone-2,.zwxr .deep-card.deep-tone-3,
+.zwxr .specialty-card,.zwxr .specialty-card.specialty-tone-0,.zwxr .specialty-card.specialty-tone-1,
+.zwxr .specialty-card.specialty-tone-2,.zwxr .specialty-card.specialty-tone-3,
+.zwxr .dimension-grid article{
+  background:#f6f0e1;border:1px solid #e2d8c0;border-top:3px solid rgba(165,64,46,.5);
+  box-shadow:0 10px 26px rgba(0,0,0,.25);border-radius:8px}
+.zwxr .logic-overlay .logic-sheet,.zwxr .logic-sheet{background:#f6f0e1;border-left:1px solid #e2d8c0;box-shadow:-18px 0 50px rgba(0,0,0,.5)}
+.zwxr .deep-card h4,.zwxr .specialty-card h4,.zwxr .dimension-grid article h4{
+  font-family:"Kaiti SC","KaiTi","STKaiti",serif;font-size:22px;letter-spacing:.06em;color:#26241d}
+/* 雷达星海装:渐变填充+辉光,标签药丸夜色描金 */
+.zwxr .deep-radar-chart .radar-grid-line{fill:none;stroke:rgba(232,206,154,.15)}
+.zwxr .deep-radar-chart line{stroke:rgba(232,206,154,.10)}
+.zwxr .deep-radar-chart .radar-value{fill:url(#zwxRadarFill);fill-opacity:.32;stroke:rgba(242,226,190,.85);stroke-width:2;filter:url(#zwxRadarGlow)}
+.zwxr .deep-radar-chart circle{stroke:rgba(7,6,19,.85);stroke-width:1.3}
+.zwxr .deep-radar-chart>span{background:rgba(10,8,24,.76);border:1px solid rgba(232,206,154,.26);border-radius:10px;
+  width:88px;padding:6px 4px;font-family:"Kaiti SC","KaiTi","STKaiti",serif;font-size:11.5px;color:#cfc9bb}
+.zwxr .deep-radar-chart>span b{display:block;margin-top:2px;color:#e8ce9a;font-family:Consolas,monospace;font-size:14.5px}
