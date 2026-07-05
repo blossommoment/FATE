@@ -1279,3 +1279,17 @@
 .zwxr .fb-pagenav a b{color:var(--zx-gold)}
 .zwxr .fb-cta{border:1px solid rgba(232,206,154,.5);background:linear-gradient(135deg,rgba(191,154,78,.28),rgba(191,154,78,.08));color:var(--zx-gold);font-family:var(--zx-kai);letter-spacing:.2em}
 .zwxr .fb-note{color:#6f6a82;font-family:var(--zx-mono);letter-spacing:.12em}
+
+/* ============ 五拍(2026-07-06):亮度提级 + 数轴统一 + 性情章 ============ */
+/* 文字太暗太小的根治:核心令牌整体提亮一级 + 桌面 zoom 1.2 */
+.zwxr{--ink:#f3edde;--muted:#c9c2da;--zr-body:#d6d0e2;--zr-soft:#e4ddcf}
+@media(min-width:701px){.zwxr .zwxr-body{zoom:1.2}}
+.zwxr p,.zwxr li{color:#ded7c9}
+.zwxr .deep-summary{color:#e8e1d2}
+.zwxr .fb-essay{color:#e4ddcf}
+.zwxr .zx-mnote{color:#c9c2da}
+/* 深度卡数轴吃四域色(与目录指标线同源) */
+.zwxr .deep-card .tendency-axis{--mc:var(--ac)}
+.zwxr .tendency-axis .zx-mtrack{margin:4px 0 0}
+/* 成册页性情章导航片 */
+.zwxr .fb-c-nature b{color:var(--zx-gold)}

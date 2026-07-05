@@ -10,10 +10,10 @@ const PAYWALL_ENABLED = false;
 
 type PageKey = "love" | "career" | "social" | "season";
 const PAGES: { key: PageKey; no: string; cn: string; en: string }[] = [
-  { key: "love", no: "壹", cn: "感情", en: "CHAPTER 01 · LOVE" },
-  { key: "career", no: "贰", cn: "事业", en: "CHAPTER 02 · WORK" },
-  { key: "social", no: "叁", cn: "人际", en: "CHAPTER 03 · SOCIAL" },
-  { key: "season", no: "肆", cn: "时运", en: "CHAPTER 04 · SEASON" },
+  { key: "love", no: "贰", cn: "感情", en: "CHAPTER 02 · LOVE" },
+  { key: "career", no: "叁", cn: "事业", en: "CHAPTER 03 · WORK" },
+  { key: "social", no: "肆", cn: "人际", en: "CHAPTER 04 · SOCIAL" },
+  { key: "season", no: "伍", cn: "时运", en: "CHAPTER 05 · SEASON" },
 ];
 
 type CachedReport = { digest: DigestPayload; source: "ai" | "fallback"; facts: PersonalFacts };
@@ -35,6 +35,37 @@ function pageMetrics(tags: TagHit[]): TagMetric[] {
 
 const TONE_WIDTH: Record<string, number> = { boost: 74, mixed: 52, neutral: 46, drain: 32 };
 const TONE_CN: Record<string, string> = { boost: "补", mixed: "间", neutral: "平", drain: "耗" };
+
+// ---- 第壹章 性情:规则引擎直出(无 AI),匹配推荐只谈倾向不作断言 ----
+function natureLine(f: PersonalFacts): string {
+  const k = f.keyScores;
+  const bits: string[] = [];
+  if (k.autonomy >= 60) bits.push("自留地要够大");
+  if (k.dependency >= 60) bits.push("在乎回应的温度");
+  if (k.novelty >= 60) bits.push("对新鲜事来者不拒");
+  if (k.resilience >= 60) bits.push("压力之下反而站得稳");
+  if (k.vigilance >= 60) bits.push("信任要一层层给");
+  if (!bits.length) bits.push("节奏平顺,不走极端");
+  return bits.slice(0, 3).join(",") + "。";
+}
+function matchAdvice(f: PersonalFacts): string {
+  const map: Record<string, string> = {
+    安全型: "大多数依恋类型都接得住你;和同为安全型的人在一起,升温最省力。",
+    焦虑型: "回应稳定、说到做到的人最能接住你——若即若离只会放大你的耗电。",
+    回避型: "不追问、给空间的人和你最合拍——查岗式的热情只会把你越推越远。",
+  };
+  return map[f.attachment] ?? map["安全型"];
+}
+function matchTags(f: PersonalFacts): string[] {
+  const k = f.keyScores;
+  const out: string[] = [];
+  out.push(k.initiative < 50 ? "会主动的人" : "接得住热情的人");
+  if (k.autonomy >= 60) out.push("给空间的人");
+  if (k.dependency >= 60) out.push("回应及时的人");
+  out.push(k.novelty >= 60 ? "能一起折腾的人" : "把日子过稳的人");
+  if (k.conflictExpression < 45) out.push("愿意先开口和好的人");
+  return out.slice(0, 4);
+}
 
 export default function FateReport({ birth, profileId }: { birth: BirthInput; profileId: string }) {
   const [result, setResult] = useState<CachedReport | null>(null);
@@ -149,6 +180,7 @@ export default function FateReport({ birth, profileId }: { birth: BirthInput; pr
 
   return <section className="fate-book">
     <nav className="fb-pagenav">
+      <a className="fb-c-nature" href="#fr-nature"><b>壹</b>性情</a>
       {PAGES.map((page) => <a key={page.key} className={`fb-c-${page.key}`} href={`#fr-${page.key}`}><b>{page.no}</b>{page.cn}</a>)}
     </nav>
     <section className="fb-cover">
@@ -157,16 +189,43 @@ export default function FateReport({ birth, profileId }: { birth: BirthInput; pr
       <div className="fb-meta">
         <div><small>命主</small><strong>{facts.dayPillar}日主</strong></div>
         <div><small>格局</small><strong>{facts.strength.level}{facts.favorable.length ? ` · 喜${facts.favorable.join("")}` : ""}</strong></div>
-        <div><small>章节</small><strong>肆章成册</strong></div>
+        <div><small>章节</small><strong>伍章成册</strong></div>
       </div>
     </section>
     {/* 册内目录(2026-07-06 用户拍板:成册报告照样例配目录) */}
     <section className="zx-tocbook zx-corner fb-toc">
-      <div className="zx-tvol"><b>册内目录</b><span>CONTENTS · 肆章</span></div>
+      <div className="zx-tvol"><b>册内目录</b><span>CONTENTS · 伍章</span></div>
+      <a className="zx-titem" href="#fr-nature">
+        <div><span className="zx-tname">壹 · 性情</span><span className="zx-tdesc">主轴人格 · 依恋方式 · 更容易合拍的人</span></div>
+        <i className="zx-tdots" /><span className="zx-tpg">CHAPTER 01 · NATURE</span>
+      </a>
       {PAGES.map((page) => <a className="zx-titem" key={page.key} href={`#fr-${page.key}`}>
         <div><span className="zx-tname">{page.no} · {page.cn}</span><span className="zx-tdesc">标签印鉴 · 判定指标与阈值 · 长评与建议</span></div>
         <i className="zx-tdots" /><span className="zx-tpg">{page.en}</span>
       </a>)}
+    </section>
+    {/* 第壹章 · 性情(规则引擎直出) */}
+    <section className="fb-page fb-p-nature" id="fr-nature">
+      <header><h2><small>CHAPTER 01 · NATURE</small>性情</h2><span className="fb-no">壹</span></header>
+      <div className="fb-stamps">
+        <div className="fb-stamp"><b>{facts.dominantAxis.god}主轴</b><span>{facts.dominantAxis.theme}</span></div>
+        <div className="fb-stamp"><b>{facts.attachment}依恋</b><span>关系中的安全感来源</span></div>
+        <div className="fb-stamp"><b>{facts.strength.level}</b><span>{facts.favorable.length ? `喜${facts.favorable.join("、")}` : "喜忌不显,自成节奏"}</span></div>
+      </div>
+      <div className="fb-data">
+        <span className="fb-mono">DATA · 性情四维</span>
+        {([["外向表达", facts.personality.extroversion], ["情绪稳定", facts.personality.stability], ["边界控制", facts.personality.control], ["情感感知", facts.personality.emotion]] as [string, number][]).map(([label, value]) => <div className="fb-metric" key={label}>
+          <span>{label}</span>
+          <div className="fb-track"><i className="fb-fill" style={{ width: `${Math.max(4, Math.min(100, value))}%` }} /></div>
+          <em>{value}</em>
+        </div>)}
+      </div>
+      <div className="fb-essay-tag">性情 · 基于 FATE 模型 2.0</div>
+      <p className="fb-essay">主轴落在「{facts.dominantAxis.theme}」,副轴「{facts.secondaryAxis.theme}」在不同场景轮换出面。依恋方式偏{facts.attachment}:{natureLine(facts)}</p>
+      <div className="fb-aside">
+        <div><small>更容易合拍的人</small><p>{matchAdvice(facts)}</p></div>
+        <div><small>匹配标签</small><p>{matchTags(facts).join(" · ")}</p></div>
+      </div>
     </section>
     {renderPage(PAGES[0])}
     <div className={unlocked ? "" : "fb-locked"}>

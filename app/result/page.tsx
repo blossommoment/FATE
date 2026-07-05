@@ -547,7 +547,7 @@ export async function ResultContent({
                     <div className="deep-factor-tags">{factorTagsFor(item.key).map((factor) => <span className={`factor-${factor.tone}`} key={`${factor.label}-${factor.tone}`}><i style={{ "--factor": `${factor.value}%` } as CSSProperties} /><b>{factor.label}</b><small>{factor.value}%</small></span>)}</div>
                     <p className="deep-summary">{item.summary}</p>
                     <div className="tendency-axis" aria-label={`${item.label}分段数轴，命主位于${item.score}分`}>
-                                            <div className="axis-track"><b className="zx-axisfill" style={{ width: `${item.score}%` }} /><i style={{ left: `${item.score}%` }} /></div>
+                                            <div className="zx-mtrack"><i className="zx-mfill" style={{ width: `${Math.min(100, item.score)}%` }} /><b className="zx-mmean" /></div>
                       <div className="zx-mscale"><span>0</span><span>25</span><span><em>50 · 常模</em></span><span>75</span><span>100</span></div>
                       <p><strong>{band.label}</strong>{band.detail}</p>
                     </div>
@@ -574,7 +574,7 @@ export async function ResultContent({
                 <header><div><small>0{index + 1} / SPECIAL TEST</small><h4>{item.label}</h4><b>{item.descriptor}</b></div><strong>{item.score}<span>{item.level}</span></strong></header>
                 <p>{item.summary}</p>
                 <div className="tendency-axis" aria-label={`${item.label}分段数轴，命主位于${item.score}分`}>
-                                    <div className="axis-track"><b className="zx-axisfill" style={{ width: `${item.score}%` }} /><i style={{ left: `${item.score}%` }} /></div>
+                                    <div className="zx-mtrack"><i className="zx-mfill" style={{ width: `${Math.min(100, item.score)}%` }} /><b className="zx-mmean" /></div>
                       <div className="zx-mscale"><span>0</span><span>25</span><span><em>50 · 常模</em></span><span>75</span><span>100</span></div>
                   <p><strong>{band.label}</strong>{band.detail}</p>
                 </div>
