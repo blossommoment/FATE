@@ -1218,3 +1218,30 @@
 .zwxr .zx-gsym{font-family:var(--zx-kai)}
 .zwxr .zx-dirpanel .zx-yearsnote a{color:var(--zx-gold2);letter-spacing:.15em}
 .zwxr .zx-dirpanel .zx-yearsnote a:hover{color:var(--zx-gold)}
+
+/* ============ 章内维度卡照样例指标制式(2026-07-06) ============ */
+/* 分数:样例大等宽金字 + /100 */
+.zwxr .deep-card .deep-score strong,.zwxr .specialty-card>header strong{font-family:var(--zx-mono);font-size:30px;color:var(--zx-gold);font-weight:400}
+.zwxr .deep-card .deep-score strong::after{content:" / 100";font-size:10px;color:#5f5a72}
+.zwxr .deep-card .deep-score span{font-family:var(--zx-kai);font-size:12px;letter-spacing:.2em;color:var(--zx-gold2)}
+/* 型签:样例药丸 */
+.zwxr .deep-descriptor{display:inline-block;border:1px solid var(--zx-line);border-radius:999px;padding:2px 12px;
+  background:rgba(191,154,78,.06);font-family:var(--zx-kai);font-size:11.5px;color:var(--zx-gold);letter-spacing:.12em;margin-top:6px}
+/* 数轴:样例指标轨道(四分格+常模菱标+渐变填充),流星标保留在最上层 */
+.zwxr .tendency-axis .axis-track{height:8px;border:1px solid var(--zx-line);border-radius:0;
+  background:repeating-linear-gradient(90deg,transparent 0,transparent calc(25% - 1px),rgba(232,206,154,.22) calc(25% - 1px),rgba(232,206,154,.22) 25%)}
+.zwxr .tendency-axis .axis-track::after{content:"";position:absolute;left:50%;top:50%;width:7px;height:7px;
+  border:1px solid var(--zx-gold);transform:translate(-50%,-50%) rotate(45deg);background:#0a0918;z-index:1}
+.zwxr .zx-axisfill{position:absolute;left:0;top:0;bottom:0;z-index:0;
+  background:linear-gradient(90deg,rgba(232,206,154,.10),rgba(191,154,78,.5))}
+.zwxr .tendency-axis .axis-track i{z-index:2}
+.zwxr .tendency-axis .axis-labels span{font-family:var(--zx-mono);font-size:9px;letter-spacing:.1em;color:#5f5a72}
+.zwxr .tendency-axis>p{font-family:var(--zx-kai);font-size:13px;color:var(--zx-mut);letter-spacing:.04em}
+.zwxr .tendency-axis>p strong{color:var(--zx-gold2);margin-right:8px;font-weight:400}
+/* 结构信号/情境预览:样例内衬卡 */
+.zwxr .deep-factor-tags span{border:1px solid var(--zx-line);background:rgba(191,154,78,.06);border-radius:6px}
+.zwxr .deep-factor-tags b{color:var(--zx-ink)}
+.zwxr .deep-scene-preview>div{background:var(--zx-panel);border:1px solid var(--zx-line);border-radius:6px}
+.zwxr .deep-scene-preview b{color:var(--zx-gold2);font-family:var(--zx-kai)}
+.zwxr .deep-scene-preview span{color:#cfc9bb}
+.zwxr .deep-note{font-family:var(--zx-mono);font-size:11px;letter-spacing:.12em;color:#6f6a82}

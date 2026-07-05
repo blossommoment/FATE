@@ -552,7 +552,7 @@ export async function ResultContent({
                     <p className="deep-summary">{item.summary}</p>
                     <div className="tendency-axis" aria-label={`${item.label}分段数轴，命主位于${item.score}分`}>
                       <div className="axis-labels"><span>弱 0—27</span><span>偏低 28—44</span><span>中段 45—64</span><span>偏高 65—81</span><span>强 82—100</span></div>
-                      <div className="axis-track"><i style={{ left: `${item.score}%` }} /></div>
+                      <div className="axis-track"><b className="zx-axisfill" style={{ width: `${item.score}%` }} /><i style={{ left: `${item.score}%` }} /></div>
                       <p><strong>{band.label}</strong>{band.detail}</p>
                     </div>
                     <div className="deep-scene-preview">
@@ -579,7 +579,7 @@ export async function ResultContent({
                 <p>{item.summary}</p>
                 <div className="tendency-axis" aria-label={`${item.label}分段数轴，命主位于${item.score}分`}>
                   <div className="axis-labels"><span>弱 0—27</span><span>偏低 28—44</span><span>中段 45—64</span><span>偏高 65—81</span><span>强 82—100</span></div>
-                  <div className="axis-track"><i style={{ left: `${item.score}%` }} /></div>
+                  <div className="axis-track"><b className="zx-axisfill" style={{ width: `${item.score}%` }} /><i style={{ left: `${item.score}%` }} /></div>
                   <p><strong>{band.label}</strong>{band.detail}</p>
                 </div>
                 <div className="specialty-evidence">{item.evidence.map((evidence) => <span key={evidence}>{evidence}</span>)}</div>
