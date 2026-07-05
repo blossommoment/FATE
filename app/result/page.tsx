@@ -234,18 +234,19 @@ export async function ResultContent({
   const elementValues = elementRadar.map((item, index) => polygonPoint(index, 5, elementRadius(item.value))).join(" ");
   const elementRadarPanel = <section className="element-card element-radar-card overview-element-radar">
     <div className="element-radar-copy"><small>五行能量图谱</small><h3>随月令旺衰的能量推演</h3><p>以月令定五行旺衰，再计通根透干与合冲刑害对每个字的增减。图形展示这套推演后的真实占比，不把八个字等量计数。</p><div className="element-weight-note"><span>月令旺衰</span><span>通根透干</span><span>合会成局</span><span>冲刑折损</span></div></div>
-    <div className="element-radar">
-      <svg viewBox="0 0 320 320" role="img" aria-label="五行能量雷达图，不显示具体数字">
-        <defs><linearGradient id="elementRadarFill" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#58a878" /><stop offset=".28" stopColor="#e66e5e" /><stop offset=".52" stopColor="#d6a64f" /><stop offset=".76" stopColor="#86a3ad" /><stop offset="1" stopColor="#5b83bd" /></linearGradient></defs>
-        {[112, 84, 56, 28].map((radius) => <polygon key={radius} points={elementGrid(radius)} className="element-grid" />)}
-        {elementRadar.map((item, index) => { const [x, y] = polygonPoint(index, 5, 112).split(","); return <line key={item.key} x1="160" y1="160" x2={x} y2={y} style={{ stroke: item.color }} />; })}
-        <polygon points={elementValues} className="element-value" />
-        {elementRadar.map((item, index) => { const [x, y] = polygonPoint(index, 5, elementRadius(item.value)).split(","); return <circle key={item.key} cx={x} cy={y} r="5" style={{ fill: item.color }} />; })}
-      </svg>
-      {elementRadar.map((item, index) => {
-        const angle = -Math.PI / 2 + index * Math.PI * 2 / 5;
-        return <span key={item.key} style={{ left: `${50 + Math.cos(angle) * 41}%`, top: `${50 + Math.sin(angle) * 41}%`, color: item.color }}><i style={{ background: item.color }} />{item.label}</span>;
+    {/* 2026-07-06 用户拍板:照首页样例做成五行称重条(真数据+喜忌) */}
+    <div className="zx-wxpanel">
+      {[...elementRadar].sort((a, b) => b.value - a.value).map((item) => {
+        const maxVal = Math.max(...elementRadar.map((e) => e.value)) || 1;
+        const fav = profile.energy.dayMaster.favorable.includes(item.key);
+        const unf = profile.energy.dayMaster.unfavorable.includes(item.key);
+        return <div className="zx-wx" key={item.key}>
+          <span className={`zx-wxel ${item.key}`}>{item.label}<i>{item.key.toUpperCase()}</i></span>
+          <div className="zx-wxtrack"><i className="zx-wxfill" style={{ width: `${Math.round(item.value / maxVal * 100)}%`, background: `linear-gradient(90deg,rgba(232,206,154,.12),${item.color})` }} /></div>
+          <span className="zx-wxval">{Math.round(item.value * 10) / 10}%{fav && <i className="zx-xi">喜</i>}{unf && <i className="zx-ji">忌</i>}</span>
+        </div>;
       })}
+      <p className="zx-wxnote"><b>{profile.energy.dayMaster.reasons[0]}</b>——每一分由干支、藏干、季节逐项称重归一,可在深度报告逐条对账。</p>
     </div>
   </section>;
   const socialModelItems = [
@@ -479,15 +480,14 @@ export async function ResultContent({
           <Link className="fb-cta" href={`/report?${baseQuery}`}>打开我的深度解读 ↗</Link>
           <div className="fb-note">报告内容基于 FATE 模型 2.0 得出。</div>
         </section>
-        <div className="module-directory">
-          <header><div><span>DEEP CHAPTERS</span><h3>深度目录 · {["零","一","二","三","四","五","六","七","八","九"][deepModules.length]}章</h3></div><small>四类关系维度 + 专项观察 · 逐章展开</small></header>
-          <div className="module-grid">
-            {deepModules.map((item, index) => <Link key={item.key} href={`/?${baseQuery}&view=deep&module=${item.key}#deep-report`}>
-              <i>{item.no}</i>
-              <div><span>0{index + 1} · {item.subtitle}</span><h4>{item.title}</h4><p>{item.teaser}</p></div>
-              <b>→</b>
-            </Link>)}
-          </div>
+        {/* 2026-07-06 用户拍板:目录照首页样例册内目录制式 */}
+        <div className="module-directory zx-tocbook zx-corner">
+          <div className="zx-tvol"><b>深度目录</b><span>DEEP CHAPTERS · {["零","一","二","三","四","五","六","七","八","九"][deepModules.length]} 章逐册展开</span></div>
+          <p className="zx-tsub">四类关系维度 + 专项观察——每章一册,点开即读。</p>
+          {deepModules.map((item) => <Link className="zx-titem" key={item.key} href={`/?${baseQuery}&view=deep&module=${item.key}#deep-report`}>
+            <div><span className="zx-tname">{item.title}</span><span className="zx-tdesc">{item.subtitle} · {item.teaser}</span></div>
+            <i className="zx-tdots" /><span className="zx-tpg">{item.no}</span>
+          </Link>)}
         </div>
         </>}
         {deepActive && <div className="module-frame">

@@ -1124,3 +1124,52 @@
 /* 数轴标记:无数字,细针+光点 */
 .zwxr .tendency-axis .axis-track i{width:3px;border-radius:2px;background:#e8ce9a;box-shadow:0 0 8px rgba(232,206,154,.7)}
 .zwxr .tendency-axis .axis-track i b{display:none}
+
+/* ============ 样例设计语言入正册(2026-07-06 用户拍板:照首页样例做) ============ */
+/* zx- 组件类在 .zwxr 壳下也要有变量供血 */
+.zwxr{
+  --zx-bg:#070613;--zx-ink:#e6e1d5;--zx-mut:#9a94a8;
+  --zx-gold:#e8ce9a;--zx-gold2:#bf9a4e;
+  --zx-line:rgba(232,206,154,.16);--zx-line2:rgba(232,206,154,.32);
+  --zx-panel:rgba(15,13,34,.58);--zx-cinnabar:#b8462f;
+  --zx-wood:#6ec98f;--zx-fire:#e0796a;--zx-earth:#d9b26c;--zx-metal:#d2a64e;--zx-water:#7fa9d9;
+  --zx-kai:"Kaiti SC","KaiTi","STKaiti",serif;--zx-mono:Consolas,monospace}
+.zwxr .wood{color:var(--zx-wood)}.zwxr .fire{color:var(--zx-fire)}.zwxr .earth{color:var(--zx-earth)}
+.zwxr .metal{color:var(--zx-metal)}.zwxr .water{color:var(--zx-water)}
+.zwxr .zx-wxpanel{margin-top:6px}
+/* 数轴标记:发光星 ✦(黑针是回滚误伤) */
+.zwxr .tendency-axis .axis-track i{background:transparent!important;box-shadow:none;width:20px;margin-left:-10px}
+.zwxr .tendency-axis .axis-track i::after{content:"✦";position:absolute;left:50%;top:50%;
+  transform:translate(-50%,-52%);color:#f6ecd2;font-size:15px;line-height:1;
+  text-shadow:0 0 7px rgba(232,206,154,.95),0 0 16px rgba(232,206,154,.55)}
+/* 流年年签照样例:干支楷体大字彩色,年份等宽小字 */
+.zwxr .annual-year-strip a{background:rgba(10,8,24,.78);border:1px solid var(--zx-line);border-radius:8px}
+.zwxr .annual-year-strip a small{font-family:var(--zx-mono);letter-spacing:.25em;color:#6f6a82}
+.zwxr .annual-year-strip a strong{font-family:var(--zx-kai);font-size:24px;letter-spacing:.12em}
+.zwxr .annual-year-strip a.active{border-color:rgba(232,206,154,.6);background:rgba(191,154,78,.12);box-shadow:0 0 22px rgba(191,154,78,.18)}
+.zwxr .annual-seal{border:1px solid rgba(232,206,154,.3)}
+.zwxr .annual-seal strong{font-family:var(--zx-kai);letter-spacing:.1em}
+.zwxr .annual-specials article,.zwxr .annual-relations article{background:var(--zx-panel);border:1px solid var(--zx-line);border-radius:8px}
+/* 深度章卡照样例章卡:四域彩号 + 药丸 + 引言评述 */
+.zwxr .deep-tone-0{--ac:#d9b26c}.zwxr .deep-tone-1{--ac:#d98a97}
+.zwxr .deep-tone-2{--ac:#a98fd6}.zwxr .deep-tone-3{--ac:#7fa9d9}
+.zwxr .deep-card>header small{color:var(--ac);font-family:var(--zx-kai);letter-spacing:.35em;font-size:12px}
+.zwxr .deep-card>header h4{font-family:var(--zx-kai);font-size:24px;letter-spacing:.1em;font-weight:400}
+.zwxr .deep-card:hover{border-color:var(--ac)}
+.zwxr .deep-keywords span{font-family:var(--zx-kai);font-size:13px;letter-spacing:.1em;color:var(--zx-gold);
+  border:1px solid rgba(232,206,154,.3);border-radius:999px;padding:5px 15px;background:rgba(191,154,78,.07)}
+.zwxr .deep-summary{border-left:2px solid var(--ac);padding-left:15px;font-family:var(--zx-kai);
+  font-size:15px;color:#d5cfc2;line-height:2;letter-spacing:.03em}
+/* 专长卡照样例四格:楷名 + 等宽大分 + 型签 */
+.zwxr .specialty-card h4{font-family:var(--zx-kai);font-size:18px;letter-spacing:.15em;font-weight:400}
+.zwxr .specialty-card>header strong{font-family:var(--zx-mono);font-size:30px;color:var(--zx-gold)}
+.zwxr .specialty-card>header strong span{display:block;font-size:11px;color:#8d87a0;letter-spacing:.2em}
+.zwxr .specialty-card>header b{display:inline-block;font-family:var(--zx-kai);font-size:11.5px;letter-spacing:.12em;
+  color:var(--zx-gold);border:1px solid var(--zx-line);border-radius:999px;padding:2px 11px;margin-top:8px}
+/* 十二维汇总行照样例指标线 */
+.zwxr .summary-dims{border:1px solid var(--zx-line);background:var(--zx-panel);border-radius:8px}
+.zwxr .summary-dim-row{border-bottom:1px solid var(--zx-line)}
+.zwxr .summary-dim-row:last-child{border-bottom:none}
+/* 成册报告册目间距 */
+.zwxr .fb-toc{margin:28px 0}
+.zwxr .fb-toc .zx-titem{text-decoration:none}

@@ -160,6 +160,14 @@ export default function FateReport({ birth, profileId }: { birth: BirthInput; pr
         <div><small>章节</small><strong>肆章成册</strong></div>
       </div>
     </section>
+    {/* 册内目录(2026-07-06 用户拍板:成册报告照样例配目录) */}
+    <section className="zx-tocbook zx-corner fb-toc">
+      <div className="zx-tvol"><b>册内目录</b><span>CONTENTS · 肆章</span></div>
+      {PAGES.map((page) => <a className="zx-titem" key={page.key} href={`#fr-${page.key}`}>
+        <div><span className="zx-tname">{page.no} · {page.cn}</span><span className="zx-tdesc">标签印鉴 · 判定指标与阈值 · 长评与建议</span></div>
+        <i className="zx-tdots" /><span className="zx-tpg">{page.en}</span>
+      </a>)}
+    </section>
     {renderPage(PAGES[0])}
     <div className={unlocked ? "" : "fb-locked"}>
       <div className={unlocked ? "" : "fb-blur"}>
