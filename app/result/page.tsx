@@ -199,12 +199,16 @@ export async function ResultContent({
       title: "社交模式",
       subtitle: "连接如何建立与维持",
       teaser: `${socialLabels[profile.socialProfile.communication_need]}沟通需求 · 偏${socialLabels[profile.socialProfile.attachment_style]}依恋`,
+      score: profile.personality.extroversion,
+      tag: `${socialLabels[profile.socialProfile.attachment_style]}依恋`,
     };
     return {
       ...item,
       title: item.category ?? "专项观察",
       subtitle: group?.subtitle ?? "神煞与十神的延伸维度",
       teaser: item.category ? `${topCard?.label} ${topCard?.score} 分 · ${topCard?.descriptor}` : `${topSpecial.label} ${topSpecial.score} 分 · ${topSpecial.descriptor}`,
+      score: item.category ? topCard?.score ?? 0 : topSpecial.score,
+      tag: item.category ? topCard?.label ?? "" : topSpecial.label,
     };
   });
   const deepActive = view === "deep" ? deepModules.find((item) => item.key === moduleKey) ?? null : null;
@@ -483,17 +487,22 @@ export async function ResultContent({
           <Link className="fb-cta" href={`/report?${baseQuery}`}>打开我的深度解读 ↗</Link>
           <div className="fb-note">报告内容基于 FATE 模型 2.0 得出。</div>
         </section>
-        {/* 2026-07-06 二拍:深度目录照样例专长天赋格子——每章一格,点进才是章内容 */}
-        <div className="module-directory zx-panel zx-corner zx-dirwrap">
-          <div className="zx-pzhead"><h4>深度目录</h4><span>DEEP CHAPTERS · 每章一格 · 点进即读</span></div>
+        {/* 2026-07-06 终拍:深度目录 = 样例专长天赋面板逐件照抄(h6/大分/细条/型签/描述) */}
+        <div className="module-directory zx-panel zx-corner zx-dirwrap" style={{ padding: "54px 54px 44px" }}>
+          <div className="zx-pzhead">
+            <h4>深度目录</h4>
+            <span>DEEP CHAPTERS · 六章逐册 · 点格进章</span>
+          </div>
           <div className="zx-gifts zx-dirgrid">
             {deepModules.map((item) => <Link className="zx-gift" key={item.key} href={`/?${baseQuery}&view=deep&module=${item.key}#deep-report`}>
-              <span className="zx-dirno">{item.no}</span>
-              <h6>{item.title}</h6>
-              <span className="zx-gtag">{item.subtitle}</span>
-              <p>{item.teaser}</p>
+              <h6>{item.no} · {item.title}</h6>
+              <div className="zx-gval">{item.score}</div>
+              <div className="zx-gbar"><i style={{ width: `${Math.min(100, item.score)}%` }} /></div>
+              <span className="zx-gtag">{item.tag}</span>
+              <p>{item.subtitle}</p>
             </Link>)}
           </div>
+          <p className="zx-yearsnote">分值取该章最高维度 · 点开任一章,逐维展开推导</p>
         </div>
         </>}
         {deepActive && <div className="module-frame">
