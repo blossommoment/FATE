@@ -1173,3 +1173,17 @@
 /* 成册报告册目间距 */
 .zwxr .fb-toc{margin:28px 0}
 .zwxr .fb-toc .zx-titem{text-decoration:none}
+
+/* ============ 二拍补样式:目录格子 + 流年卡阵(2026-07-06) ============ */
+.zwxr .zx-dirwrap{margin:26px 0}
+.zwxr .zx-dirgrid{grid-template-columns:repeat(3,1fr)}
+.zwxr .zx-dirgrid .zx-gift{text-decoration:none;transition:.3s}
+.zwxr .zx-dirgrid .zx-gift:hover{background:rgba(191,154,78,.12);transform:translateY(-2px)}
+.zwxr .zx-dirno{display:block;font-family:var(--zx-kai);font-size:28px;color:var(--zx-gold);line-height:1;margin-bottom:10px}
+.zwxr .zx-dirgrid h6{margin:0 0 6px}
+.zwxr .zx-years-annual .zx-yr{text-decoration:none;transition:.3s}
+.zwxr .zx-years-annual .zx-yr:hover{background:rgba(191,154,78,.10)}
+.zwxr .zx-yr-active{background:rgba(191,154,78,.13)!important;border:1px solid rgba(232,206,154,.55);
+  box-shadow:0 0 26px rgba(191,154,78,.2);border-radius:6px}
+@media(max-width:900px){.zwxr .zx-dirgrid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:700px){.zwxr .zx-dirgrid{grid-template-columns:1fr}}

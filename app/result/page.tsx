@@ -390,18 +390,21 @@ export async function ResultContent({
           </div>
           <section className="annual-flow" id="annual-flow">
             <header><div><span>流年索引</span><h3>选择年份，查看当年五行样式</h3></div><small>以喜忌为标尺标注补给与消耗，不作具体事件断言</small></header>
-            <div className="annual-year-strip">
+            {/* 2026-07-06 二拍:流年照样例五年卡阵(真数据),当前年鎏金,点卡切换 */}
+            <div className="zx-years zx-years-annual">
               {annualYears.map((year) => {
                 const ganZhi = annualGanZhi(year);
-                const yearSpecials = analyzeAnnualFlow(profile, ganZhi).specials;
-                return <Link className={`${year === safeFlowYear ? "active " : ""}annual-${annualTone(ganZhi[0])}`} href={`/?${baseQuery}&view=overview&flowYear=${year}#annual-flow`} key={year} title={yearSpecials.map((item) => item.name).join("、")}>{yearSpecials.length > 0 && <i className="annual-flag">{yearSpecials[0].name.slice(0, 2)}</i>}<small>{year}</small><strong>{ganZhi}</strong></Link>;
+                const flow = analyzeAnnualFlow(profile, ganZhi);
+                const tags = flow.specials.length ? flow.specials.slice(0, 2).map((sp) => sp.name.slice(0, 4)) : [flow.verdict.label];
+                return <Link className={`zx-yr${year === safeFlowYear ? " zx-yr-active" : ""}`} href={`/?${baseQuery}&view=overview&flowYear=${year}#annual-flow`} key={year}>
+                  <div className="zx-ynum">{year}</div>
+                  <div className="zx-ygz"><b className={annualTone(ganZhi[0])}>{ganZhi[0]}</b><b className={annualTone(ganZhi[1])}>{ganZhi[1]}</b></div>
+                  <div className="zx-ygod">{flow.stemRole} · {flow.verdict.label}</div>
+                  <p>{flow.verdict.text}</p>
+                  <div className="zx-ytags">{tags.map((t) => <span key={t}>{t}</span>)}</div>
+                </Link>;
               })}
             </div>
-            <article className={`annual-detail annual-${annualTone(selectedAnnual[0])}`}>
-              <div className="annual-seal"><small>{safeFlowYear}</small><strong>{selectedAnnual[0]}<b>{selectedAnnual[1]}</b></strong></div>
-              <div><span>当年元素标记</span><h3>{selectedAnnual}流年</h3><p>流年天干{selectedAnnual[0]}为{annualFlow.stemElement}，对你的{profile.bazi.dayPillar[0]}日主属于{annualFlow.stemRole}——这一年{annualFlow.stemTheme}相关的主题更容易走到台前。{annualFlow.verdict.text}</p></div>
-              <div className="annual-element-pills"><span className={`tone-${annualTone(selectedAnnual[0])}`}>天干 · {annualElementNames[annualTone(selectedAnnual[0]) as keyof typeof annualElementNames]}</span><span className={`tone-${annualTone(selectedAnnual[1])}`}>地支 · {annualElementNames[annualTone(selectedAnnual[1]) as keyof typeof annualElementNames]}</span></div>
-            </article>
             {annualFlow.specials.length > 0 && <div className="annual-specials">
               {annualFlow.specials.map((item) => <article key={item.name}><b>{item.name}</b><p>{item.summary}</p></article>)}
             </div>}
@@ -480,14 +483,17 @@ export async function ResultContent({
           <Link className="fb-cta" href={`/report?${baseQuery}`}>打开我的深度解读 ↗</Link>
           <div className="fb-note">报告内容基于 FATE 模型 2.0 得出。</div>
         </section>
-        {/* 2026-07-06 用户拍板:目录照首页样例册内目录制式 */}
-        <div className="module-directory zx-tocbook zx-corner">
-          <div className="zx-tvol"><b>深度目录</b><span>DEEP CHAPTERS · {["零","一","二","三","四","五","六","七","八","九"][deepModules.length]} 章逐册展开</span></div>
-          <p className="zx-tsub">四类关系维度 + 专项观察——每章一册,点开即读。</p>
-          {deepModules.map((item) => <Link className="zx-titem" key={item.key} href={`/?${baseQuery}&view=deep&module=${item.key}#deep-report`}>
-            <div><span className="zx-tname">{item.title}</span><span className="zx-tdesc">{item.subtitle} · {item.teaser}</span></div>
-            <i className="zx-tdots" /><span className="zx-tpg">{item.no}</span>
-          </Link>)}
+        {/* 2026-07-06 二拍:深度目录照样例专长天赋格子——每章一格,点进才是章内容 */}
+        <div className="module-directory zx-dirwrap">
+          <div className="zx-pzhead"><h4>深度目录</h4><span>DEEP CHAPTERS · 每章一格 · 点进即读</span></div>
+          <div className="zx-gifts zx-dirgrid">
+            {deepModules.map((item) => <Link className="zx-gift" key={item.key} href={`/?${baseQuery}&view=deep&module=${item.key}#deep-report`}>
+              <span className="zx-dirno">{item.no}</span>
+              <h6>{item.title}</h6>
+              <span className="zx-gtag">{item.subtitle}</span>
+              <p>{item.teaser}</p>
+            </Link>)}
+          </div>
         </div>
         </>}
         {deepActive && <div className="module-frame">
