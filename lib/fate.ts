@@ -858,10 +858,11 @@ export function analyzeBirth(birth: BirthInput): UserProfile {
   };
   // 强弱感知命名（2026-07-03）：同一主轴十神，身强是持刀者、身弱是承受方，
   // 名字不能两用；前缀由「最强五行系」改为强弱档位（身弱盘最强五行是对手而非气质）
+  // 2026-07-05 用户拍板:去劳碌感/弱者感字眼(奔忙、担重、倚靠、借力、承压),换意象化命名
   const weakPersonaNames: Record<string, string> = {
-    七杀: "承压应变型", 正官: "守序谨慎型", 伤官: "敏锐易感型", 食神: "安逸自适型",
-    正印: "倚靠滋养型", 偏印: "敏思内守型", 正财: "务实担重型", 偏财: "机会奔忙型",
-    比肩: "同伴借力型", 劫财: "并肩共担型",
+    七杀: "逆风稳舵型", 正官: "守序谨慎型", 伤官: "敏锐易感型", 食神: "安逸自适型",
+    正印: "静水养气型", 偏印: "敏思内守型", 正财: "稳步经营型", 偏财: "顺水行舟型",
+    比肩: "同行聚力型", 劫财: "并肩共担型",
   };
   const isWeakSide = energy.dayMaster.level === "身弱" || energy.dayMaster.level === "从弱";
   const personaDisplayName = isWeakSide ? weakPersonaNames[dominantGodName] ?? persona.name : persona.name;
