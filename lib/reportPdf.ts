@@ -5,8 +5,11 @@ import { existsSync } from "node:fs";
 // 字体：全部用磁盘 TTF（楷体标题 + 黑体正文，英文借用其拉丁字形）。
 // 【不用 pdfkit 内置字体】——其 .afm 度量文件在 Next.js 打包后按 C:\ROOT 解析失败(ENOENT)。
 
-const HEI_CANDIDATES = [process.env.FATE_PDF_FONT_HEI ?? "", "C:\\Windows\\Fonts\\simhei.ttf"];
-const KAI_CANDIDATES = [process.env.FATE_PDF_FONT_KAI ?? "", "C:\\Windows\\Fonts\\simkai.ttf", "C:\\Windows\\Fonts\\simhei.ttf"];
+// 字体候选：环境变量优先 → Linux 部署路径（开源中文字体）→ Windows 本地兜底。
+const LINUX_HEI = ["/opt/fate/fonts/NotoSansSC-Regular.otf", "/usr/share/fonts/opentype/noto/NotoSansCJKsc-Regular.otf", "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc"];
+const LINUX_KAI = ["/opt/fate/fonts/NotoSerifSC-Regular.otf", "/usr/share/fonts/truetype/arphic/ukai.ttc", ...LINUX_HEI];
+const HEI_CANDIDATES = [process.env.FATE_PDF_FONT_HEI ?? "", ...LINUX_HEI, "C:\\Windows\\Fonts\\simhei.ttf"];
+const KAI_CANDIDATES = [process.env.FATE_PDF_FONT_KAI ?? "", ...LINUX_KAI, "C:\\Windows\\Fonts\\simkai.ttf", "C:\\Windows\\Fonts\\simhei.ttf"];
 
 const INK = "#26241d";
 const SUB = "#5f5b50";

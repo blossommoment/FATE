@@ -71,7 +71,7 @@ function collectProse(p: UserProfile, digest: DeepDigest): string[] {
   });
   p.specialtyAnalysis.forEach((s) => { add(s.label); add(s.descriptor); add(s.summary); s.evidence.forEach(add); add(s.caution); });
   p.identityTags.forEach(add);
-  p.bazi.pillars.forEach((pl) => add(pl.stage));
+  // 注：pillar.stage（十二长生）属命理术语，渲染层 stageT 统一中英对照，不进翻译批次
   add(digest.headline);
   (Object.values(digest.pages)).forEach((page) => { add(page.essay); add(page.advice); });
   return [...set];
@@ -92,7 +92,7 @@ function translateProfile(p: UserProfile, tr: (s: string) => string): UserProfil
     })),
     specialtyAnalysis: p.specialtyAnalysis.map((s) => ({ ...s, label: tr(s.label), descriptor: tr(s.descriptor), summary: tr(s.summary), evidence: s.evidence.map(tr), caution: tr(s.caution) })),
     identityTags: p.identityTags.map(tr),
-    bazi: { ...p.bazi, pillars: p.bazi.pillars.map((pl) => ({ ...pl, stage: tr(pl.stage) })) },
+    // pillar.stage 保持中文，交给渲染层 stageT 统一对照
   };
 }
 

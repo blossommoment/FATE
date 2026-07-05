@@ -7,8 +7,11 @@ import type { PersonaTags } from "./digest";
 // 日主强弱推导、十二维深度。全部规则引擎数据（零 AI，秒出），彩色标注让人信服"有真东西"。
 // 语言由调用方选（lang），单语言输出。
 
-const HEI = ["", "C:\\Windows\\Fonts\\simhei.ttf"].map((c) => c || (process.env.FATE_PDF_FONT_HEI ?? ""));
-const KAI = ["", "C:\\Windows\\Fonts\\simkai.ttf", "C:\\Windows\\Fonts\\simhei.ttf"].map((c, i) => i === 0 ? (process.env.FATE_PDF_FONT_KAI ?? "") : c);
+// 字体候选：环境变量优先 → Linux 部署路径（apt/手动放置的开源中文字体）→ Windows 本地兜底。
+const LINUX_HEI = ["/opt/fate/fonts/NotoSansSC-Regular.otf", "/usr/share/fonts/opentype/noto/NotoSansCJKsc-Regular.otf", "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc"];
+const LINUX_KAI = ["/opt/fate/fonts/NotoSerifSC-Regular.otf", "/usr/share/fonts/truetype/arphic/ukai.ttc", ...LINUX_HEI];
+const HEI = [process.env.FATE_PDF_FONT_HEI ?? "", ...LINUX_HEI, "C:\\Windows\\Fonts\\simhei.ttf"];
+const KAI = [process.env.FATE_PDF_FONT_KAI ?? "", ...LINUX_KAI, "C:\\Windows\\Fonts\\simkai.ttf", "C:\\Windows\\Fonts\\simhei.ttf"];
 
 const INK = "#26241d", SUB = "#5f5b50", FAINT = "#9a9587", CINNABAR = "#a5402e", LINE = "#ddd8c9", CARD = "#f6f3ea", TRACK = "#eae7db";
 
@@ -35,7 +38,10 @@ const levelOf = (v: number) => v >= 82 ? "强倾向" : v >= 65 ? "偏高" : v >=
 // 命理术语中英对照（英文报告里译掉等级、十神名，避免露中文）
 const LEVEL_EN: Record<string, string> = { 从强: "Follow-Strong", 身强: "Strong", 中和: "Balanced", 身弱: "Weak", 从弱: "Follow-Weak" };
 const GOD_EN: Record<string, string> = { 比肩: "Friend", 劫财: "Rival", 食神: "Output", 伤官: "Hurting Officer", 正财: "Direct Wealth", 偏财: "Indirect Wealth", 正官: "Direct Officer", 七杀: "Seven Killings", 正印: "Direct Resource", 偏印: "Indirect Resource" };
+// 十二长生（日主在各柱地支的生旺死绝状态）
+const STAGE_EN: Record<string, string> = { 长生: "Growth", 沐浴: "Bath", 冠带: "Maturing", 临官: "Rising", 帝旺: "Peak", 衰: "Waning", 病: "Ailing", 死: "Fading", 墓: "Tomb", 绝: "Void", 胎: "Seed", 养: "Nurture" };
 const godT = (lang: "zh" | "en", god: string) => lang === "en" ? (GOD_EN[god] ?? god) : god;
+const stageT = (lang: "zh" | "en", stage: string) => lang === "en" ? (STAGE_EN[stage] ?? stage) : stage;
 const levelT = (lang: "zh" | "en", level: string) => lang === "en" ? (LEVEL_EN[level] ?? level) : level;
 
 type ChapterText = { essay: string; advice: string };
@@ -130,14 +136,15 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
   const secAssessment = () => {
     chapter(T(lang, "综合评定", "Overall Assessment"), "Who You Are");
     // 性格特点评定：AI 一句话人设 + 主轴人格
+    const EN = lang === "en";
     if (opts.digest?.headline) {
-      doc.font("kai").fontSize(19).fillColor(CINNABAR).text(`「${opts.digest.headline}」`, ML, doc.y, { width: W });
-      doc.moveDown(0.3);
+      doc.font("kai").fontSize(19).fillColor(CINNABAR).text(`${T(lang, "「", "“")}${opts.digest.headline}${T(lang, "」", "”")}`, ML, doc.y, { width: W, lineGap: EN ? 3 : 0 });
+      doc.moveDown(EN ? 0.55 : 0.3);
     }
-    doc.font("hei").fontSize(10.5).fillColor(SUB).text(`${T(lang, "性格特点", "Character")}${T(lang, "：", ": ")}${profile.archetype} · ${profile.dominantPersona.name}（${godT(lang, profile.dominantPersona.god)}）`, ML, doc.y, { width: W });
-    doc.moveDown(0.2);
+    doc.font("hei").fontSize(10.5).fillColor(SUB).text(`${T(lang, "性格特点", "Character")}${T(lang, "：", ": ")}${profile.archetype} · ${profile.dominantPersona.name}${T(lang, "（", " (")}${godT(lang, profile.dominantPersona.god)}${T(lang, "）", ")")}`, ML, doc.y, { width: W });
+    doc.moveDown(EN ? 0.4 : 0.2);
     para(profile.combinedPersona.summary, INK, 11);
-    doc.moveDown(0.3);
+    doc.moveDown(EN ? 0.55 : 0.3);
     // 四域：标签 → 触发指标 → AI 评述 → 建议
     const domains: { tagKey: keyof PersonaTags; pageKey: keyof DeepDigest["pages"]; zh: string; en: string; color: string }[] = [
       { tagKey: "love", pageKey: "love", zh: "感情", en: "Love", color: "#c96f7d" },
@@ -145,24 +152,27 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
       { tagKey: "social", pageKey: "social", zh: "人际", en: "Social", color: "#4f9d6b" },
       { tagKey: "energy", pageKey: "season", zh: "时运", en: "Timing", color: "#4a7fb0" },
     ];
+    let first = true;
     for (const dom of domains) {
       const hits = opts.tags?.[dom.tagKey] ?? [];
       const page = opts.digest?.pages[dom.pageKey];
       ensure(80);
+      if (!first) doc.moveDown(EN ? 0.6 : 0.35);
+      first = false;
       // 领域标题
       doc.font("kai").fontSize(16).fillColor(dom.color).text(T(lang, dom.zh, dom.en), ML, doc.y, { width: W });
-      doc.moveDown(0.35);
+      doc.moveDown(EN ? 0.55 : 0.35);
       // 标签药丸（横排）
       if (hits.length) {
         let tx = ML;
         for (const hit of hits) {
           const tw = doc.font("hei").fontSize(10).widthOfString(hit.tag) + 18;
-          if (tx + tw > ML + W) { tx = ML; doc.y += 22; ensure(22); }
+          if (tx + tw > ML + W) { tx = ML; doc.y += EN ? 24 : 22; ensure(24); }
           doc.roundedRect(tx, doc.y, tw, 17, 5).fillColor(dom.color).fill();
           doc.fillColor("#fff").fontSize(10).text(hit.tag, tx + 9, doc.y + 3, { lineBreak: false });
-          tx += tw + 6;
+          tx += tw + (EN ? 8 : 6);
         }
-        doc.x = ML; doc.y += 24;
+        doc.x = ML; doc.y += EN ? 30 : 24;
       }
       // AI 评述 + 建议
       if (page) {
@@ -178,20 +188,23 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
   chapter(T(lang, "四柱命盘", "The Four Pillars"), "The Natal Chart");
   para(T(lang, "四柱是全部推算的起点。天干地支各自属五行，颜色即其五行归属——一眼看出这张盘由什么能量构成。", "The four pillars are the starting point of every calculation. Each stem and branch carries one of the five elements; the colour is that element."), SUB, 9.5);
   const pillars = profile.bazi.pillars;
-  const colW = W / 4, tableY = doc.y + 6;
+  // 英文行标签更长（Ten God/Branch…），给左侧留出装订线避免压到第一列数据
+  const gutter = lang === "en" ? 54 : 0;
+  const tableLeft = ML + gutter, colW = (W - gutter) / 4, tableY = doc.y + 6;
   const rows: [string, string, (i: number) => { text: string; color?: string }][] = [
     [T(lang, "天干", "Stem"), "", (i) => ({ text: pillars[i].gan, color: EL_COLOR[GAN_EL[pillars[i].gan]] })],
     [T(lang, "地支", "Branch"), "", (i) => ({ text: pillars[i].zhi, color: EL_COLOR[ZHI_EL[pillars[i].zhi]] })],
-    [T(lang, "十神", "Ten God"), "", (i) => ({ text: pillars[i].tenGod })],
+    [T(lang, "十神", "Ten God"), "", (i) => ({ text: pillars[i].tenGod === "日主" ? T(lang, "日主", "Self") : godT(lang, pillars[i].tenGod) })],
     [T(lang, "藏干", "Hidden"), "", (i) => ({ text: pillars[i].hiddenStems.join("") })],
-    [T(lang, "长生", "Stage"), "", (i) => ({ text: pillars[i].stage })],
+    [T(lang, "长生", "Stage"), "", (i) => ({ text: stageT(lang, pillars[i].stage) })],
   ];
   // 柱头
-  pillars.forEach((p, i) => { doc.font("hei").fontSize(9).fillColor(CINNABAR).text(p.label, ML + i * colW, tableY, { width: colW, align: "center" }); });
+  const pillarHeadEn = ["Year", "Month", "Day", "Hour"];
+  pillars.forEach((p, i) => { doc.font("hei").fontSize(9).fillColor(CINNABAR).text(lang === "en" ? pillarHeadEn[i] : p.label, tableLeft + i * colW, tableY, { width: colW, align: "center" }); });
   let ry = tableY + 18;
   rows.forEach(([label, , val], ri) => {
-    doc.font("hei").fontSize(8).fillColor(FAINT).text(label, ML, ry + 5, { width: 40 });
-    pillars.forEach((_, i) => { const c = val(i); doc.font(ri < 2 ? "kai" : "hei").fontSize(ri < 2 ? 20 : 9.5).fillColor(c.color ?? INK).text(c.text, ML + i * colW, ry + (ri < 2 ? 2 : 5), { width: colW, align: "center" }); });
+    doc.font("hei").fontSize(8).fillColor(FAINT).text(label, ML, ry + 5, { width: gutter ? gutter - 4 : 40 });
+    pillars.forEach((_, i) => { const c = val(i); doc.font(ri < 2 ? "kai" : "hei").fontSize(ri < 2 ? 20 : 9.5).fillColor(c.color ?? INK).text(c.text, tableLeft + i * colW, ry + (ri < 2 ? 2 : 5), { width: colW, align: "center" }); });
     ry += ri < 2 ? 30 : 18;
   });
   doc.y = ry + 6;
