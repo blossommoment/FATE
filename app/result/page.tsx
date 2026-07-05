@@ -517,7 +517,7 @@ export async function ResultContent({
                     <p className="deep-summary">{item.summary}</p>
                     <div className="tendency-axis" aria-label={`${item.label}分段数轴，命主位于${item.score}分`}>
                       <div className="axis-labels"><span>弱 0—27</span><span>偏低 28—44</span><span>中段 45—64</span><span>偏高 65—81</span><span>强 82—100</span></div>
-                      <div className="axis-track"><i style={{ left: `${item.score}%` }}><b>{item.score}</b></i></div>
+                      <div className="axis-track"><i style={{ left: `${item.score}%` }} /></div>
                       <p><strong>{band.label}</strong>{band.detail}</p>
                     </div>
                     <div className="deep-scene-preview">
@@ -544,7 +544,7 @@ export async function ResultContent({
                 <p>{item.summary}</p>
                 <div className="tendency-axis" aria-label={`${item.label}分段数轴，命主位于${item.score}分`}>
                   <div className="axis-labels"><span>弱 0—27</span><span>偏低 28—44</span><span>中段 45—64</span><span>偏高 65—81</span><span>强 82—100</span></div>
-                  <div className="axis-track"><i style={{ left: `${item.score}%` }}><b>{item.score}</b></i></div>
+                  <div className="axis-track"><i style={{ left: `${item.score}%` }} /></div>
                   <p><strong>{band.label}</strong>{band.detail}</p>
                 </div>
                 <div className="specialty-evidence">{item.evidence.map((evidence) => <span key={evidence}>{evidence}</span>)}</div>
@@ -1104,22 +1104,19 @@ export async function ResultContent({
             <div className="logic-factor-panel"><h3>01 · 结构信号</h3><div className="deep-factor-tags">{factorTagsFor(selectedDeep.key).map((factor) => <span className={`factor-${factor.tone}`} key={`${factor.label}-${factor.tone}`}><i style={{ "--factor": `${factor.value}%` } as CSSProperties} /><b>{factor.label}</b><small>{factor.value}%</small></span>)}</div><p>标签展示该维度调用的主要十神与五行占比；位置权重已在底层统一折算，不在阅读层重复堆叠算式。</p></div>
             <div className="logic-block"><span>02 · 倾向如何形成</span><p>{selectedDeep.logic.premise}</p></div>
             <div className="logic-block counter"><span>03 · 什么时候不会这样</span><p>{selectedDeep.logic.counterSignal}</p></div>
-            <div className="logic-block verify"><span>04 · 可以如何验证</span><p>{selectedDeep.logic.realWorldCheck}</p></div>
-            <div className="detail-duo">
+                        <div className="detail-duo">
               <div><i>✦</i><span>这项倾向的优势</span><p>{selectedDeep.logic.strength}</p></div>
               <div><i>!</i><span>容易忽略的盲点</span><p>{selectedDeep.logic.blindSpot}</p></div>
             </div>
             <div className="scene-analysis"><h3>05 · 三类真实场景</h3>{selectedDeep.sceneInsights.map((scene, index) => <article key={scene.scene}><i>{index + 1}</i><div><span>{scene.scene} · {scene.title}</span><p>{scene.text}</p></div></article>)}</div>
-            <div className="scene-grid"><h3>可观察行为</h3>{selectedDeep.logic.scenes.map((scene, index) => <div key={scene}><i>{index + 1}</i><span>{scene}</span></div>)}</div>
-            <p className="logic-disclaimer">{selectedDeep.note}</p>
+                        <p className="logic-disclaimer">{selectedDeep.note}</p>
           </>}
           {selectedInteraction && <>
             <div className="logic-result"><strong>{relationship?.score}</strong><div><span>双人关系</span><p>{selectedInteraction.summary}</p></div></div>
             <div className="logic-steps"><h3>双方推导步骤</h3>{selectedInteraction.logic.map((step) => <div key={step}>{step}</div>)}</div>
             <div className="logic-block"><span>量化证据</span><PairBars metrics={selectedInteraction.metrics} aName={birth.name ?? "我"} bName={partnerBirth?.name ?? "TA"} /></div>
             <div className="logic-block counter"><span>关系原因</span><p>{selectedInteraction.why}</p></div>
-            <div className="logic-block verify"><span>建议如何验证</span><p>{selectedInteraction.advice}</p></div>
-          </>}
+                      </>}
         </section>
       </div>}
       <nav className="mobile-bottom-nav" aria-label="移动端主导航">

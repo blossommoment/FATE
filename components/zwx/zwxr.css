@@ -1114,3 +1114,13 @@
 .zwxr .deep-radar-chart>span{background:rgba(10,8,24,.76);border:1px solid rgba(232,206,154,.26);border-radius:10px;
   width:88px;padding:6px 4px;font-family:"Kaiti SC","KaiTi","STKaiti",serif;font-size:11.5px;color:#cfc9bb}
 .zwxr .deep-radar-chart>span b{display:block;margin-top:2px;color:#e8ce9a;font-family:Consolas,monospace;font-size:14.5px}
+
+/* ============ 深度卡等高对齐 + 数轴净化(2026-07-06) ============ */
+/* 同一行卡片高度拉齐,底部链接钉底 */
+.zwxr .deep-card-grid{align-items:stretch}
+.zwxr .deep-card,.zwxr .specialty-card,.zwxr .dimension-grid article{display:flex;flex-direction:column}
+.zwxr .deep-card .logic-link,.zwxr .dimension-grid article .logic-link{margin-top:auto;align-self:flex-start}
+.zwxr .specialty-grid{align-items:stretch}
+/* 数轴标记:无数字,细针+光点 */
+.zwxr .tendency-axis .axis-track i{width:3px;border-radius:2px;background:#e8ce9a;box-shadow:0 0 8px rgba(232,206,154,.7)}
+.zwxr .tendency-axis .axis-track i b{display:none}
