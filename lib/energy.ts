@@ -313,7 +313,10 @@ export function findBestRoot(gan: string, branchStates: { zhi: string; availabil
   };
   for (const b of branchStates) {
     const hidden = BRANCH_HIDDEN[b.zhi];
-    if (STEM_ELEMENT[hidden[0]] === el) consider("禄刃", 1.3, b.zhi, b.availability);
+    // 火土同宫（2026-07-05 用户拍板 C）：戊己以巳午为禄刃——与十二长生表（戊寄丙宫）
+    // 保持同一学派；此前计根按藏干等级只给巳午「中余气」，与长生表自相矛盾
+    const huoTuLuRen = el === "earth" && (b.zhi === "巳" || b.zhi === "午");
+    if (STEM_ELEMENT[hidden[0]] === el || huoTuLuRen) consider("禄刃", 1.3, b.zhi, b.availability);
     if (YANG_STEMS.has(gan) && CHANG_SHENG[gan] === b.zhi) consider("长生", 1.15, b.zhi, b.availability);
     if (hidden.slice(1).some((h) => STEM_ELEMENT[h] === el)) consider("中余气", 1.1, b.zhi, b.availability);
     if (TOMB[el] === b.zhi) consider("墓库", 1.05, b.zhi, b.availability);
