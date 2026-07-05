@@ -1187,3 +1187,24 @@
   box-shadow:0 0 26px rgba(191,154,78,.2);border-radius:6px}
 @media(max-width:900px){.zwxr .zx-dirgrid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:700px){.zwxr .zx-dirgrid{grid-template-columns:1fr}}
+
+/* ============ 三拍(2026-07-06):目录/章页穿样例面板壳 + 数轴流星标记 ============ */
+/* 章内页头照样例 pz-head:楷体章名 + mono 编号,同一制式 */
+.zwxr .deep-category{margin-bottom:34px}
+.zwxr .deep-category>header{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:38px}
+.zwxr .deep-category>header>div{display:flex;align-items:baseline;gap:14px}
+.zwxr .deep-category>header span{font-family:var(--zx-mono);font-size:11px;letter-spacing:.4em;color:var(--zx-gold2)}
+.zwxr .deep-category>header h3{font-family:var(--zx-kai);font-size:22px;letter-spacing:.35em;font-weight:400;color:var(--zx-ink);margin:0}
+.zwxr .deep-category>header p{font-family:var(--zx-kai);font-size:12.5px;color:var(--zx-mut);letter-spacing:.08em;margin:0}
+/* 数轴标记:发光流星(拖尾+亮头,头落在分值位) */
+.zwxr .tendency-axis .axis-track{position:relative;overflow:visible}
+.zwxr .tendency-axis .axis-track i{
+  background:linear-gradient(90deg,transparent,rgba(232,206,154,.85))!important;
+  width:54px;height:2px;margin-left:-54px;top:50%;transform:translateY(-50%);border-radius:999px;box-shadow:none}
+.zwxr .tendency-axis .axis-track i::after{
+  content:"";position:absolute;right:-3.5px;top:50%;transform:translateY(-50%);
+  width:7px;height:7px;border-radius:50%;background:#fff;
+  box-shadow:0 0 8px 2px rgba(242,246,255,.95),0 0 20px 7px rgba(232,206,154,.5);
+  animation:zwxrPulse 2.6s ease-in-out infinite;text-shadow:none}
+@keyframes zwxrPulse{0%,100%{box-shadow:0 0 8px 2px rgba(242,246,255,.95),0 0 20px 7px rgba(232,206,154,.5)}
+  50%{box-shadow:0 0 10px 3px rgba(242,246,255,1),0 0 26px 10px rgba(232,206,154,.65)}}

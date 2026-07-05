@@ -484,7 +484,7 @@ export async function ResultContent({
           <div className="fb-note">报告内容基于 FATE 模型 2.0 得出。</div>
         </section>
         {/* 2026-07-06 二拍:深度目录照样例专长天赋格子——每章一格,点进才是章内容 */}
-        <div className="module-directory zx-dirwrap">
+        <div className="module-directory zx-panel zx-corner zx-dirwrap">
           <div className="zx-pzhead"><h4>深度目录</h4><span>DEEP CHAPTERS · 每章一格 · 点进即读</span></div>
           <div className="zx-gifts zx-dirgrid">
             {deepModules.map((item) => <Link className="zx-gift" key={item.key} href={`/?${baseQuery}&view=deep&module=${item.key}#deep-report`}>
@@ -507,7 +507,7 @@ export async function ResultContent({
           </header>
         {deepActive.key !== "special" && <div className="deep-profile">
           <div className="deep-category-stack">
-            {deepCategories.filter((group) => group.category === deepActive.category).map((group) => { const categoryIndex = deepCategories.findIndex((candidate) => candidate.category === group.category); return <section className="deep-category" key={group.category}>
+            {deepCategories.filter((group) => group.category === deepActive.category).map((group) => { const categoryIndex = deepCategories.findIndex((candidate) => candidate.category === group.category); return <section className="deep-category zx-panel zx-corner" key={group.category}>
               <header><div><span>0{categoryIndex + 1}</span><h3>{group.category}</h3></div><p>{group.subtitle}</p></header>
               <div className="deep-card-grid">
                 {group.items.map((item) => {
