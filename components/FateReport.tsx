@@ -56,15 +56,32 @@ function matchAdvice(f: PersonalFacts): string {
   };
   return map[f.attachment] ?? map["安全型"];
 }
-function matchTags(f: PersonalFacts): string[] {
+function matchTags(f: PersonalFacts): { tag: string; why: string }[] {
   const k = f.keyScores;
-  const out: string[] = [];
-  out.push(k.initiative < 50 ? "会主动的人" : "接得住热情的人");
-  if (k.autonomy >= 60) out.push("给空间的人");
-  if (k.dependency >= 60) out.push("回应及时的人");
-  out.push(k.novelty >= 60 ? "能一起折腾的人" : "把日子过稳的人");
-  if (k.conflictExpression < 45) out.push("愿意先开口和好的人");
+  const out: { tag: string; why: string }[] = [];
+  out.push(k.initiative < 50
+    ? { tag: "会主动的人", why: "你的推进偏内敛,先递话的人省你半程" }
+    : { tag: "接得住热情的人", why: "你惯于先手推进,对面要接得住节奏" });
+  if (k.autonomy >= 60) out.push({ tag: "给空间的人", why: "你的自留地大,不查岗是基本修养" });
+  if (k.dependency >= 60) out.push({ tag: "回应及时的人", why: "你在乎回应的温度,秒回的人天然加分" });
+  out.push(k.novelty >= 60
+    ? { tag: "能一起折腾的人", why: "你的新鲜感需求高,同频折腾才不腻" }
+    : { tag: "把日子过稳的人", why: "你的节奏求稳,细水长流最合拍" });
+  if (k.conflictExpression < 45) out.push({ tag: "愿意先开口的人", why: "你冲突时偏静音,对面先开口能救场" });
   return out.slice(0, 4);
+}
+// 一句话评价:取四维最高与最低,拼出厂布局
+const QUAD_PHRASE: Record<string, { high: string; low: string }> = {
+  外向表达: { high: "场子热得起来", low: "话不多,但都在点上" },
+  情绪稳定: { high: "情绪的锚比多数人沉", low: "感受来得快去得也快" },
+  边界控制: { high: "边界划得清清楚楚", low: "边界随缘,看人下菜" },
+  情感感知: { high: "是别人情绪的雷达", low: "钝感是你的护甲" },
+};
+function quadVerdict(f: PersonalFacts): string {
+  const quad: [string, number][] = [["外向表达", f.personality.extroversion], ["情绪稳定", f.personality.stability], ["边界控制", f.personality.control], ["情感感知", f.personality.emotion]];
+  const sorted = [...quad].sort((a, b) => b[1] - a[1]);
+  const top = sorted[0], low = sorted[sorted.length - 1];
+  return `${QUAD_PHRASE[top[0]].high};${QUAD_PHRASE[low[0]].low}——这是你的出厂布局。`;
 }
 
 export default function FateReport({ birth, profileId }: { birth: BirthInput; profileId: string }) {
@@ -215,16 +232,20 @@ export default function FateReport({ birth, profileId }: { birth: BirthInput; pr
       <div className="fb-data">
         <span className="fb-mono">DATA · 性情四维</span>
         {([["外向表达", facts.personality.extroversion], ["情绪稳定", facts.personality.stability], ["边界控制", facts.personality.control], ["情感感知", facts.personality.emotion]] as [string, number][]).map(([label, value]) => <div className="fb-metric" key={label}>
-          <span>{label}</span>
+          <label>{label}</label>
           <div className="fb-track"><i className="fb-fill" style={{ width: `${Math.max(4, Math.min(100, value))}%` }} /></div>
           <em>{value}</em>
         </div>)}
       </div>
       <div className="fb-essay-tag">性情 · 基于 FATE 模型 2.0</div>
       <p className="fb-essay">主轴落在「{facts.dominantAxis.theme}」,副轴「{facts.secondaryAxis.theme}」在不同场景轮换出面。依恋方式偏{facts.attachment}:{natureLine(facts)}</p>
+      <div className="fb-essay-tag">匹配 · 什么样的人接得住你</div>
+      <div className="fb-stamps">
+        {matchTags(facts).map((m) => <div className="fb-stamp" key={m.tag}><b>{m.tag}</b><span>{m.why}</span></div>)}
+      </div>
       <div className="fb-aside">
+        <div><small>一句话评价</small><p>{quadVerdict(facts)}</p></div>
         <div><small>更容易合拍的人</small><p>{matchAdvice(facts)}</p></div>
-        <div><small>匹配标签</small><p>{matchTags(facts).join(" · ")}</p></div>
       </div>
     </section>
     {renderPage(PAGES[0])}

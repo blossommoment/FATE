@@ -1293,3 +1293,12 @@
 .zwxr .tendency-axis .zx-mtrack{margin:4px 0 0}
 /* 成册页性情章导航片 */
 .zwxr .fb-c-nature b{color:var(--zx-gold)}
+
+/* ============ 六拍小修(2026-07-06):右上分数排版 + 刻度文字提亮 ============ */
+.zwxr .deep-card>header{display:flex;justify-content:space-between;align-items:flex-start;gap:14px}
+.zwxr .deep-card .deep-score{display:flex;flex-direction:column;align-items:flex-end;gap:2px;
+  flex:none;min-width:92px;text-align:right;background:transparent;padding:0;box-shadow:none}
+.zwxr .deep-card .deep-score strong{line-height:1}
+.zwxr .specialty-card>header{align-items:flex-start}
+.zwxr .zx-mscale span{color:#a9a2c0;font-size:10.5px}
+.zwxr .zx-mscale em{color:var(--zx-gold)}
