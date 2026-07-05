@@ -1069,3 +1069,18 @@
 .zwxr footer small{font-size:12.5px}
 .zwxr form button{font-size:13.5px}
 .zwxr label span{font-size:13px}
+
+/* ============ 合盘邀请分享卡 + 分享按钮 星海化(2026-07-05) ============ */
+.zwxr .invite-share{background:rgba(15,13,34,.62);border:1px solid rgba(232,206,154,.22);box-shadow:none;border-radius:10px}
+.zwxr .invite-share>div>span{color:#bf9a4e;font-size:11px;letter-spacing:.3em}
+.zwxr .invite-share h3{color:#e6e1d5;letter-spacing:.06em}
+.zwxr .invite-share p{color:#b5aec6}
+.zwxr .invite-share button{
+  background:linear-gradient(135deg,rgba(191,154,78,.30),rgba(191,154,78,.08));
+  border:1px solid rgba(232,206,154,.5);color:#e8ce9a;box-shadow:none;border-radius:4px;
+  font-family:"Kaiti SC","KaiTi","STKaiti",serif;font-size:14px;letter-spacing:.18em;padding:15px 30px}
+.zwxr .invite-share button:hover{transform:translateY(-1px);box-shadow:0 0 30px rgba(191,154,78,.22);background:linear-gradient(135deg,rgba(191,154,78,.42),rgba(191,154,78,.14))}
+.zwxr .invite-share button.copied{background:rgba(110,201,143,.14);border-color:rgba(110,201,143,.55);color:#8fdcaa;box-shadow:none}
+.zwxr .share-btn{border:1px solid rgba(232,206,154,.45);background:rgba(191,154,78,.10);color:#e8ce9a;
+  font-family:"Kaiti SC","KaiTi","STKaiti",serif;font-size:13px;letter-spacing:.12em}
+.zwxr .share-btn:hover{background:rgba(191,154,78,.28);color:#f2e2be}
