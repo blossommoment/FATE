@@ -487,22 +487,42 @@ export async function ResultContent({
           <Link className="fb-cta" href={`/report?${baseQuery}`}>打开我的深度解读 ↗</Link>
           <div className="fb-note">报告内容基于 FATE 模型 2.0 得出。</div>
         </section>
-        {/* 2026-07-06 终拍:深度目录 = 样例专长天赋面板逐件照抄(h6/大分/细条/型签/描述) */}
-        <div className="module-directory zx-panel zx-corner zx-dirwrap" style={{ padding: "54px 54px 44px" }}>
-          <div className="zx-pzhead">
-            <h4>深度目录</h4>
-            <span>DEEP CHAPTERS · 六章逐册 · 点格进章</span>
-          </div>
-          <div className="zx-gifts zx-dirgrid">
-            {deepModules.map((item) => <Link className="zx-gift" key={item.key} href={`/?${baseQuery}&view=deep&module=${item.key}#deep-report`}>
-              <h6>{item.no} · {item.title}</h6>
-              <div className="zx-gval">{item.score}</div>
-              <div className="zx-gbar"><i style={{ width: `${Math.min(100, item.score)}%` }} /></div>
-              <span className="zx-gtag">{item.tag}</span>
-              <p>{item.subtitle}</p>
-            </Link>)}
-          </div>
-          <p className="zx-yearsnote">分值取该章最高维度 · 点开任一章,逐维展开推导</p>
+        {/* 2026-07-06 真·照抄:目录拆成六个样例式预览面板——每章一面板,格子=该章真实维度,
+            专项观察章即样例专长天赋面板原样(真数据);点格直达维度,点脚注进全章 */}
+        <div className="module-directory zx-dirstack">
+          {deepModules.map((mod) => {
+            const group = mod.category ? deepCategories.find((g) => g.category === mod.category) : null;
+            const href = `/?${baseQuery}&view=deep&module=${mod.key}#deep-report`;
+            return <div className="zx-panel zx-corner zx-dirpanel" key={mod.key} style={{ padding: "54px 54px 44px" }}>
+              <div className="zx-pzhead">
+                <h4>{mod.no} · {mod.title}</h4>
+                <span>{mod.subtitle}</span>
+              </div>
+              <div className="zx-gifts">
+                {group?.items.map((item) => <Link className="zx-gift" key={item.key} href={`/?${baseQuery}&view=deep&module=${mod.key}&detail=${item.key}#deep-card-${item.key}`}>
+                  <h6>{item.label}</h6>
+                  <div className="zx-gval">{item.score}</div>
+                  <div className="zx-gbar"><i style={{ width: `${Math.min(100, item.score)}%` }} /></div>
+                  <span className="zx-gtag">{item.descriptor}</span>
+                  <p>{item.summary}</p>
+                </Link>)}
+                {mod.key === "special" && profile.specialtyAnalysis.map((item) => <Link className="zx-gift" key={item.key} href={href}>
+                  <h6>{item.label}</h6>
+                  <div className="zx-gval">{item.score}</div>
+                  <div className="zx-gbar"><i style={{ width: `${Math.min(100, item.score)}%` }} /></div>
+                  <span className="zx-gtag">{item.descriptor}</span>
+                  <p>{item.summary}</p>
+                </Link>)}
+                {mod.key === "social" && socialModelItems.map((item) => <Link className="zx-gift" key={item.key} href={href}>
+                  <h6>{item.label}</h6>
+                  <div className="zx-gval zx-gsym">{item.symbol}</div>
+                  <span className="zx-gtag">{item.value}</span>
+                  <p>{item.description}</p>
+                </Link>)}
+              </div>
+              <p className="zx-yearsnote"><Link href={href}>展开「{mod.title}」全章 · 逐维推导 →</Link></p>
+            </div>;
+          })}
         </div>
         </>}
         {deepActive && <div className="module-frame">

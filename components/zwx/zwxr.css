@@ -1208,3 +1208,13 @@
   animation:zwxrPulse 2.6s ease-in-out infinite;text-shadow:none}
 @keyframes zwxrPulse{0%,100%{box-shadow:0 0 8px 2px rgba(242,246,255,.95),0 0 20px 7px rgba(232,206,154,.5)}
   50%{box-shadow:0 0 10px 3px rgba(242,246,255,1),0 0 26px 10px rgba(232,206,154,.65)}}
+
+/* ============ 目录拆面板(2026-07-06 真·照抄) ============ */
+.zwxr .zx-dirstack{display:flex;flex-direction:column;gap:0;margin:26px 0}
+.zwxr .zx-dirpanel .zx-gifts{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.zwxr .zx-dirpanel .zx-gift{text-decoration:none;transition:.3s}
+.zwxr .zx-dirpanel .zx-gift:hover{background:rgba(191,154,78,.12);transform:translateY(-2px)}
+.zwxr .zx-dirpanel .zx-gift p{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.zwxr .zx-gsym{font-family:var(--zx-kai)}
+.zwxr .zx-dirpanel .zx-yearsnote a{color:var(--zx-gold2);letter-spacing:.15em}
+.zwxr .zx-dirpanel .zx-yearsnote a:hover{color:var(--zx-gold)}
