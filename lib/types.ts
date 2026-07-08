@@ -134,6 +134,11 @@ export type UserProfile = {
     name: string;
     summary: string;
   };
+  /** 定格(古法):组合格(杀印相生/食神制杀…)优先,否则月令主气基础格 */
+  pattern: {
+    name: string;
+    basis: string;
+  };
   luckCycles: {
     direction: "顺排" | "逆排";
     startAgeText: string;

@@ -443,7 +443,8 @@ export async function ResultContent({
 
         <section className="dominant-persona">
           <div className="persona-god"><span>主轴 · {profile.dominantPersona.weight}分 · {profile.dominantBasis}</span><strong>{profile.dominantPersona.god}</strong><small>{profile.dominantPersona.name}</small></div>
-          <div className={`persona-god secondary${profile.tertiaryPersona ? " dual" : ""}`}><span>{profile.tertiaryPersona ? "双副轴" : "副轴"}</span><strong>{profile.secondaryPersona.god}{profile.tertiaryPersona ? `·${profile.tertiaryPersona.god}` : ""}</strong><small>{profile.secondaryPersona.name}{profile.tertiaryPersona ? ` × ${profile.tertiaryPersona.name}` : ""}</small></div>
+          {/* 2026-07-08 用户拍板:副轴卡改「定格」,按古法命名(杀印相生/食神制杀…),不再拼十神名 */}
+          <div className={`persona-god secondary${profile.pattern.name.length > 2 ? " dual" : ""}`}><span>定格 · 古法</span><strong>{profile.pattern.name}</strong><small>{profile.pattern.basis}</small></div>
           <div className="persona-combined"><span>组合人格</span><h3>{profile.combinedPersona.name}</h3><p>{profile.combinedPersona.summary}</p></div>
           <div><span>行为特征</span><p>{profile.dominantPersona.behavior}；同时带有{profile.secondaryPersona.behavior}的副轴倾向。</p></div>
           <div><span>关系表现</span><p>{profile.dominantPersona.relationship}；副轴表现为{profile.secondaryPersona.relationship}。</p></div>
@@ -476,14 +477,15 @@ export async function ResultContent({
         </section>
         <section className="fate-book fate-book-intro">
           <span className="fb-mono">FATE° · 深度解读报告</span>
-          <h3>四章，读懂你自己。</h3>
+          <h3>五章，读懂你自己。</h3>
           <div className="fb-toc-preview">
-            <span className="fb-c-love"><b>壹</b>感情</span>
-            <span className="fb-c-career"><b>贰</b>事业</span>
-            <span className="fb-c-social"><b>叁</b>人际</span>
-            <span className="fb-c-season"><b>肆</b>时运</span>
+            <span className="fb-c-nature"><b>壹</b>性情</span>
+            <span className="fb-c-love"><b>贰</b>感情</span>
+            <span className="fb-c-career"><b>叁</b>事业</span>
+            <span className="fb-c-social"><b>肆</b>人际</span>
+            <span className="fb-c-season"><b>伍</b>时运</span>
           </div>
-          <p>感情、事业、人际、时运各一章——你的标签、数据表征、与一段只属于你的评述与建议。生成一次，永久可看，可分享。</p>
+          <p>性情、感情、事业、人际、时运各一章——你的标签、数据表征、与一段只属于你的评述与建议。生成一次，永久可看，可分享。</p>
           <Link className="fb-cta" href={`/report?${baseQuery}`}>打开我的深度解读 ↗</Link>
           <div className="fb-note">报告内容基于 FATE 模型 2.0 得出。</div>
         </section>

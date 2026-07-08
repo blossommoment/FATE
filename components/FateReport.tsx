@@ -36,26 +36,7 @@ function pageMetrics(tags: TagHit[]): TagMetric[] {
 const TONE_WIDTH: Record<string, number> = { boost: 74, mixed: 52, neutral: 46, drain: 32 };
 const TONE_CN: Record<string, string> = { boost: "补", mixed: "间", neutral: "平", drain: "耗" };
 
-// ---- 第壹章 性情:规则引擎直出(无 AI),匹配推荐只谈倾向不作断言 ----
-function natureLine(f: PersonalFacts): string {
-  const k = f.keyScores;
-  const bits: string[] = [];
-  if (k.autonomy >= 60) bits.push("自留地要够大");
-  if (k.dependency >= 60) bits.push("在乎回应的温度");
-  if (k.novelty >= 60) bits.push("对新鲜事来者不拒");
-  if (k.resilience >= 60) bits.push("压力之下反而站得稳");
-  if (k.vigilance >= 60) bits.push("信任要一层层给");
-  if (!bits.length) bits.push("节奏平顺,不走极端");
-  return bits.slice(0, 3).join(",") + "。";
-}
-function matchAdvice(f: PersonalFacts): string {
-  const map: Record<string, string> = {
-    安全型: "大多数依恋类型都接得住你;和同为安全型的人在一起,升温最省力。",
-    焦虑型: "回应稳定、说到做到的人最能接住你——若即若离只会放大你的耗电。",
-    回避型: "不追问、给空间的人和你最合拍——查岗式的热情只会把你越推越远。",
-  };
-  return map[f.attachment] ?? map["安全型"];
-}
+// ---- 第壹章 性情:匹配标签规则直出(数据展示);essay 与合拍建议已改走 AI 长评 ----
 function matchTags(f: PersonalFacts): { tag: string; why: string }[] {
   const k = f.keyScores;
   const out: { tag: string; why: string }[] = [];
@@ -122,11 +103,12 @@ export default function FateReport({ birth, profileId }: { birth: BirthInput; pr
   if (!result) {
     return <section className="fate-book fate-book-intro">
       <span className="fb-mono">FATE° · 深度解读报告</span>
-      <h3>四章，读懂你自己。</h3>
+      <h3>五章，读懂你自己。</h3>
       <div className="fb-toc-preview">
+        <span className="fb-c-nature"><b>壹</b>性情</span>
         {PAGES.map((page) => <span key={page.key} className={`fb-c-${page.key}`}><b>{page.no}</b>{page.cn}</span>)}
       </div>
-      <p>感情、事业、人际、时运各一章——每章：你的标签、数据表征、与一段只属于你的评述与建议。生成一次，永久可看。</p>
+      <p>性情、感情、事业、人际、时运各一章——每章：你的标签、数据表征、与一段只属于你的评述与建议。生成一次，永久可看。</p>
       <button className="fb-cta" onClick={generate} disabled={loading}>
         {loading ? "正在撰写你的报告…（约一分钟，值得等）" : "生成我的深度解读 · 限免体验"}
       </button>
@@ -237,15 +219,15 @@ export default function FateReport({ birth, profileId }: { birth: BirthInput; pr
           <em>{value}</em>
         </div>)}
       </div>
-      <div className="fb-essay-tag">性情 · 基于 FATE 模型 2.0</div>
-      <p className="fb-essay">主轴落在「{facts.dominantAxis.theme}」,副轴「{facts.secondaryAxis.theme}」在不同场景轮换出面。依恋方式偏{facts.attachment}:{natureLine(facts)}</p>
+      <div className="fb-essay-tag">评述 · 基于 FATE 模型 2.0</div>
+      <p className="fb-essay">{digest.pages.nature.essay}</p>
       <div className="fb-essay-tag">匹配 · 什么样的人接得住你</div>
       <div className="fb-stamps">
         {matchTags(facts).map((m) => <div className="fb-stamp" key={m.tag}><b>{m.tag}</b><span>{m.why}</span></div>)}
       </div>
       <div className="fb-aside">
         <div><small>一句话评价</small><p>{quadVerdict(facts)}</p></div>
-        <div><small>更容易合拍的人</small><p>{matchAdvice(facts)}</p></div>
+        <div><small>更容易合拍的人</small><p>{digest.pages.nature.advice}</p></div>
       </div>
     </section>
     {renderPage(PAGES[0])}

@@ -45,7 +45,7 @@ const stageT = (lang: "zh" | "en", stage: string) => lang === "en" ? (STAGE_EN[s
 const levelT = (lang: "zh" | "en", level: string) => lang === "en" ? (LEVEL_EN[level] ?? level) : level;
 
 type ChapterText = { essay: string; advice: string };
-export type DeepDigest = { source: "ai" | "fallback"; headline: string; pages: { love: ChapterText; career: ChapterText; social: ChapterText; season: ChapterText } };
+export type DeepDigest = { source: "ai" | "fallback"; headline: string; pages: { nature: ChapterText; love: ChapterText; career: ChapterText; social: ChapterText; season: ChapterText } };
 
 export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "en"; reportId: string; generatedAt: string; digest?: DeepDigest; tags?: PersonaTags }): Promise<Buffer> {
   const lang = opts.lang;

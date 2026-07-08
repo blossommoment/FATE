@@ -65,20 +65,21 @@ describe("推荐候选池", () => {
 describe("叙述层（成册四章）：提示词契约、校验器、兜底", () => {
   const facts = buildPersonalFacts(analyzeBirth(owner));
 
-  it("提示词：FATE 模型口径、四章结构、正文禁数字禁术语", () => {
+  it("提示词：FATE 模型口径、五章结构、正文禁数字禁术语", () => {
     const { system, user } = buildDigestPrompt(facts);
     expect(system).toContain("FATE 模型 2.0");
     expect(system).toContain("pages");
+    expect(system).toContain("nature");
     expect(system).toContain("禁止出现任何数字");
     expect(system).toContain("禁止命理术语");
     expect(user).toContain("事实清单");
   });
 
-  it("兜底成册：确定性、四章齐全、正文零黑话零数字（时运章放行数字）", () => {
+  it("兜底成册：确定性、五章齐全、正文零黑话零数字（时运章放行数字）", () => {
     const fb = buildFallbackDigest(facts);
     expect(fb).toEqual(buildFallbackDigest(buildPersonalFacts(analyzeBirth(owner))));
     expect(fb.headline.length).toBeGreaterThan(0);
-    (["love", "career", "social", "season"] as const).forEach((key) => {
+    (["nature", "love", "career", "social", "season"] as const).forEach((key) => {
       expect(fb.pages[key].essay.length).toBeGreaterThanOrEqual(90);
       expect(fb.pages[key].advice.length).toBeGreaterThanOrEqual(15);
       expect(JARGON.test(fb.pages[key].essay + fb.pages[key].advice), `${key} 章含黑话`).toBe(false);

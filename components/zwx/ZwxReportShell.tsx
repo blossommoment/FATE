@@ -6,6 +6,7 @@
 import { useEffect, useRef } from "react";
 import "./zwx.css";
 import "./zwxr.css";
+import "./zwxp.css";
 
 export default function ZwxReportShell({ children }: { children: React.ReactNode }) {
   const starsRef = useRef<HTMLDivElement>(null);

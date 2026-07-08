@@ -41,7 +41,7 @@ export async function POST(request: Request) {
           model,
           ...(isSiliconFlow ? { enable_thinking: false } : { thinking: { type: "disabled" } }),
           temperature: 0.4,
-          max_tokens: 2400, // 四章成册全文，给足余量防 JSON 截断
+          max_tokens: 3000, // 五章成册全文(2026-07-08 加性情章)，给足余量防 JSON 截断
           response_format: { type: "json_object" },
           messages: [
             { role: "system", content: system },

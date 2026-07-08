@@ -732,10 +732,13 @@ export function analyzeBirth(birth: BirthInput): UserProfile {
     god: pillar.hiddenTenGods[0] ?? "日主",
   }));
   const branchCounts = Object.fromEntries(branches.map((branch) => [branch, branchEntries.filter((item) => item.branch === branch).length])) as Record<string, number>;
-  const godThemes: Record<string, string> = {
-    正官: "规则与责任", 七杀: "压力与决断", 正印: "接纳与安全", 偏印: "观察与策略",
-    正财: "现实投入", 偏财: "机会与连接", 比肩: "自我立场", 劫财: "竞争与主导",
-    食神: "松弛表达", 伤官: "破界表达", 日主: "自我核心",
+  // 十神事件词（人话）：冲合卡只写"盘的结构"和"哪类事"，人格推断留给深度分析章
+  const godScenes: Record<string, string> = {
+    正官: "该守的规矩、接下来的责任", 七杀: "顶头的压力、要拍板的事",
+    正印: "被照顾、有人托底的部分", 偏印: "退后观察、留后手的部分",
+    正财: "手里在经营的事、实打实的付出", 偏财: "进出的机会、场面上的人缘",
+    比肩: "自己的立场、并肩的伙伴", 劫财: "想赢的劲、抢先的冲动",
+    食神: "松弛的表达、生活里的甜", 伤官: "出格的话、破格的才", 日主: "你本人的状态",
   };
   const specialPoints: UserProfile["specialPoints"] = [];
   const clashPairs = [["子", "午"], ["丑", "未"], ["寅", "申"], ["卯", "酉"], ["辰", "戌"], ["巳", "亥"]];
@@ -749,8 +752,8 @@ export function analyzeBirth(birth: BirthInput): UserProfile {
       : `${branchCounts[left] > 1 ? `${branchCounts[left]}个` : ""}${left}冲${branchCounts[right] > 1 ? `${branchCounts[right]}个` : ""}${right}`;
     specialPoints.push({
       type: "冲", title, branches: [left, right], tenGods: [leftGod, rightGod], strength: Math.min(100, 55 + force * 15),
-      summary: `${left}的${leftGod}（${godThemes[leftGod]}）与${right}的${rightGod}（${godThemes[rightGod]}）发生正面拉扯。${force > 1 ? `命盘中共有 ${force} 组同类冲，重复感更明显。` : ""}`,
-      relationshipImpact: `${godThemes[leftGod]}与${godThemes[rightGod]}不容易同时满足，关系中更容易在这两种需求之间来回摆动。`,
+      summary: `${left}里藏的${leftGod}和${right}里藏的${rightGod}，在盘里是对着顶的：一边是${godScenes[leftGod]}，一边是${godScenes[rightGod]}。${force > 1 ? `这组冲盘里有 ${force} 份，属于反复出现的结构。` : ""}`,
+      relationshipImpact: `这两类事很难同时顾上，常见的节奏是顾了这头，那头先放着。`,
     });
   });
   const sixHarmony = [
@@ -763,8 +766,8 @@ export function analyzeBirth(birth: BirthInput): UserProfile {
     const rightGod = branchEntries.find((item) => item.branch === right)?.god ?? "";
     specialPoints.push({
       type: "六合", title: `${left}${right}六合${element}`, branches: [left, right], tenGods: [leftGod, rightGod], strength: 68,
-      summary: `${left}的${leftGod}（${godThemes[leftGod]}）与${right}的${rightGod}（${godThemes[rightGod]}）形成六合，关系更容易找到彼此接住的接口。`,
-      relationshipImpact: `${godThemes[leftGod]}与${godThemes[rightGod]}会倾向互相牵引，但是否化为${element}仍需看全盘与透干。`,
+      summary: `${left}里的${leftGod}和${right}里的${rightGod}在盘里是搭着的：${godScenes[leftGod]}，和${godScenes[rightGod]}，容易互相带动——一头动，另一头跟着来。`,
+      relationshipImpact: `关系里这是个现成的搭扣：对方碰到其中一头，另一头多半也会被带起来。是否真化成${element}要看全盘，这里不下结论。`,
     });
   });
   const harmonyGroups = [
@@ -790,8 +793,12 @@ export function analyzeBirth(birth: BirthInput): UserProfile {
     specialPoints.push({
       type, title: `${present.join("")}${type}${group.element}`,
       branches: present, tenGods: gods, strength: complete ? 90 : 58,
-      summary: `${present.join("、")}把${gods.map((god) => `${god}（${godThemes[god]}）`).join("、")}牵引到${group.element}的${group.theme}上。${complete ? "三支齐全，结构完整。" : "目前是两支倾向，不等同于完整成局。"}`,
-      relationshipImpact: complete ? `关系中${group.theme}会成为反复出现的主场。` : `遇到能补齐剩余地支的人或环境时，${group.theme}更容易被明显激活。`,
+      summary: complete
+        ? `${present.join("、")}凑齐了${group.element}局，${gods.join("、")}这几股力拧到了"${group.theme}"一件事上——不是偶尔出现的状态，是盘里的常驻结构。`
+        : `${present.join("和")}向${group.element}凑了半局，还差一角。平时不太显，遇到补上这一角的人或环境（包括流年），这个结构才真正启动。`,
+      relationshipImpact: complete
+        ? `关系里"${group.theme}"这类事会反复开场，绕不开，不如正面经营。`
+        : `带这一角的人在场时，"${group.theme}"相关的事明显更容易成。`,
     });
   });
   specialPoints.sort((a, b) => b.strength - a.strength);
@@ -830,6 +837,50 @@ export function analyzeBirth(birth: BirthInput): UserProfile {
     && godGroupOf(tertiaryGodName) !== godGroupOf(secondaryGodName)
     ? { god: tertiaryGodName, ...tenGodPersonas[tertiaryGodName], weight: adjustedGodCounts[tertiaryGodName] }
     : null;
+  // 定格(古法,2026-07-08 用户拍板二改:"用主轴和副轴定格")：
+  // 只看主轴+副轴两个十神——恰好构成古法组合才叫组合格,否则以主轴十神定基础格。
+  // 副轴级以下(三轴)不参与定格;纯命名层,不改任何权重。
+  const patternPair = new Set<string>([dominantGodName, secondaryGodName]);
+  const pairHas = (...gods: string[]) => gods.some((god) => patternPair.has(god));
+  const comboPatterns: { name: string; when: boolean; note: string }[] = [
+    { name: "杀印相生", when: patternPair.has("七杀") && pairHas("正印", "偏印"), note: "压力先过印再落地——扛得住事，也消化得了事" },
+    { name: "官印相生", when: patternPair.has("正官") && pairHas("正印", "偏印"), note: "规矩与托底互相供血——越正规的场越稳" },
+    { name: "食神制杀", when: patternPair.has("食神") && patternPair.has("七杀"), note: "松弛管住锋芒——能扛压，还不失分寸" },
+    { name: "伤官配印", when: patternPair.has("伤官") && pairHas("正印", "偏印"), note: "才气有缰绳——出格，但不出事" },
+    { name: "财官双美", when: patternPair.has("正官") && pairHas("正财", "偏财"), note: "做事有回报，位置坐得正" },
+    { name: "食伤生财", when: pairHas("食神", "伤官") && pairHas("正财", "偏财"), note: "表达直接变现——产出即收成" },
+    { name: "财滋七杀", when: patternPair.has("七杀") && pairHas("正财", "偏财"), note: "资源喂给野心——目标感极强" },
+  ];
+  const basePatternNames: Record<string, string> = {
+    正官: "正官格", 七杀: "七杀格", 正财: "正财格", 偏财: "偏财格",
+    正印: "正印格", 偏印: "偏印格", 食神: "食神格", 伤官: "伤官格",
+    比肩: "建禄格", 劫财: "阳刃格",
+  };
+  // 五行专旺格(一行得气,2026-07-08 用户拍板"要专旺格"):日主一气专旺(从强)时,
+  // 按日主五行定格,并以三会/三合成局(土以辰戌丑未四库)为据。优先于组合/基础格。
+  const dayStemEl = stemElements[stems.indexOf(bazi.dayPillar[0])];
+  const dayElCn = ELEMENT_CN[dayStemEl];
+  const zhuanwang: Record<keyof Elements, { name: string; note: string }> = {
+    wood: { name: "曲直格", note: "满盘木气条达生发——顺其舒展则昌，最忌金来强伐" },
+    fire: { name: "炎上格", note: "一气炎上势如烈火——顺其光热则旺，最忌水来浇灭" },
+    earth: { name: "稼穑格", note: "土厚载物包容四方——顺其承载则安，最忌木来疏克" },
+    metal: { name: "从革格", note: "金气成锋肃而能断——顺其刚利则成，最忌火炼过头" },
+    water: { name: "润下格", note: "水势润下奔流不息——顺其流动则通，最忌土来壅堵" },
+  };
+  const dmTrio = specialPoints.find((point) =>
+    (point.type === "三会" || point.type === "三合") && point.strength >= 90 && point.title.slice(-1) === dayElCn);
+  const earthVault = ["辰", "戌", "丑", "未"].filter((branch) => branchCounts[branch]).length;
+  const zwBasis = dmTrio
+    ? `${dmTrio.title}成局 · ${zhuanwang[dayStemEl].note}`
+    : dayStemEl === "earth" && earthVault >= 3
+      ? `辰戌丑未四库聚土 · ${zhuanwang.earth.note}`
+      : `日主一气专旺 · ${zhuanwang[dayStemEl].note}`;
+  const comboHit = comboPatterns.find((item) => item.when);
+  const pattern = energy.dayMaster.level === "从强"
+    ? { name: zhuanwang[dayStemEl].name, basis: zwBasis }
+    : comboHit
+      ? { name: comboHit.name, basis: comboHit.note }
+      : { name: basePatternNames[dominantGodName] ?? `${dominantGodName}格`, basis: `主轴${dominantGodName}定格 · 副轴${secondaryGodName}不成局` };
   const personaNouns: Record<string, string> = {
     七杀: "决断者", 正官: "秩序者", 伤官: "破界者", 食神: "体验者", 正印: "守护者",
     偏印: "洞察者", 正财: "建设者", 偏财: "连接者", 比肩: "独行者", 劫财: "竞合者",
@@ -956,6 +1007,7 @@ export function analyzeBirth(birth: BirthInput): UserProfile {
     secondaryPersona,
     tertiaryPersona,
     combinedPersona,
+    pattern,
     luckCycles: {
       ...luckCycles,
       periods: luckCycles.periods.map((period) => ({ ...period, verdict: ganZhiVerdict(energy, period.ganZhi) })),
@@ -1079,8 +1131,15 @@ export function analyzeAnnualFlow(profile: UserProfile, ganZhi: string): AnnualF
   const stemElement = elementCn[stemElements[stems.indexOf(ganZhi[0])]];
   const stemRole = elementRoleForDayMaster(dayStem, stemElement);
   const roleThemes: Record<string, string> = {
-    比劫: "自我立场与同伴关系", 食伤: "表达、体验与输出", 财星: "投入、经营与现实事务",
-    官杀: "规则、责任与外部压力", 印星: "学习、支持与安全感",
+    比劫: "朋友、伙伴、自己人这类事", 食伤: "表达、作品、玩和产出这类事", 财星: "钱、项目、实际经营这类事",
+    官杀: "责任、规则、上面来的要求这类事", 印星: "学习、证书、被支持被照顾这类事",
+  };
+  // 宫位场景词（人话）：流年卡只报"哪块领域今年什么天气"，不评价人
+  const palaceScenes: Record<string, string> = {
+    年柱: "长辈、老家、大环境这些来处",
+    月柱: "工作节奏、身边协作",
+    日柱: "亲密关系、自己的身体和情绪节奏",
+    时柱: "计划中的事、手上的产出",
   };
   const branch = ganZhi[1];
   const clashMap: Record<string, string> = { 子: "午", 午: "子", 丑: "未", 未: "丑", 寅: "申", 申: "寅", 卯: "酉", 酉: "卯", 辰: "戌", 戌: "辰", 巳: "亥", 亥: "巳" };
@@ -1090,18 +1149,18 @@ export function analyzeAnnualFlow(profile: UserProfile, ganZhi: string): AnnualF
   ];
   const interactions: AnnualFlow["interactions"] = [];
   profile.bazi.pillars.forEach((pillar) => {
-    const god = pillar.hiddenTenGods[0] ?? "日主";
+    const scene = palaceScenes[pillar.label] ?? "这一柱对应的领域";
     if (clashMap[branch] === pillar.zhi) interactions.push({
       type: "冲", title: `流年${branch}冲${pillar.label}${pillar.zhi}`,
-      summary: `${pillar.label}承载的${god}（${godThemesForRelationship(god)}）这一年更容易被外部事件正面触发，原有节奏会被打断或加速。`,
+      summary: `流年${branch}和你${pillar.label}的${pillar.zhi}正好相冲：${scene}，今年容易出计划外的事——安排被打断、节奏被提速。大事多留一步确认，日程别排太满。`,
     });
     if (sixMap[branch] === pillar.zhi) interactions.push({
       type: "六合", title: `流年${branch}与${pillar.label}${pillar.zhi}六合`,
-      summary: `外部环境与${pillar.label}的${god}（${godThemesForRelationship(god)}）更容易形成配合接口，相关主题推进阻力较小。`,
+      summary: `流年${branch}和你${pillar.label}的${pillar.zhi}相合：${scene}，今年推进比平时省力，常有现成的机会接上。攒着没办的事，趁今年办。`,
     });
     if (branch === pillar.zhi) interactions.push({
       type: "同气", title: `流年${branch}与${pillar.label}同支`,
-      summary: `${pillar.label}的既有模式被同类能量加强，${god}相关的惯性这一年更明显。`,
+      summary: `流年${branch}和你${pillar.label}的${pillar.zhi}是同一个字：${scene}，同类的事今年叠着来，重复出现的变多。反复出现的那件，就是今年的重点。`,
     });
   });
   trioGroups.forEach(([first, second, third, element]) => {
@@ -1110,9 +1169,10 @@ export function analyzeAnnualFlow(profile: UserProfile, ganZhi: string): AnnualF
     const partners = profile.bazi.pillars.filter((pillar) => group.includes(pillar.zhi) && pillar.zhi !== branch);
     if (!partners.length) return;
     const role = elementRoleForDayMaster(dayStem, element);
+    const zhis = [...new Set(partners.map((pillar) => pillar.zhi))].join("、");
     interactions.push({
-      type: "半合", title: `流年${branch}与${[...new Set(partners.map((pillar) => pillar.zhi))].join("、")}半合${element}`,
-      summary: `${element}属性的主题（对你属于${role}，即${roleThemes[role]}）这一年更容易被激活，相关场景出现频率上升。`,
+      type: "半合", title: `流年${branch}与${zhis}半合${element}`,
+      summary: `流年${branch}和你盘里的${zhis}向${element}凑了半局：${roleThemes[role]}，今年遇到合适的人和场合，容易成串出现。`,
     });
   });
   // 特殊流年点：只描述场景密度与扰动强度，不作吉凶断言

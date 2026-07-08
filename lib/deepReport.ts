@@ -118,6 +118,7 @@ export async function buildDeepReport(input: DeepReportInput): Promise<{ reportI
     rendered = translateProfile(profile, tr);
     tags = Object.fromEntries(Object.entries(tags).map(([k, hits]) => [k, hits.map((h) => ({ tag: tr(h.tag), metrics: h.metrics.map((m) => ({ ...m, label: tr(m.label) })) }))])) as PersonaTags;
     digest = { source: digest.source, headline: tr(digest.headline), pages: {
+      nature: { essay: tr(digest.pages.nature.essay), advice: tr(digest.pages.nature.advice) },
       love: { essay: tr(digest.pages.love.essay), advice: tr(digest.pages.love.advice) },
       career: { essay: tr(digest.pages.career.essay), advice: tr(digest.pages.career.advice) },
       social: { essay: tr(digest.pages.social.essay), advice: tr(digest.pages.social.advice) },

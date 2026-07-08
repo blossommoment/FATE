@@ -1,0 +1,464 @@
+/* ============================================================
+   命书纸皮 zwxp.css(2026-07-08 用户拍板:字的背景改书页)
+   叠在 zwxr.css(夜皮)之后加载:夜空壳照旧,阅读面板翻纸。
+   语言:书页米纸为底 / 墨字正文 / 朱砂批点 / 泥金饰线;
+   夜色岛屿(顶导航/底栏/页签/助手/排盘面板/铭牌/页脚)钉回夜色。
+   换皮不动骨:零结构改动,全部靠加载顺序与同特异度覆盖取胜。
+   ============================================================ */
+
+/* ---------- 0. body 白边根治(滚动回弹/视口外不再露亮米底) ---------- */
+body:has(.zwxr),body:has(.zx-galaxy){background:#070613}
+
+/* ---------- 1. 令牌翻纸(内容区全局) ---------- */
+.zwxr{
+  /* 墨系文字 */
+  --ink:#2f2a3c; --muted:#6f6754; --zr-body:#4a4457; --zr-soft:#3b3548;
+  /* 泥金(暗金,纸上读得清) */
+  --zr-gold:#8a6c2e; --zr-gold2:#7a5f28;
+  --zr-line:rgba(118,92,50,.30); --zr-line2:rgba(118,92,50,.50);
+  /* 纸面层级:面板必须近实(下面是夜空,半透会发灰) */
+  --zr-panel:linear-gradient(160deg,#f8f3e6,#efe6d1);
+  --zr-card:rgba(255,252,244,.66);
+  --zr-chip:rgba(140,110,55,.10);
+  --zr-track:rgba(118,92,50,.16);
+  --zr-solid:#f6efdd;
+  /* 五行色转纸面可读深色 */
+  --wood:#3d7d54; --fire:#b0432f; --earth:#8a6a2e; --metal:#77621f; --water:#33608f;
+  /* zx 组件令牌同步翻纸 */
+  --zx-ink:#2f2a3c; --zx-mut:#6f6754;
+  --zx-gold:#8a6c2e; --zx-gold2:#7a5f28;
+  --zx-line:rgba(118,92,50,.30); --zx-line2:rgba(118,92,50,.50);
+  --zx-panel:linear-gradient(160deg,#f8f3e6,#efe6d1);
+  --zx-cinnabar:#a6392b;
+  --zx-wood:#3d7d54; --zx-fire:#b0432f; --zx-earth:#8a6a2e; --zx-metal:#77621f; --zx-water:#33608f;
+  color:var(--ink);
+}
+.zwxr ::selection{background:rgba(166,57,43,.22);color:#2f2a3c}
+.zwxr select option{background:#fbf7ec;color:#2f2a3c}
+
+/* ---------- 2. 夜色岛屿钉回(仅剩弹层/页脚级;导航已随纸,见 §9/§11) ---------- */
+.zwxr .assistant-panel,
+.zwxr .plot-panel,.zwxr .result-page>footer,.zwxr .history-strip,.zwxr .fb-pagenav,
+.zwxr .invite-landing,.zwxr .report-topbar{
+  --ink:#f3edde; --muted:#c9c2da; --zr-body:#d6d0e2; --zr-soft:#e4ddcf;
+  --zr-gold:#e8ce9a; --zr-gold2:#bf9a4e;
+  --zr-line:rgba(232,206,154,.16); --zr-line2:rgba(232,206,154,.32);
+  --zr-chip:rgba(232,206,154,.08); --zr-track:rgba(232,206,154,.12);
+  --zx-ink:#e6e1d5; --zx-mut:#9a94a8; --zx-gold:#e8ce9a; --zx-gold2:#bf9a4e;
+  --zx-line:rgba(232,206,154,.16); --zx-panel:rgba(15,13,34,.58);
+  font-family:"PingFang SC","Microsoft YaHei",sans-serif;
+}
+
+/* ---------- 3. 字体制式:正文宋 / 判词楷 / 小注黑,整体放大 ---------- */
+.zwxr{font-size:18px;font-family:"Songti SC","STSong","SimSun",serif}
+.zwxr p{font-size:16px;line-height:2.05;color:#3f3a4d}
+.zwxr li{font-size:15.5px;line-height:2;color:#3f3a4d}
+.zwxr dl div{font-size:15px}
+.zwxr dd{font-size:14.5px}
+.zwxr small,.zwxr dt{color:#6f6754}
+.zwxr label span,.zwxr .signature small,.zwxr .profile-grid small,.zwxr .score small{color:#6f6754;font-size:12.5px}
+.zwxr .deep-summary{font-size:17px;line-height:2.1;color:#332e42}
+.zwxr .quote-life{font-size:18px;color:#332e42}
+.zwxr .fb-essay{font-size:16.5px;line-height:2.1;color:#332e42}
+.zwxr .zx-mnote{color:#6f6754}
+/* 高频阅读小字抬底 */
+.zwxr .term-context{font-size:13.5px}
+.zwxr .deep-note,.zwxr .logic-disclaimer{font-size:13px}
+.zwxr .deep-keywords span{font-size:13.5px}
+.zwxr .evidence-chain>span{font-size:13.5px}
+.zwxr .annual-detail p{font-size:14px}
+.zwxr .annual-relations p,.zwxr .annual-specials p{font-size:14.5px}
+.zwxr .ten-god-grid p,.zwxr .overview-insights p,.zwxr .dimension-grid article>p{font-size:14.5px}
+.zwxr .guide-initiator p,.zwxr .guide-translation-grid p,.zwxr .guide-hotspots p,.zwxr .guide-behaviors p{font-size:14.5px}
+.zwxr .interaction-grid article>p,.zwxr .post-card>p{font-size:15px}
+.zwxr .special-content p,.zwxr .scene-grid p{font-size:14px}
+.zwxr .logic-steps>div,.zwxr .logic-block{font-size:14px}
+.zwxr .fb-aside p{font-size:14.5px}
+.zwxr .fb-metric label,.zwxr .fb-duo-metric label{font-size:14px}
+@media(max-width:700px){
+  .zwxr p{font-size:15.5px}
+  .zwxr li{font-size:15px}
+  .zwxr .deep-summary{font-size:16px}
+}
+
+/* ---------- 4. 朱砂批点(分数/印鉴/编号/点睛) ---------- */
+.zwxr .god-score strong,.zwxr .social-stats strong,
+.zwxr .deep-card .deep-score strong,.zwxr .specialty-card>header strong,
+.zwxr .deep-radar-chart>span b,.zwxr .score-breakdown-grid article>div span{color:#a6392b}
+.zwxr .identity-card h1 em,.zwxr .result-report .signature strong{color:#a6392b}
+.zwxr .eyebrow,.zwxr .section-number,.zwxr .deep-category>header span,
+.zwxr .fb-mono,.zwxr .fb-essay-tag,.zwxr .deep-radar-overview>div:first-child>span{color:#a6392b}
+.zwxr .logic-link{color:#a6392b;border-color:rgba(166,57,43,.4);background:rgba(166,57,43,.06)}
+.zwxr .trait-basis b{color:#a6392b;background:rgba(166,57,43,.08)}
+.zwxr .nature-card>header b{color:#a6392b;background:rgba(166,57,43,.08)}
+.zwxr .deep-descriptor{color:#a6392b;border-color:rgba(166,57,43,.4);background:rgba(166,57,43,.05)}
+.zwxr .specialty-card>header b{color:#a6392b;border-color:rgba(166,57,43,.4)}
+.zwxr .deep-card .deep-score span{color:#a6392b}
+.zwxr .deep-card .deep-score strong::after{color:#6f6754}
+/* 印章制式:朱砂钤印 */
+.zwxr .annual-seal{border-color:rgba(166,57,43,.5)}
+.zwxr .annual-seal strong{color:#a6392b}
+.zwxr .verdict-seal{background:rgba(166,57,43,.06);border:1px solid rgba(166,57,43,.55);color:#a6392b}
+.zwxr .fb-stamp{border-color:rgba(166,57,43,.45);background:rgba(166,57,43,.05)}
+.zwxr .fb-stamp b{color:#a6392b}
+.zwxr .fb-tick{background:#a6392b;opacity:.55}
+.zwxr .annual-year-strip a.active{border-color:rgba(166,57,43,.55);background:rgba(166,57,43,.07);box-shadow:none}
+.zwxr .zx-yr-active{background:rgba(166,57,43,.07)!important;border:1px solid rgba(166,57,43,.5);box-shadow:none}
+
+/* ---------- 5. 写死深底 → 纸面(内容面板逐条翻) ---------- */
+.zwxr .identity-card{background:linear-gradient(115deg,rgba(250,246,235,.95),rgba(243,236,220,.92)),url("/images/five-elements-hero.png") center/cover}
+.zwxr .identity-card h1{color:var(--ink)}
+.zwxr .bazi-chart .element-wood{background:linear-gradient(180deg,rgba(61,125,84,.14),rgba(250,246,235,.9))}
+.zwxr .bazi-chart .element-fire{background:linear-gradient(180deg,rgba(176,67,47,.13),rgba(250,246,235,.9))}
+.zwxr .bazi-chart .element-earth{background:linear-gradient(180deg,rgba(138,106,46,.15),rgba(250,246,235,.9))}
+.zwxr .bazi-chart .element-metal{background:linear-gradient(180deg,rgba(119,98,31,.14),rgba(250,246,235,.9))}
+.zwxr .bazi-chart .element-water{background:linear-gradient(180deg,rgba(51,96,143,.13),rgba(250,246,235,.9))}
+.zwxr .result-page .bazi-chart article.day-master{background:linear-gradient(150deg,color-mix(in srgb,var(--day-accent) 22%,#f6f0e0),#f6f0e0);color:#3b3548;--pillar-color:#8a6c2e;box-shadow:none}
+.zwxr .bazi-chart article.day-master{color:#3b3548}
+.zwxr .day-master .pillar-meta{border-color:rgba(118,92,50,.35)}
+.zwxr .day-master .pillar-meta>span{border-color:rgba(118,92,50,.3);color:#4a4457}
+.zwxr .day-master .pillar-glyph strong:first-child{color:#b0432f}
+.zwxr .hidden-stems i{background:color-mix(in srgb,var(--pillar-color) 15%,#f6f0e0)}
+.zwxr .dimension-viz i{border-color:#f6f0e0}
+.zwxr .deep-radar-overview{background:linear-gradient(135deg,#f8f3e6,#f2ead6 65%,#eee2c8);border:1px solid var(--zr-line)}
+.zwxr .duo-radar-panel{background:linear-gradient(145deg,#f8f3e6,#f0e7d2);border:1px solid var(--zr-line)}
+.zwxr .deep-radar-chart>span,.zwxr .duo-radar-chart>span{background:rgba(255,252,244,.88);border:1px solid var(--zr-line);color:#4a4457}
+.zwxr .element-radar-card{background:linear-gradient(145deg,#f8f3e6,#f0e7d2)!important;border:1px solid var(--zr-line)}
+.zwxr .element-grid{fill:rgba(255,252,244,.6);stroke:rgba(118,92,50,.35)}
+.zwxr .element-radar svg{filter:drop-shadow(0 10px 18px rgba(90,70,40,.25))}
+.zwxr .element-radar>span{background:rgba(255,252,244,.9);border:1px solid var(--zr-line)}
+.zwxr .deep-radar-chart .radar-grid-line{stroke:rgba(118,92,50,.32)}
+.zwxr .deep-radar-chart line{stroke:rgba(118,92,50,.22)}
+.zwxr .deep-radar-chart .radar-value{stroke:#a6392b;fill:rgba(166,57,43,.14);fill-opacity:1;filter:none}
+.zwxr .deep-radar-chart circle{stroke:#f6f0e0}
+.zwxr .social-spectrum{background:rgba(140,110,55,.10)}
+.zwxr .axis-track:before,.zwxr .axis-track:after{background:repeating-linear-gradient(90deg,transparent 0 calc(20% - 1px),rgba(118,92,50,.35) calc(20% - 1px) 20%)}
+.zwxr .luck-current{background:linear-gradient(120deg,#f8f2e2,#f2e9d2 70%,#eee0c4);box-shadow:none;color:#3b3548}
+.zwxr .luck-current div{color:#3b3548}
+.zwxr .luck-current span{color:#a6392b}
+.zwxr .luck-current strong{color:#3b3548}
+.zwxr .luck-current>i{color:rgba(150,60,40,.16)}
+.zwxr .luck-track{scrollbar-color:#b8a888 transparent}
+.zwxr .luck-track article.current{border-color:color-mix(in srgb,var(--luck) 55%,#8a6c2e);background:rgba(138,108,46,.10)}
+.zwxr .luck-glyph strong+strong{background:color-mix(in srgb,var(--luck) 14%,#f6f0e0)}
+.zwxr .luck-age{background:color-mix(in srgb,var(--luck) 12%,#f6f0e0)}
+.zwxr .annual-detail{color:var(--zr-soft);background:linear-gradient(125deg,color-mix(in srgb,var(--annual) 13%,#f8f2e2),#f3ecd9)}
+.zwxr .special-point-list>article.special-冲{background:linear-gradient(120deg,rgba(176,67,47,.10),rgba(250,246,235,.9))}
+.zwxr .compact-pillars>div{background:rgba(255,252,244,.6)}
+.zwxr .partner-form{background:rgba(255,252,244,.55)}
+.zwxr .partner-form label{background:rgba(255,252,244,.6)}
+.zwxr .relationship-score{background:linear-gradient(145deg,#f8f2e2,#f1e6cc 70%,#ecdec0)}
+.zwxr .match-hero,.zwxr .module-header{background:linear-gradient(145deg,#f8f2e2,#f1e6cc 70%,#ecdec0);border:1px solid var(--zr-line)}
+.zwxr .module-grid>a>i{background:linear-gradient(135deg,#ece1c6,#ddcda6);color:#7a5f28}
+.zwxr .pl-box{fill:rgba(255,252,244,.92);stroke:rgba(118,92,50,.4)}
+.zwxr .pl-box.pl-mine{stroke:#2e6b5d}
+.zwxr .pl-box.pl-theirs{stroke:#a34d5e}
+.zwxr .source-orb:before{background:#f6f0e0}
+.zwxr .recommendation-results,.zwxr .view-match .recommendation-results{background:linear-gradient(145deg,#f8f3e6,#f0e7d2)}
+.zwxr .recommendation-grid article,.zwxr .view-match .recommendation-grid article{background:rgba(140,110,55,.06)}
+.zwxr .view-match .recommendation-grid article.top-match,.zwxr .recommendation-grid article.top-match{background:linear-gradient(120deg,rgba(191,154,78,.18),rgba(255,252,244,.8))}
+.zwxr .story i{border-color:#f6f0e0}
+.zwxr .quote-life{background:linear-gradient(145deg,#f8f2e2,#f2e9d2 65%,#eee0c4)}
+.zwxr .music-card{background:linear-gradient(135deg,#f6efdd,#f0e7d2)}
+.zwxr .daily-card{background:linear-gradient(145deg,#f8f2e2,#f2e9d2 70%,#eee0c4)!important}
+.zwxr .weight-model{background:linear-gradient(135deg,#f8f3e6,#f0e7d2)}
+.zwxr .persona-name{background:#f2ebd8!important}
+.zwxr .persona-combined{background:linear-gradient(145deg,#f5eddb,#efe3cc)!important}
+.zwxr .persona-combined h3{color:#a34d5e}
+.zwxr .dominant-persona>div{background:#faf5e8}
+/* 主导人格卡:主轴纸底朱砂大字;副轴保持彩底白字 */
+.zwxr .dominant-persona .persona-god{color:#3b3548}
+.zwxr .persona-god span{color:#7a5f28!important}
+.zwxr .dominant-persona .persona-god strong{color:#a6392b}
+.zwxr .persona-god small{color:#6f6754;font-size:12px}
+.zwxr .dominant-persona .persona-god.secondary{color:#fff}
+.zwxr .persona-god.secondary span{color:#f0e6ea!important}
+.zwxr .dominant-persona .persona-god.secondary strong{color:#fff}
+.zwxr .persona-god.secondary small{color:#e8dce0}
+.zwxr .special-symbol,.zwxr .dynamic-mark{
+  background:linear-gradient(160deg,rgba(191,154,78,.26),rgba(255,250,238,.92));
+  border:1px solid rgba(118,92,50,.4);color:#7a5f28}
+.zwxr .special-冲 .special-symbol,.zwxr .duo-dynamic-冲 .dynamic-mark{
+  background:linear-gradient(160deg,rgba(176,67,47,.16),rgba(255,250,238,.92));
+  border-color:rgba(176,67,47,.5);color:#a34d5e}
+.zwxr .duo-dynamic-天干克 .dynamic-mark{
+  background:linear-gradient(160deg,rgba(107,79,160,.16),rgba(255,250,238,.92));
+  border-color:rgba(107,79,160,.5);color:#6b5fa0}
+.zwxr .special-symbol span,.zwxr .dynamic-mark span{color:#6f6754}
+.zwxr .social-model-card{background:var(--zr-panel);border:1px solid var(--zr-line)}
+.zwxr .social-model-card>header h3{color:var(--ink)}
+.zwxr .social-model-card>header small{color:#a6392b}
+.zwxr .social-model-card>header>p{color:#6f6754}
+.zwxr .social-model-grid article{background:var(--zr-card);border:1px solid var(--zr-line)}
+.zwxr .social-model-grid article>header i{
+  background:linear-gradient(160deg,rgba(191,154,78,.3),rgba(255,250,238,.92));
+  border:1px solid rgba(118,92,50,.42);color:#7a5f28}
+.zwxr .duo-branch-script article{background:var(--zr-card);border:1px solid var(--zr-line)}
+.zwxr .annual-year-strip a{background:rgba(255,252,244,.72)}
+.zwxr .annual-year-strip a small{color:#6f6754}
+.zwxr .zx-yr{background:rgba(255,252,244,.6)}
+.zwxr .zx-yr p{color:#4a4457}
+.zwxr .zx-gift{background:rgba(255,252,244,.6)}
+.zwxr .fb-toc-preview span,.zwxr .fb-stamp{background:rgba(255,252,244,.7)}
+.zwxr .fb-data{background:rgba(255,252,244,.66)}
+.zwxr .fb-aside div{background:rgba(255,252,244,.7)}
+.zwxr .fb-no{color:rgba(150,60,40,.16)}
+.zwxr .fb-fill-a{background:#2e6b5d}
+.zwxr .fb-fill-b{background:#a34d5e}
+.zwxr .fate-book{--fb-love:#a34d5e;--fb-work:#2e6b5d;--fb-social:#6b5fa0;--fb-season:#8a6a2e}
+/* 逻辑推导弹层 = 批注页,也翻纸 */
+.zwxr .logic-sheet{color:var(--zr-soft);background:#f6efdd;box-shadow:-20px 0 60px rgba(0,0,0,.45);border-left:1px solid var(--zr-line)}
+.zwxr .logic-result{background:linear-gradient(135deg,#f5edda,#efe4ca 70%,#ecdec0)}
+.zwxr .logic-steps>div{background:rgba(255,252,244,.7)}
+@media(max-width:760px){
+  .zwxr .logic-sheet{background:#f6efdd;border-top:1px solid var(--zr-line2);border-left:0}
+  .zwxr .deep-radar-chart>span{background:rgba(255,252,244,.9)}
+  .zwxr .term-context{background:var(--zr-chip)}
+}
+
+/* ---------- 6. 显式浅色文字 → 墨/五行深色 ---------- */
+.zwxr .guide-initiator aside b,.zwxr .guide-hotspots aside b{color:#27593c}
+.zwxr .special-gods span{color:#27593c;background:rgba(61,125,84,.12)}
+.zwxr .dynamic-roles span{color:#27593c;background:rgba(61,125,84,.12)}
+.zwxr .post-tags span{color:#27593c}
+.zwxr .top-match .simple-match-reasons i{color:#27593c}
+.zwxr .logic-block span{color:#27593c}
+.zwxr .logic-block.counter span{color:#b0432f}
+.zwxr .logic-block.verify span{color:#8a6a2e}
+.zwxr .manual-do{color:#27593c;background:rgba(61,125,84,.10)}
+.zwxr .manual-dont{color:#b0432f;background:rgba(176,67,47,.10)}
+.zwxr .plan-advance{background:rgba(61,125,84,.12);color:#27593c}
+.zwxr .plan-turbulence{background:rgba(176,67,47,.12);color:#b0432f}
+.zwxr .plan-change{background:rgba(138,106,46,.12);color:#8a6a2e}
+.zwxr .plan-attraction{background:rgba(163,77,94,.12);color:#a34d5e}
+.zwxr .dynamic-source b{color:#a34d5e;background:rgba(163,77,94,.12)}
+.zwxr .dynamic-source .impact-pos{color:#27593c}
+.zwxr .dynamic-source .impact-neg{color:#b0432f}
+.zwxr .interaction-why b{color:#a34d5e}
+.zwxr .contrast-head b:first-child{color:#2e6b5d}
+.zwxr .contrast-head b:last-child{color:#a34d5e}
+.zwxr .guide-philosophy{border-left-color:#2e6b5d}
+.zwxr .guide-longrun{border-left-color:#6b5fa0}
+.zwxr .deep-descriptor{font-size:12.5px}
+.zwxr .tone-wood{color:#27593c;background:rgba(61,125,84,.12)}
+.zwxr .tone-fire{color:#b0432f;background:rgba(176,67,47,.12)}
+.zwxr .tone-earth{color:#8a6a2e;background:rgba(138,106,46,.12)}
+.zwxr .tone-metal{color:#77621f;background:rgba(119,98,31,.12)}
+.zwxr .tone-water{color:#33608f;background:rgba(51,96,143,.12)}
+.zwxr .deep-radar-legend span{color:#6f6754}
+.zwxr .deep-radar-overview h3{color:var(--ink)}
+.zwxr .deep-radar-overview p{color:#6f6754}
+.zwxr .deep-summary{border-left-color:var(--ac);color:#332e42}
+.zwxr .deep-scene-preview span{color:#4a4457}
+.zwxr .fb-aside p{color:#4a4457}
+.zwxr .deep-note{color:#6f6754}
+.zwxr .compact-pillars p small{color:#6f6754}
+.zwxr .zx-mscale span{color:#6b6254}
+.zwxr .specialty-card>header strong span{color:#6b6254}
+.zwxr .zxal-val{fill:#8a6c2e}
+.zwxr .zxal-stemsub{fill:#6f6754}
+.zwxr .zxln-scale{fill:#6f6754}
+.zwxr .zxln-norm{fill:#a6392b}
+.zwxr .zxln-val{fill:#8a6c2e}
+.zwxr .tendency-axis .axis-labels span{color:#6f6754}
+.zwxr .assistant-messages .user{color:#f2e2be}
+
+/* ---------- 7. 数轴流星标 → 朱砂笔锋(白光头在纸上看不见) ---------- */
+.zwxr .tendency-axis .axis-track i{
+  background:linear-gradient(90deg,transparent,rgba(166,57,43,.75))!important}
+.zwxr .tendency-axis .axis-track i::after{
+  background:#a6392b;
+  box-shadow:0 0 6px 1px rgba(166,57,43,.7),0 0 14px 4px rgba(166,57,43,.3);
+  animation:zwxpPulse 2.6s ease-in-out infinite}
+@keyframes zwxpPulse{
+  0%,100%{box-shadow:0 0 6px 1px rgba(166,57,43,.7),0 0 14px 4px rgba(166,57,43,.3)}
+  50%{box-shadow:0 0 8px 2px rgba(166,57,43,.85),0 0 18px 6px rgba(166,57,43,.4)}}
+.zwxr .tendency-axis .axis-track::after{background:#f6f0e0;border-color:#a6392b}
+.zwxr .zx-axisfill{background:linear-gradient(90deg,rgba(138,108,46,.10),rgba(138,108,46,.42))}
+
+/* ---------- 8. 面板质感:纸卡投影 + 泥金细框 ---------- */
+.zwxr .result-hero,.zwxr .result-report,.zwxr .luck-cycles,.zwxr .special-points,
+.zwxr .match-workspace,.zwxr .square-main,.zwxr .square-aside>div,.zwxr .fate-book,
+.zwxr .fb-cover,.zwxr .fb-page,.zwxr .fb-toc,.zwxr .deep-radar-overview,
+.zwxr .duo-branch-script,.zwxr .duo-bazi-comparison,.zwxr .match-score-method,
+.zwxr .duo-guide,.zwxr .share-card,.zwxr .match-inspire,.zwxr .module-directory{
+  box-shadow:0 14px 34px rgba(0,0,0,.42)}
+.zwxr .bazi-chart article:hover{box-shadow:0 14px 30px rgba(90,70,40,.28)}
+.zwxr .deep-card:hover{box-shadow:0 16px 36px rgba(90,70,40,.3)}
+.zwxr .overview-insights article:hover,.zwxr .luck-track article:hover{box-shadow:0 12px 26px rgba(90,70,40,.26)}
+
+/* ---------- 9. 复检修正(2026-07-08 用户走查) ---------- */
+/* 9a. 洞察图标(日/令/缘):青紫渐变方块 → 朱砂钤印 */
+.zwxr .overview-insights i{
+  background:linear-gradient(150deg,#b0432f,#8c2f22);color:#f8f3e6;border-radius:9px;
+  font-family:var(--zx-kai);font-size:19px;
+  box-shadow:inset 0 0 0 2px rgba(248,243,230,.32)}
+/* 9b. 日柱藏干:白透底浅金字在纸上隐形 → 朱砂章豆 */
+.zwxr .day-master .hidden-stems i{background:color-mix(in srgb,#b0432f 13%,#f6f0e0);color:#b0432f}
+/* 9c. 顶导航随纸:米纸横卷 + 朱砂印钮 */
+.zwxr .result-page nav{background:rgba(250,246,235,.95);border:1px solid rgba(118,92,50,.3);
+  box-shadow:0 10px 26px rgba(0,0,0,.35);backdrop-filter:blur(14px)}
+.zwxr .result-page .nav-links a{color:#f8f3e6;background:linear-gradient(120deg,#b0432f,#8c2f22)}
+.zwxr .nav-links span{color:#6f6754}
+.zwxr .brand i{background:linear-gradient(135deg,#a6392b,#8c2f22);box-shadow:0 7px 18px rgba(166,57,43,.3)}
+/* 9d. 页签条随纸:纸底墨字,当前页 = 朱砂印 */
+.zwxr .profile-tabs{border:1px solid rgba(118,92,50,.32);background:rgba(250,246,235,.96);
+  box-shadow:0 10px 26px rgba(0,0,0,.30);backdrop-filter:blur(12px)}
+.zwxr .profile-tabs a{color:#5b5348}
+.zwxr .profile-tabs a span{color:#6f6754}
+.zwxr .profile-tabs a.active{color:#f8f3e6;background:linear-gradient(120deg,#b0432f,#8c2f22);
+  box-shadow:0 8px 20px rgba(166,57,43,.35)}
+.zwxr .profile-tabs a.active span{color:rgba(248,243,230,.78)}
+/* 9e. 底部四导航随纸(760 断点与夜皮同步) */
+@media(max-width:760px){
+  .zwxr .mobile-bottom-nav{background:rgba(250,246,235,.97)!important;
+    border:1px solid rgba(118,92,50,.35)!important;box-shadow:0 -8px 30px rgba(0,0,0,.35)!important}
+  .zwxr .mobile-bottom-nav a,.zwxr .mobile-bottom-nav .nav-plot{color:#6f6754}
+  .zwxr .mobile-bottom-nav a.active{color:#a6392b}
+  .zwxr .mobile-bottom-nav .nav-plot i{border-color:#f6f0e0;
+    background:linear-gradient(135deg,#b0432f,#8c2f22);color:#f8f3e6;
+    box-shadow:0 7px 18px rgba(166,57,43,.4)}
+  .zwxr .mobile-bottom-nav .nav-plot span{color:#a6392b}
+  .zwxr .profile-tabs{background:rgba(250,246,235,.97)}
+  .zwxr .result-page>nav:not(.mobile-bottom-nav){background:rgba(250,246,235,.96)}
+}
+/* 9f. 「问」悬钮 = 朱砂印;铭牌随纸 */
+.zwxr .assistant-fab{border:1px solid rgba(166,57,43,.5);color:#f8f3e6;
+  background:linear-gradient(135deg,#b0432f,#8c2f22);box-shadow:0 14px 30px rgba(0,0,0,.35);backdrop-filter:none}
+.zwxr .assistant-fab i{background:rgba(248,243,230,.18)}
+.zwxr-brandmark{border-color:rgba(118,92,50,.4);background:rgba(250,246,235,.92);backdrop-filter:none}
+.zwxr-brandmark b{color:#7a5f28}
+.zwxr-brandmark span{color:#6f6754}
+/* 9g. 邀请卡:结果页里随纸;邀请落地页(夜面)保持星海 */
+.zwxr .invite-share{background:rgba(255,252,244,.72);border:1px solid rgba(118,92,50,.35)}
+.zwxr .invite-share>div>span{color:#a6392b}
+.zwxr .invite-share h3{color:var(--ink)}
+.zwxr .invite-share p{color:#4a4457}
+.zwxr .invite-share button{background:linear-gradient(135deg,rgba(166,57,43,.14),rgba(166,57,43,.05));
+  border:1px solid rgba(166,57,43,.5);color:#a6392b}
+.zwxr .invite-share button:hover{box-shadow:0 0 22px rgba(166,57,43,.2);
+  background:linear-gradient(135deg,rgba(166,57,43,.2),rgba(166,57,43,.08))}
+.zwxr .invite-share button.copied{background:rgba(61,125,84,.12);border-color:rgba(61,125,84,.55);color:#27593c}
+.zwxr .invite-landing .invite-share{background:rgba(15,13,34,.62);border:1px solid rgba(232,206,154,.22)}
+.zwxr .invite-landing .invite-share>div>span{color:#bf9a4e}
+.zwxr .invite-landing .invite-share h3{color:#e6e1d5}
+.zwxr .invite-landing .invite-share p{color:#b5aec6}
+.zwxr .invite-landing .invite-share button{background:linear-gradient(135deg,rgba(191,154,78,.30),rgba(191,154,78,.08));
+  border:1px solid rgba(232,206,154,.5);color:#e8ce9a}
+/* 9i. 十二维雷达标签:手机端压叠根治(夜皮 1114 行曾把 66px 覆盖回 88px) */
+@media(max-width:700px){
+  .zwxr .deep-radar-chart>span{width:58px;padding:3px 2px;font-size:9px;letter-spacing:0;line-height:1.3}
+  .zwxr .deep-radar-chart>span b{font-size:11.5px;margin-top:0}
+  /* 径向外推:1=12点起顺时针;两极纵推,侧翼斜推,拉开相邻药丸 */
+  .zwxr .deep-radar-chart>span:nth-of-type(1){transform:translate(-50%,calc(-50% - 13px))}
+  .zwxr .deep-radar-chart>span:nth-of-type(2){transform:translate(calc(-50% + 11px),calc(-50% - 7px))}
+  .zwxr .deep-radar-chart>span:nth-of-type(5){transform:translate(calc(-50% + 9px),calc(-50% + 3px))}
+  .zwxr .deep-radar-chart>span:nth-of-type(6){transform:translate(calc(-50% + 11px),calc(-50% + 8px))}
+  .zwxr .deep-radar-chart>span:nth-of-type(7){transform:translate(-50%,calc(-50% + 13px))}
+  .zwxr .deep-radar-chart>span:nth-of-type(8){transform:translate(calc(-50% - 11px),calc(-50% + 8px))}
+  .zwxr .deep-radar-chart>span:nth-of-type(11){transform:translate(calc(-50% - 9px),calc(-50% - 3px))}
+  .zwxr .deep-radar-chart>span:nth-of-type(12){transform:translate(calc(-50% - 11px),calc(-50% - 7px))}
+}
+/* 9h. 未开放占位页(feature-locked)直接躺在夜空上:字钉回夜色 */
+.zwxr .feature-locked{--ink:#f3edde;--muted:#c9c2da;--zr-body:#d6d0e2;--zr-soft:#e4ddcf;color:#e6e1d5}
+.zwxr .feature-locked h1,.zwxr .feature-locked h2,.zwxr .feature-locked h3{color:#e6e1d5}
+.zwxr .feature-locked p{color:#b5aec6}
+
+/* ---------- 10. 对比度全站审计修正(2026-07-08 v2 审计仪) ---------- */
+/* 10a. 页脚(夜色岛)继承 bug:color 是继承计算值,岛内必须显式钉色 */
+.zwxr .result-page>footer{color:#cfc9dd}
+.zwxr .result-page>footer p{color:#b5aec6}
+.zwxr .result-page>footer .brand{color:#e6e1d5}
+/* 大运卡内部 footer 是内容,不是页脚:还它纸面 */
+.zwxr .luck-cycles>footer{background:transparent;border-top:1px solid var(--zr-line);color:#6f6754}
+/* 10b. 大运五行色:亮调→纸面深调(luck-age 文字/边框全跟) */
+.zwxr .luck-track article{--luck:#8a6c2e}
+.zwxr .luck-wood{--luck:#27593c}
+.zwxr .luck-fire{--luck:#a63a2b}
+.zwxr .luck-earth{--luck:#7a5f28}
+.zwxr .luck-metal{--luck:#4e6a76}
+.zwxr .luck-water{--luck:#33608f}
+.zwxr .luck-age{font-weight:600}
+/* 10c. 冲合徽章:底色淡一档、字深一档 */
+.zwxr .special-symbol,.zwxr .dynamic-mark{
+  background:linear-gradient(160deg,rgba(191,154,78,.12),rgba(255,250,238,.95));color:#6d5320}
+.zwxr .special-冲 .special-symbol,.zwxr .duo-dynamic-冲 .dynamic-mark{
+  background:linear-gradient(160deg,rgba(176,67,47,.10),rgba(255,250,238,.95));color:#8c2f22}
+.zwxr .duo-dynamic-天干克 .dynamic-mark{
+  background:linear-gradient(160deg,rgba(107,79,160,.10),rgba(255,250,238,.95));color:#59477e}
+.zwxr .special-symbol span,.zwxr .dynamic-mark span{color:#6f6754}
+/* 10d. 流年卡/目录卡小字与标签 */
+.zwxr .zx-ynum{color:#6f6754}
+.zwxr .zx-ygod{color:#63511d}
+.zwxr .zx-ytags span,.zwxr .zx-gtag{color:#63511d;border-color:rgba(118,92,50,.4)}
+/* 10e. 四柱卡内小注(元素淡彩底上要更深) */
+.zwxr .bazi-chart small,.zwxr .bazi-chart article header,.zwxr .pillar-meta small{color:#5b5348}
+/* 10f. 成册区:CTA 与章签深一档 */
+.zwxr .fb-cta,.zwxr a.fb-cta{color:#6d5320;border-color:rgba(109,83,32,.55)}
+.zwxr .fb-c-love{color:#a34d5e}
+.zwxr .fb-c-work{color:#2e6b5d}
+.zwxr .fb-c-social{color:#6b5fa0}
+.zwxr .fb-c-season{color:#8a6a2e}
+.zwxr .fb-c-nature b,.zwxr .fb-c-nature{color:#7a5f28}
+/* 10g. 流年关系类型章(同气/冲/六合小方章):统一朱砂实底白字 */
+.zwxr .annual-relations article>span:first-child,.zwxr .annual-relations article>header span{background:#8c2f22;color:#f8f3e6}
+/* 10h. 副轴人格卡(紫檀底)文字提纯 */
+.zwxr .persona-god.secondary span{color:#fff!important}
+.zwxr .persona-god.secondary small{color:#fff}
+/* 10i. 复审收尾:特异度与余量 */
+.zwxr .luck-track article.luck-wood{--luck:#27593c}
+.zwxr .luck-track article.luck-fire{--luck:#a63a2b}
+.zwxr .luck-track article.luck-earth{--luck:#6d5320}
+.zwxr .luck-track article.luck-metal{--luck:#4e6a76}
+.zwxr .luck-track article.luck-water{--luck:#33608f}
+.zwxr .zx-yr{background:rgba(255,252,244,.82)}
+.zwxr .zx-ynum{color:#5b5348}
+.zwxr .zx-ygod,.zwxr .zx-ytags span,.zwxr .zx-gtag{color:#574717}
+.zwxr .special-content aside{color:#5b5348}
+.zwxr .special-points small{color:#5b5348}
+.zwxr .special-points>header span{color:#96455a}
+.zwxr .match-intro span{color:#96455a}
+.zwxr .special-content>div small{color:#5b5348}
+.zwxr .zx-ynum{color:#4f4840}
+.zwxr .feature-locked .section-number,.zwxr .feature-locked .eyebrow{color:#d0685a}
+
+/* ---------- 11. 模块全章页(module=*)随纸 ---------- */
+/* 页头:白字→墨/朱 */
+.zwxr .module-header h2{color:var(--ink)}
+.zwxr .module-header span{color:#a6392b}
+.zwxr .module-header p{color:#6f6754}
+/* 顶条/分页条本是 <nav>,被纸导航规则接管后配套字色 */
+.zwxr .module-topbar,.zwxr .module-pager{background:rgba(250,246,235,.95);border:1px solid rgba(118,92,50,.3);box-shadow:0 10px 26px rgba(0,0,0,.3)}
+.zwxr .module-topbar a,.zwxr .module-pager a{color:#7a5f28}
+.zwxr .module-topbar span{color:#6f6754}
+.zwxr .module-pager .pager-home{color:#f8f3e6;background:linear-gradient(120deg,#b0432f,#8c2f22)}
+/* 四域色 --ac:夜皮浅彩 → 纸面深彩(章名小签/summary 左边线全跟) */
+.zwxr .deep-tone-0{--ac:#8a6a2e}
+.zwxr .deep-tone-1{--ac:#a34d5e}
+.zwxr .deep-tone-2{--ac:#6b5fa0}
+.zwxr .deep-tone-3{--ac:#33608f}
+/* 关键词药丸压线提深 */
+.zwxr .deep-keywords span,.zwxr .logic-keywords span{color:#6d5a1e;border-color:rgba(118,92,50,.42)}
+.zwxr .module-frame .special-points>header span,.zwxr .special-points header span{color:#96455a}
+.zwxr .specialty-analysis>header span{color:#96455a}
+
+/* ---------- 12. 走查修正(2026-07-08 晚) ---------- */
+/* 日主圆钮:淡金看不清 → 朱砂钤印 */
+.zwxr .identity-orb{background:linear-gradient(150deg,#b0432f,#8c2f22);border-color:rgba(140,47,34,.55);color:#f8f3e6;box-shadow:0 10px 24px rgba(140,47,34,.28)}
+.zwxr .identity-orb small{color:rgba(248,243,230,.85)}
+/* 合盘英雄区(match-hero):判词白字压纸 → 朱砂判词+墨字 */
+.zwxr .match-hero{color:#3b3548}
+.zwxr .match-hero h2,.zwxr .match-hero h3{color:#a6392b}
+.zwxr .match-hero strong,.zwxr .match-hero b{color:#a6392b}
+.zwxr .match-hero-score,.zwxr .match-hero-score>span{color:#3b3548}
+.zwxr .match-hero-verdict p{color:#3b3548}
+.zwxr .match-hero-verdict .hero-basis,.zwxr .match-hero small,.zwxr .match-hero-verdict>small{color:#6f6754}
+/* 同款白字压纸的双人分数卡 */
+.zwxr .relationship-score{color:#3b3548}
+.zwxr .relationship-score>strong,.zwxr .relationship-score b{color:#a6392b}
+.zwxr .relationship-score>p,.zwxr .relationship-score>span{color:#6f6754}
+.zwxr .match-keypoints article span{color:#96455a}
+.zwxr .share-card button{color:#6d5320;border-color:rgba(109,83,32,.5)}
+.zwxr .module-directory>header span{color:#96455a}
+.zwxr .match-inspire>header span,.zwxr .duo-guide>header span,.zwxr .duo-branch-script>header span,.zwxr .duo-bazi-comparison>header span,.zwxr .match-score-method>header span{color:#96455a}
+.zwxr .share-card>div>span{color:#96455a}
