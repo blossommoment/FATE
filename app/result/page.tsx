@@ -8,6 +8,8 @@ import ShareCard from "@/components/ShareCard";
 import HistoryRecorder from "@/components/HistoryRecorder";
 import PillarLinks from "@/components/PillarLinks";
 import PlotPanel, { PlotTrigger } from "@/components/PlotPanel";
+import DeepLock from "@/components/DeepLock";
+import PdfButton from "@/components/PdfButton";
 
 import { askDeepSeek } from "@/lib/deepseek";
 
@@ -486,13 +488,17 @@ export async function ResultContent({
             <span className="fb-c-season"><b>伍</b>时运</span>
           </div>
           <p>性情、感情、事业、人际、时运各一章——你的标签、数据表征、与一段只属于你的评述与建议。生成一次，永久可看，可分享。</p>
-          <Link className="fb-cta" href={`/report?${baseQuery}`}>打开我的深度解读 ↗</Link>
-          <div className="fb-note">报告内容基于 FATE 模型 2.0 得出。</div>
+          <div className="fb-cta-row">
+            <Link className="fb-cta" href={`/report?${baseQuery}`}>打开我的深度解读 ↗</Link>
+            <PdfButton birth={birth} profileId={profile.id} />
+          </div>
+          <div className="fb-note">报告内容基于 FATE 模型 2.0 得出 · 命书 PDF 为解锁权益。</div>
         </section>
         {/* 2026-07-06 真·照抄:目录拆成六个样例式预览面板——每章一面板,格子=该章真实维度,
             专项观察章即样例专长天赋面板原样(真数据);点格直达维度,点脚注进全章 */}
         <div className="module-directory zx-dirstack">
-          {deepModules.map((mod) => {
+          {(() => {
+            const renderDirPanel = (mod: typeof deepModules[number]) => {
             const group = mod.category ? deepCategories.find((g) => g.category === mod.category) : null;
             const href = `/?${baseQuery}&view=deep&module=${mod.key}#deep-report`;
             return <div className="zx-panel zx-corner zx-dirpanel" key={mod.key} style={{ padding: "54px 54px 44px" }}>
@@ -520,7 +526,15 @@ export async function ResultContent({
               </div>
               <p className="zx-yearsnote"><Link href={href}>展开「{mod.title}」全章 · 逐维推导 →</Link></p>
             </div>;
-          })}
+            };
+            // 付费墙（2026-07-09 用户拍板）：目录壹贰免费，叁肆伍陆整组上锁
+            return <>
+              {deepModules.slice(0, 2).map(renderDirPanel)}
+              <DeepLock birth={birth} profileId={profile.id} reportHref={`/report?${baseQuery}`}>
+                {deepModules.slice(2).map(renderDirPanel)}
+              </DeepLock>
+            </>;
+          })()}
         </div>
         </>}
         {deepActive && <div className="module-frame">
@@ -532,6 +546,8 @@ export async function ResultContent({
             <i>{deepActive.no}</i>
             <div><span>第 {deepActiveIndex + 1} 章 / 共 {deepModules.length} 章</span><h2>{deepActive.title}</h2><p>{deepActive.subtitle}</p></div>
           </header>
+        {/* 付费墙：第叁章起全章内容上锁（直链绕不过），壹贰 open 直渲染 */}
+        <DeepLock birth={birth} profileId={profile.id} reportHref={`/report?${baseQuery}`} open={deepActiveIndex < 2}>
         {deepActive.key !== "special" && <div className="deep-profile">
           <div className="deep-category-stack">
             {deepCategories.filter((group) => group.category === deepActive.category).map((group) => { const categoryIndex = deepCategories.findIndex((candidate) => candidate.category === group.category); return <section className="deep-category zx-panel zx-corner" key={group.category}>
@@ -609,6 +625,7 @@ export async function ResultContent({
           </div>
           <blockquote className="social-chapter-quote">“{profile.summary}”</blockquote>
         </section>}
+        </DeepLock>
         <nav className="module-pager">
           {deepActiveIndex > 0
             ? <Link href={`/?${baseQuery}&view=deep&module=${deepModules[deepActiveIndex - 1].key}#deep-report`}>← {deepModules[deepActiveIndex - 1].no} · {deepModules[deepActiveIndex - 1].title}</Link>

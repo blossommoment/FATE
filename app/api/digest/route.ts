@@ -13,10 +13,10 @@ export const maxDuration = 150; // SiliconFlow DeepSeek-V3.2 实测单次 ~50-80
 // 两轮全败则如实报错（2026-07-09 用户拍板：不要兜底文冒充 AI 评述），前端显示失败态可重试。
 // 缓存策略在客户端按 profile.id 落 localStorage（付费功能：点击触发，一次生成反复看）。
 
-// 付费墙（2026-07-09 用户拍板）：前两章（性情/感情）免费，叁肆伍锁——未解锁响应里锁章正文只给开头
+// 付费墙（2026-07-09 用户拍板，同日收紧：成册免费只看目录）：五章全锁——未解锁响应里正文只给开头
 // 吊胃口、建议不下发（防 DOM 扒全文）；带有效 unlockToken 则全文。评述按 profileId 落服务端缓存，
 // 解锁后二次请求命中缓存秒出，不重复烧 AI。
-const LOCKED_KEYS = ["career", "social", "season"] as const;
+const LOCKED_KEYS = ["nature", "love", "career", "social", "season"] as const;
 const lockPages = (digest: DigestPayload): DigestPayload => ({
   headline: digest.headline,
   pages: {

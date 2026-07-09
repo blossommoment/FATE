@@ -1274,6 +1274,9 @@ main:not(.result-page) .entry form input { font-size:23px; }
 .fb-unlock-tip { color:#8f89a3; font-size:12px; }
 .fb-unlock-err { color:#d98a7f; font-size:12.5px; }
 .fb-pdfrow { display:flex; flex-direction:column; align-items:center; gap:8px; margin:20px 0 4px; }
+.fb-cta-row { display:flex; gap:12px; justify-content:center; align-items:center; flex-wrap:wrap; }
+.fb-cta-ghost { background:transparent; border:1px solid rgba(191,154,78,.55); color:#bf9a4e; }
+.deep-locked .fb-unlock-card a.fb-cta { margin:4px auto 0; }
 @media (max-width:760px) { .fate-book { padding:6px 16px 20px; } .fate-book-intro { padding:22px 18px; } }
 a.fb-cta { display:inline-block; text-decoration:none; color:#fff; }
 .report-page { max-width:600px; margin:0 auto; padding:14px 16px 70px; }

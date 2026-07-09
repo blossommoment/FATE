@@ -61,9 +61,7 @@ export default function FateReport({ birth, profileId }: { birth: BirthInput; pr
   const [codeInput, setCodeInput] = useState("");
   const [redeeming, setRedeeming] = useState(false);
   const [redeemError, setRedeemError] = useState("");
-  const [pdfBusy, setPdfBusy] = useState(false);
-  const [pdfError, setPdfError] = useState("");
-  const cacheKey = `fate-report-v4-${profileId}`;
+  const cacheKey = `fate-report-v5-${profileId}`; // v5:锁范围改为五章全锁(2026-07-09)
   const tokenKey = `fate-unlock-${profileId}`;
   const unlocked = !PAYWALL_ENABLED || !!result?.unlocked;
 
@@ -118,33 +116,6 @@ export default function FateReport({ birth, profileId }: { birth: BirthInput; pr
     setRedeeming(false);
   };
 
-  // 命书 PDF（解锁权益）：评述命中服务端缓存时秒级出书，否则约一分钟
-  const downloadPdf = async () => {
-    setPdfBusy(true);
-    setPdfError("");
-    try {
-      const res = await fetch("/api/report/pdf", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ birth, lang: "zh", unlockToken: readToken() }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => null) as { error?: string } | null;
-        throw new Error(data?.error || "生成失败，请稍后重试。");
-      }
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${res.headers.get("X-Report-Id") ?? "FATE-命书"}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      setPdfError(error instanceof Error ? error.message : "生成失败，请稍后重试。");
-    }
-    setPdfBusy(false);
-  };
-
   if (!result) {
     return <section className="fate-book fate-book-intro">
       <span className="fb-mono">FATE° · 深度解读报告</span>
@@ -153,9 +124,9 @@ export default function FateReport({ birth, profileId }: { birth: BirthInput; pr
         <span className="fb-c-nature"><b>壹</b>性情</span>
         {PAGES.map((page) => <span key={page.key} className={`fb-c-${page.key}`}><b>{page.no}</b>{page.cn}</span>)}
       </div>
-      <p>性情、感情、事业、人际、时运各一章——每章：你的标签、数据表征、与一段只属于你的评述与建议。前两章免费试读，解锁全册另含 30 页命书 PDF。</p>
+      <p>性情、感情、事业、人际、时运各一章——每章：你的标签、数据表征、与一段只属于你的评述与建议。免费预览目录，解锁读全册，另含 30 页命书 PDF。</p>
       <button className="fb-cta" onClick={() => generate()} disabled={loading}>
-        {loading ? "正在撰写你的报告…（约一分钟，值得等）" : "生成我的深度解读 · 前两章免费"}
+        {loading ? "正在撰写你的报告…（约一分钟，值得等）" : "生成我的深度解读"}
       </button>
       <div className="fb-note">{failed ? "生成没有成功，多半是网络原因——稍等片刻再点一次。" : "报告内容基于 FATE 模型 2.0 得出。"}</div>
     </section>;
@@ -248,6 +219,9 @@ export default function FateReport({ birth, profileId }: { birth: BirthInput; pr
         <i className="zx-tdots" /><span className="zx-tpg">{page.en}</span>
       </a>)}
     </section>
+    {/* 付费墙（2026-07-09 用户拍板收紧）：成册免费只看封面与目录，壹-伍章全部上锁 */}
+    <div className={unlocked ? "" : "fb-locked"}>
+      <div className={unlocked ? "" : "fb-blur"}>
     {/* 第壹章 · 性情(规则引擎直出) */}
     <section className="fb-page fb-p-nature" id="fr-nature">
       <header><h2><small>CHAPTER 01 · NATURE</small>性情</h2><span className="fb-no">壹</span></header>
@@ -275,15 +249,12 @@ export default function FateReport({ birth, profileId }: { birth: BirthInput; pr
         <div><small>更容易合拍的人</small><p>{digest.pages.nature.advice}</p></div>
       </div>
     </section>
-    {renderPage(PAGES[0])}
-    <div className={unlocked ? "" : "fb-locked"}>
-      <div className={unlocked ? "" : "fb-blur"}>
-        {PAGES.slice(1).map(renderPage)}
+        {PAGES.map(renderPage)}
       </div>
       {!unlocked && <div className="fb-unlock">
         <div className="fb-unlock-card">
-          <b>解锁叁 · 肆 · 伍章 全册评述</b>
-          <span>事业 · 人际 · 时运完整长评与建议，另含 30 页命书 PDF 下载 · {PRICE_TEXT}</span>
+          <b>解锁全册五章评述</b>
+          <span>性情 · 感情 · 事业 · 人际 · 时运完整长评与建议，另含 30 页命书 PDF 下载 · {PRICE_TEXT}</span>
           <div className="fb-unlock-row">
             <input
               value={codeInput}
@@ -300,12 +271,6 @@ export default function FateReport({ birth, profileId }: { birth: BirthInput; pr
         </div>
       </div>}
     </div>
-    {unlocked && <div className="fb-pdfrow">
-      <button className="fb-cta" onClick={downloadPdf} disabled={pdfBusy}>
-        {pdfBusy ? "正在成书…（最多约一分钟，别关页面）" : "生成 30 页命书 PDF"}
-      </button>
-      {pdfError && <span className="fb-unlock-err">{pdfError}</span>}
-    </div>}
     <div className="fb-note">本报告内容基于 FATE 模型 2.0 得出 · 图表数据可在深度报告各章逐条对账 · 不作吉凶断言</div>
   </section>;
 }
