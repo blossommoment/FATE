@@ -5,7 +5,9 @@ export type BirthInput = {
   hour: number;
   minute?: number;
   name?: string;
-  gender?: "male" | "female" | "other";
+  gender?: "male" | "female";
+  calendarType?: "solar" | "lunar";
+  isLeapMonth?: boolean;
 };
 
 export type Elements = {
@@ -22,6 +24,8 @@ export type Bazi = {
   dayPillar: string;
   hourPillar: string;
   elements: Elements;
+  elementStrength: Elements;
+  solarDate: string;
   lunarDate: string;
   previousSolarTerm: { name: string; at: string };
   nextSolarTerm: { name: string; at: string };
@@ -112,7 +116,7 @@ export type UserProfile = {
     startAgeText: string;
     startDate: string;
     currentYear: number;
-    currentAnalysis: string;
+    currentGanZhi: string;
     periods: {
       index: number;
       ganZhi: string;
@@ -120,10 +124,6 @@ export type UserProfile = {
       endYear: number;
       startAge: number;
       endAge: number;
-      stemTenGod: string;
-      branchTenGod: string;
-      theme: string;
-      analysis: string;
       isCurrent: boolean;
     }[];
   };
@@ -139,11 +139,19 @@ export type UserProfile = {
   deepAnalysis: {
     key: string;
     label: string;
+    category: "亲密与安全" | "沟通与连接" | "边界与冲突" | "成长与行动";
     score: number;
     level: string;
+    descriptor: string;
+    keywords: string[];
     summary: string;
     evidence: string[];
     note: string;
+    sceneInsights: {
+      scene: "感情中" | "人际中" | "压力下";
+      title: string;
+      text: string;
+    }[];
     logic: {
       premise: string;
       counterSignal: string;
@@ -153,18 +161,47 @@ export type UserProfile = {
       scenes: string[];
     };
   }[];
+  specialtyAnalysis: {
+    key: "intuition" | "love_structure" | "attraction" | "creative_sensitivity";
+    label: string;
+    score: number;
+    level: string;
+    descriptor: string;
+    summary: string;
+    evidence: string[];
+    caution: string;
+  }[];
 };
 
 export type MatchResult = {
   score: number;
   reasons: string[];
   analysis: string;
+  breakdown?: {
+    key: string;
+    label: string;
+    score: number;
+    weight: number;
+    contribution: number;
+    summary: string;
+    basis: string[];
+  }[];
 };
 
 export type RelationshipAnalysis = {
   score: number;
   relationType: string;
   headline: string;
+  scoreSummary: string;
+  scoreBreakdown: {
+    key: string;
+    label: string;
+    score: number;
+    weight: number;
+    contribution: number;
+    summary: string;
+    basis: string[];
+  }[];
   cards: {
     key: string;
     label: string;
@@ -174,18 +211,18 @@ export type RelationshipAnalysis = {
     advice: string;
     logic: string[];
   }[];
-  socialConversion: {
-    atmosphere: string;
-    icebreakers: string[];
-    trigger: string;
-  };
   branchDynamics: {
-    type: "冲" | "六合" | "三合" | "三会";
+    type: "冲" | "六合" | "三合" | "三会" | "天干克";
     title: string;
     branches: string[];
     userRole: string;
     partnerRole: string;
+    userPillars: string[];
+    partnerPillars: string[];
+    strength: number;
+    scoreImpact: number;
     summary: string;
+    scenarioImpact: string;
     advice: string;
   }[];
 };

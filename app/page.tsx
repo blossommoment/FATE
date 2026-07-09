@@ -11,20 +11,23 @@ export default async function Home({ searchParams }: {
     year: Number(query.year), month: Number(query.month),
     day: Number(query.day), hour: Number(query.hour),
     minute: Number(query.minute ?? 0), name: String(query.name ?? "我"),
-    gender: query.gender === "male" || query.gender === "other" ? query.gender : "female",
+    gender: query.gender === "male" ? "male" : "female",
+    calendarType: query.calendarType === "lunar" ? "lunar" : "solar",
+    isLeapMonth: query.isLeapMonth === "true",
   };
   const partnerBirth: BirthInput | undefined = query.partnerYear ? {
     year: Number(query.partnerYear), month: Number(query.partnerMonth),
     day: Number(query.partnerDay), hour: Number(query.partnerHour),
     minute: Number(query.partnerMinute ?? 0), name: String(query.partnerName ?? "TA"),
-    gender: query.partnerGender === "female" || query.partnerGender === "other" ? query.partnerGender : "male",
+    gender: query.partnerGender === "female" ? "female" : "male",
+    calendarType: query.partnerCalendarType === "lunar" ? "lunar" : "solar",
+    isLeapMonth: query.partnerIsLeapMonth === "true",
   } : undefined;
   const view = query.view === "deep" || query.view === "match" || query.view === "square" ? query.view : "overview";
-
   return (
     <>
       {(!hasBirth || view === "overview") && <Landing embeddedResult={hasBirth} />}
-      {hasBirth && <ResultContent birth={birth} embedded={view === "overview"} view={view} partnerBirth={partnerBirth} relationType={String(query.relationType ?? "恋爱")} detail={String(query.detail ?? "")} assistantQuestion={String(query.ask ?? "")} />}
+      {hasBirth && <ResultContent birth={birth} embedded={view === "overview"} view={view} partnerBirth={partnerBirth} relationType={String(query.relationType ?? "恋爱")} detail={String(query.detail ?? "")} assistantQuestion={String(query.ask ?? "")} flowYear={Number(query.flowYear ?? new Date().getFullYear())} />}
     </>
   );
 }

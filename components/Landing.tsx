@@ -26,7 +26,7 @@ const socialLabels: Record<string, string> = {
   low: "低", medium: "中等", high: "高", slow: "慢热", fast: "快速",
   secure: "安全型", anxious: "焦虑型", avoidant: "回避型",
 };
-const initialBirth: BirthInput = { year: 1998, month: 8, day: 24, hour: 14, minute: 0, gender: "female", name: "我" };
+const initialBirth: BirthInput = { year: 1998, month: 8, day: 24, hour: 14, minute: 0, gender: "female", name: "我", calendarType: "solar", isLeapMonth: false };
 
 export default function Landing({ embeddedResult = false }: { embeddedResult?: boolean }) {
   const [birth, setBirth] = useState<BirthInput>(initialBirth);
@@ -63,6 +63,7 @@ export default function Landing({ embeddedResult = false }: { embeddedResult?: b
 
   const update = (key: keyof BirthInput, value: string) => setBirth((old) => ({ ...old, [key]: Number(value) }));
   const updateGender = (value: string) => setBirth((old) => ({ ...old, gender: value as BirthInput["gender"] }));
+  const updateCalendar = (value: "solar" | "lunar") => setBirth((old) => ({ ...old, calendarType: value, isLeapMonth: value === "lunar" ? old.isLeapMonth : false }));
   const updateName = (value: string) => setBirth((old) => ({ ...old, name: value }));
 
   return (
@@ -93,13 +94,19 @@ export default function Landing({ embeddedResult = false }: { embeddedResult?: b
           <p>我们将出生信息转译为结构化人格信号。没有预言，只有可解释的关系模型。</p>
         </div>
         <form action="/" method="get">
+          <fieldset className="calendar-switch">
+            <legend>日期类型</legend>
+            <label className={birth.calendarType !== "lunar" ? "active" : ""}><input type="radio" name="calendarType" value="solar" checked={birth.calendarType !== "lunar"} onChange={() => updateCalendar("solar")} /><span>公历</span><small>阳历生日</small></label>
+            <label className={birth.calendarType === "lunar" ? "active" : ""}><input type="radio" name="calendarType" value="lunar" checked={birth.calendarType === "lunar"} onChange={() => updateCalendar("lunar")} /><span>农历</span><small>阴历生日</small></label>
+          </fieldset>
           <label><span>怎么称呼你</span><input name="name" aria-label="怎么称呼你" type="text" value={birth.name} onChange={(e) => updateName(e.target.value)} /></label>
           <label><span>出生年份</span><input name="year" aria-label="出生年份" type="number" value={birth.year} min="1900" max="2100" onChange={(e) => update("year", e.target.value)} /></label>
           <label><span>出生月份</span><input name="month" aria-label="出生月份" type="number" value={birth.month} min="1" max="12" onChange={(e) => update("month", e.target.value)} /></label>
           <label><span>出生日期</span><input name="day" aria-label="出生日期" type="number" value={birth.day} min="1" max="31" onChange={(e) => update("day", e.target.value)} /></label>
           <label><span>出生时辰（24小时）</span><input name="hour" aria-label="出生时辰" type="number" value={birth.hour} min="0" max="23" onChange={(e) => update("hour", e.target.value)} /></label>
           <label><span>出生分钟</span><input name="minute" aria-label="出生分钟" type="number" value={birth.minute ?? 0} min="0" max="59" onChange={(e) => update("minute", e.target.value)} /></label>
-          <label className="gender-field"><span>性别</span><select name="gender" aria-label="性别" value={birth.gender} onChange={(e) => updateGender(e.target.value)}><option value="female">女</option><option value="male">男</option><option value="other">其他／不透露</option></select></label>
+          {birth.calendarType === "lunar" && <label className="leap-field"><span>农历月份</span><span className="check-row"><input type="checkbox" name="isLeapMonth" value="true" checked={birth.isLeapMonth ?? false} onChange={(event) => setBirth((old) => ({ ...old, isLeapMonth: event.target.checked }))} />这是闰月</span></label>}
+          <label className="gender-field"><span>性别</span><select name="gender" aria-label="性别" value={birth.gender} onChange={(e) => updateGender(e.target.value)}><option value="female">女</option><option value="male">男</option></select></label>
           <button type="submit">生成我的八字与人格画像<span>↗</span></button>
           {error && <p className="error">{error}</p>}
         </form>

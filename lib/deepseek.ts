@@ -7,20 +7,23 @@ export async function askDeepSeek(
   evidence: string[],
 ) {
   const apiKey = process.env.DEEPSEEK_API_KEY;
+  const baseUrl = (process.env.DEEPSEEK_BASE_URL ?? "https://api.deepseek.com").replace(/\/$/, "");
+  const model = process.env.DEEPSEEK_MODEL ?? "deepseek-v4-flash";
+  const isSiliconFlow = baseUrl.includes("siliconflow.cn");
   if (!apiKey) {
     return `DeepSeek 尚未配置，当前使用本地规则回答。\n\n${explainQuestion(question, contextTitle, contextSummary, evidence)}`;
   }
 
   try {
-    const response = await fetch("https://api.deepseek.com/chat/completions", {
+    const response = await fetch(`${baseUrl}/chat/completions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "deepseek-v4-flash",
-        thinking: { type: "disabled" },
+        model,
+        ...(isSiliconFlow ? { enable_thinking: false } : { thinking: { type: "disabled" } }),
         max_tokens: 600,
         messages: [
           {
