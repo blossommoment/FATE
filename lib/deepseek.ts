@@ -1,5 +1,15 @@
 import { explainQuestion } from "./assistant";
 
+// DeepSeek 接入配置统一出口。FATE_DEEPSEEK_API_KEY 优先于 DEEPSEEK_API_KEY：
+// 防止机器全局同名变量（如本机 Hermes 栈的 DeepSeek 官方 key）顶掉 .env.local 里的项目配置——
+// Next.js 的规则是进程环境变量优先于 .env 文件，同名即被劫持且无任何报错。
+export function deepseekConfig() {
+  const apiKey = process.env.FATE_DEEPSEEK_API_KEY || process.env.DEEPSEEK_API_KEY;
+  const baseUrl = (process.env.DEEPSEEK_BASE_URL ?? "https://api.deepseek.com").replace(/\/$/, "");
+  const model = process.env.DEEPSEEK_MODEL ?? "deepseek-v4-flash";
+  return { apiKey, baseUrl, model, isSiliconFlow: baseUrl.includes("siliconflow.cn") };
+}
+
 export async function askDeepSeek(
   question: string,
   contextTitle: string,
@@ -7,10 +17,7 @@ export async function askDeepSeek(
   evidence: string[],
   detailed = false,
 ) {
-  const apiKey = process.env.DEEPSEEK_API_KEY;
-  const baseUrl = (process.env.DEEPSEEK_BASE_URL ?? "https://api.deepseek.com").replace(/\/$/, "");
-  const model = process.env.DEEPSEEK_MODEL ?? "deepseek-v4-flash";
-  const isSiliconFlow = baseUrl.includes("siliconflow.cn");
+  const { apiKey, baseUrl, model, isSiliconFlow } = deepseekConfig();
   if (!apiKey) {
     return `DeepSeek 尚未配置，当前使用本地规则回答。\n\n${explainQuestion(question, contextTitle, contextSummary, evidence)}`;
   }

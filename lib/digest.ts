@@ -33,6 +33,22 @@ const isWeak = (p: UserProfile) => p.energy.dayMaster.level === "身弱" || p.en
 
 // ── 人话标签（规则表映射，确定性）────────────────────────────────
 
+// 性情章匹配标签（规则直出，网页第壹章与 PDF 综合评定共用一份逻辑）
+export function matchTags(f: PersonalFacts): { tag: string; why: string }[] {
+  const k = f.keyScores;
+  const out: { tag: string; why: string }[] = [];
+  out.push(k.initiative < 50
+    ? { tag: "会主动的人", why: "你的推进偏内敛,先递话的人省你半程" }
+    : { tag: "接得住热情的人", why: "你惯于先手推进,对面要接得住节奏" });
+  if (k.autonomy >= 60) out.push({ tag: "给空间的人", why: "你的自留地大,不查岗是基本修养" });
+  if (k.dependency >= 60) out.push({ tag: "回应及时的人", why: "你在乎回应的温度,秒回的人天然加分" });
+  out.push(k.novelty >= 60
+    ? { tag: "能一起折腾的人", why: "你的新鲜感需求高,同频折腾才不腻" }
+    : { tag: "把日子过稳的人", why: "你的节奏求稳,细水长流最合拍" });
+  if (k.conflictExpression < 45) out.push({ tag: "愿意先开口的人", why: "你冲突时偏静音,对面先开口能救场" });
+  return out.slice(0, 4);
+}
+
 export function buildPersonaTags(p: UserProfile): PersonaTags {
   const P = p.personality;
   const social = p.socialProfile;
@@ -312,7 +328,7 @@ export const TAG_EXPLAIN: Record<string, string> = {
 // 正文禁用的命理黑话（校验器与测试共用）
 export const JARGON_RE = /食神|伤官|比肩|劫财|正印|偏印|正官|七杀|正财|偏财|日主|喜用|忌神|身弱|身强|从弱|从强|禄|刃|藏干|十神|用神/;
 
-// ── 叙述层：提示词契约、校验器、确定性兜底（成册四章版）─────────────
+// ── 叙述层：提示词契约、校验器、确定性兜底（成册五章版；兜底仅作测试样本，生产路径已改为如实报错）─────────────
 // 品牌口径（2026-07-03 拍板）：对用户呈现为「报告内容基于 FATE 模型 2.0 得出」，
 // 不出现「AI 不算命 / 基于报告生成」类免责话术；正文不引用指标数字（数据由图表呈现）。
 
@@ -478,7 +494,7 @@ export function buildPersonalFacts(p: UserProfile) {
     recommendations: buildRecommendations(p),
     contract: {
       rule: "只许转述与组织清单中的事实，不得新增任何判断或预测；正文与建议禁用命理术语，且不得出现任何指标数字（数据由图表呈现，season 章可提年龄段）；标签与推荐必须从清单给定项中选取，不得自创。",
-      output: "成册四章：封面一句话人设 + love/career/social/season 各一章（评述 + 建议一条），品牌口径为「报告内容基于 FATE 模型 2.0 得出」。",
+      output: "成册五章：封面一句话人设 + nature/love/career/social/season 各一章（评述 + 建议一条），品牌口径为「报告内容基于 FATE 模型 2.0 得出」。",
     },
   };
 }

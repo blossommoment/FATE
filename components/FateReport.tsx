@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import type { BirthInput } from "@/lib/types";
-import { TAG_EXPLAIN, type DigestPayload, type PersonalFacts, type TagHit, type TagMetric } from "@/lib/digest";
+import { TAG_EXPLAIN, matchTags, type DigestPayload, type PersonalFacts, type TagHit, type TagMetric } from "@/lib/digest";
 
-// 深度解读报告 · 成册四章（设计稿经用户 2026-07-03 定稿）
+// 深度解读报告 · 成册五章（设计稿经用户 2026-07-03 定稿；2026-07-08 补性情章）
 // 付费开关：置 true 后封面与感情章可看，贰叁肆章模糊待解锁（预览截断，接支付零返工）
 const PAYWALL_ENABLED = false;
 
@@ -36,21 +36,7 @@ function pageMetrics(tags: TagHit[]): TagMetric[] {
 const TONE_WIDTH: Record<string, number> = { boost: 74, mixed: 52, neutral: 46, drain: 32 };
 const TONE_CN: Record<string, string> = { boost: "补", mixed: "间", neutral: "平", drain: "耗" };
 
-// ---- 第壹章 性情:匹配标签规则直出(数据展示);essay 与合拍建议已改走 AI 长评 ----
-function matchTags(f: PersonalFacts): { tag: string; why: string }[] {
-  const k = f.keyScores;
-  const out: { tag: string; why: string }[] = [];
-  out.push(k.initiative < 50
-    ? { tag: "会主动的人", why: "你的推进偏内敛,先递话的人省你半程" }
-    : { tag: "接得住热情的人", why: "你惯于先手推进,对面要接得住节奏" });
-  if (k.autonomy >= 60) out.push({ tag: "给空间的人", why: "你的自留地大,不查岗是基本修养" });
-  if (k.dependency >= 60) out.push({ tag: "回应及时的人", why: "你在乎回应的温度,秒回的人天然加分" });
-  out.push(k.novelty >= 60
-    ? { tag: "能一起折腾的人", why: "你的新鲜感需求高,同频折腾才不腻" }
-    : { tag: "把日子过稳的人", why: "你的节奏求稳,细水长流最合拍" });
-  if (k.conflictExpression < 45) out.push({ tag: "愿意先开口的人", why: "你冲突时偏静音,对面先开口能救场" });
-  return out.slice(0, 4);
-}
+// ---- 第壹章 性情:匹配标签规则直出(逻辑挪至 lib/digest.ts matchTags,与 PDF 共用) ----
 // 一句话评价:取四维最高与最低,拼出厂布局
 const QUAD_PHRASE: Record<string, { high: string; low: string }> = {
   外向表达: { high: "场子热得起来", low: "话不多,但都在点上" },

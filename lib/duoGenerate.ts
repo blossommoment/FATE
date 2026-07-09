@@ -1,4 +1,5 @@
 import { buildDuoFallback, buildDuoPrompt, validateDuoPayload, type DuoDigestPayload, type DuoFacts } from "./duo";
+import { deepseekConfig } from "./deepseek";
 
 // 成册五章生成（/api/digest/duo 与 agent 报告管线共用）。
 // 契约：AI 只组织语言；校验不过重试一次→确定性兜底；网络/超时如实抛错，不拿兜底冒充（用户拍板）。
@@ -9,12 +10,8 @@ export class UpstreamTimeoutError extends Error {
 
 export async function generateDuoDigest(facts: DuoFacts): Promise<{ source: "ai" | "fallback"; digest: DuoDigestPayload }> {
   const fallback = buildDuoFallback(facts);
-  const apiKey = process.env.DEEPSEEK_API_KEY;
+  const { apiKey, baseUrl, model, isSiliconFlow } = deepseekConfig();
   if (!apiKey) return { source: "fallback", digest: fallback };
-
-  const baseUrl = (process.env.DEEPSEEK_BASE_URL ?? "https://api.deepseek.com").replace(/\/$/, "");
-  const model = process.env.DEEPSEEK_MODEL ?? "deepseek-v4-flash";
-  const isSiliconFlow = baseUrl.includes("siliconflow.cn");
   const { system, user } = buildDuoPrompt(facts);
 
   for (let attempt = 0; attempt < 2; attempt++) {
@@ -60,11 +57,8 @@ export async function generateDuoDigest(facts: DuoFacts): Promise<{ source: "ai"
 export async function translateBatch(texts: string[]): Promise<string[]> {
   const out = new Array<string>(texts.length).fill("");
   if (!texts.length) return out;
-  const apiKey = process.env.DEEPSEEK_API_KEY;
+  const { apiKey, baseUrl, model, isSiliconFlow } = deepseekConfig();
   if (!apiKey) return out; // 无 key：整份留中文，不抛错
-  const baseUrl = (process.env.DEEPSEEK_BASE_URL ?? "https://api.deepseek.com").replace(/\/$/, "");
-  const model = process.env.DEEPSEEK_MODEL ?? "deepseek-v4-flash";
-  const isSiliconFlow = baseUrl.includes("siliconflow.cn");
 
   // 分块：≤1100 字或 ≤10 段一块（块更小→单块更快→超时概率更低）
   const chunks: { start: number; items: string[] }[] = [];
@@ -122,11 +116,8 @@ export async function translateBatch(texts: string[]): Promise<string[]> {
 
 // 小型翻译调用：只翻执行摘要与目录级文本（Hermes 双语需求），失败如实抛错
 export async function translateToEnglish(chineseText: string): Promise<string> {
-  const apiKey = process.env.DEEPSEEK_API_KEY;
+  const { apiKey, baseUrl, model, isSiliconFlow } = deepseekConfig();
   if (!apiKey) throw new UpstreamTimeoutError();
-  const baseUrl = (process.env.DEEPSEEK_BASE_URL ?? "https://api.deepseek.com").replace(/\/$/, "");
-  const model = process.env.DEEPSEEK_MODEL ?? "deepseek-v4-flash";
-  const isSiliconFlow = baseUrl.includes("siliconflow.cn");
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
       const response = await fetch(`${baseUrl}/chat/completions`, {

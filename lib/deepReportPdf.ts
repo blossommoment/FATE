@@ -40,14 +40,24 @@ const LEVEL_EN: Record<string, string> = { 从强: "Follow-Strong", 身强: "Str
 const GOD_EN: Record<string, string> = { 比肩: "Friend", 劫财: "Rival", 食神: "Output", 伤官: "Hurting Officer", 正财: "Direct Wealth", 偏财: "Indirect Wealth", 正官: "Direct Officer", 七杀: "Seven Killings", 正印: "Direct Resource", 偏印: "Indirect Resource" };
 // 十二长生（日主在各柱地支的生旺死绝状态）
 const STAGE_EN: Record<string, string> = { 长生: "Growth", 沐浴: "Bath", 冠带: "Maturing", 临官: "Rising", 帝旺: "Peak", 衰: "Waning", 病: "Ailing", 死: "Fading", 墓: "Tomb", 绝: "Void", 胎: "Seed", 养: "Nurture" };
+// 定格（古法）格名中英对照——固定集合走静态表，不进翻译批次
+const PATTERN_EN: Record<string, string> = {
+  曲直格: "Wood Unity (Qu-Zhi)", 炎上格: "Fire Unity (Yan-Shang)", 稼穑格: "Earth Unity (Jia-Se)", 从革格: "Metal Unity (Cong-Ge)", 润下格: "Water Unity (Run-Xia)",
+  杀印相生: "Killings Feeding Resource", 官印相生: "Officer Feeding Resource", 食神制杀: "Output Taming Killings", 伤官配印: "Hurting Officer with Resource",
+  财官双美: "Wealth & Officer in Concert", 食伤生财: "Output Generating Wealth", 财滋七杀: "Wealth Feeding Killings",
+  正官格: "Direct Officer Structure", 七杀格: "Seven Killings Structure", 正财格: "Direct Wealth Structure", 偏财格: "Indirect Wealth Structure",
+  正印格: "Direct Resource Structure", 偏印格: "Indirect Resource Structure", 食神格: "Output Structure", 伤官格: "Hurting Officer Structure",
+  建禄格: "Jianlu (Peer-Root) Structure", 阳刃格: "Yang Blade Structure",
+};
 const godT = (lang: "zh" | "en", god: string) => lang === "en" ? (GOD_EN[god] ?? god) : god;
+const patternT = (lang: "zh" | "en", name: string) => lang === "en" ? (PATTERN_EN[name] ?? name) : name;
 const stageT = (lang: "zh" | "en", stage: string) => lang === "en" ? (STAGE_EN[stage] ?? stage) : stage;
 const levelT = (lang: "zh" | "en", level: string) => lang === "en" ? (LEVEL_EN[level] ?? level) : level;
 
 type ChapterText = { essay: string; advice: string };
 export type DeepDigest = { source: "ai" | "fallback"; headline: string; pages: { nature: ChapterText; love: ChapterText; career: ChapterText; social: ChapterText; season: ChapterText } };
 
-export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "en"; reportId: string; generatedAt: string; digest?: DeepDigest; tags?: PersonaTags }): Promise<Buffer> {
+export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "en"; reportId: string; generatedAt: string; digest?: DeepDigest; tags?: PersonaTags; natureTags?: { tag: string; why: string }[] }): Promise<Buffer> {
   const lang = opts.lang;
   const hei = HEI.find((c) => c && existsSync(c));
   const kai = KAI.find((c) => c && existsSync(c));
@@ -141,20 +151,21 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
       doc.font("kai").fontSize(19).fillColor(CINNABAR).text(`${T(lang, "「", "“")}${opts.digest.headline}${T(lang, "」", "”")}`, ML, doc.y, { width: W, lineGap: EN ? 3 : 0 });
       doc.moveDown(EN ? 0.55 : 0.3);
     }
-    doc.font("hei").fontSize(10.5).fillColor(SUB).text(`${T(lang, "性格特点", "Character")}${T(lang, "：", ": ")}${profile.archetype} · ${profile.dominantPersona.name}${T(lang, "（", " (")}${godT(lang, profile.dominantPersona.god)}${T(lang, "）", ")")}`, ML, doc.y, { width: W });
+    doc.font("hei").fontSize(10.5).fillColor(SUB).text(`${T(lang, "性格特点", "Character")}${T(lang, "：", ": ")}${profile.archetype} · ${profile.dominantPersona.name}${T(lang, "（", " (")}${godT(lang, profile.dominantPersona.god)}${T(lang, "）", ")")} · ${T(lang, "定格", "Pattern")} ${patternT(lang, profile.pattern.name)}`, ML, doc.y, { width: W });
     doc.moveDown(EN ? 0.4 : 0.2);
     para(profile.combinedPersona.summary, INK, 11);
     doc.moveDown(EN ? 0.55 : 0.3);
-    // 四域：标签 → 触发指标 → AI 评述 → 建议
-    const domains: { tagKey: keyof PersonaTags; pageKey: keyof DeepDigest["pages"]; zh: string; en: string; color: string }[] = [
-      { tagKey: "love", pageKey: "love", zh: "感情", en: "Love", color: "#c96f7d" },
-      { tagKey: "career", pageKey: "career", zh: "事业", en: "Career", color: "#bf9a4e" },
-      { tagKey: "social", pageKey: "social", zh: "人际", en: "Social", color: "#4f9d6b" },
-      { tagKey: "energy", pageKey: "season", zh: "时运", en: "Timing", color: "#4a7fb0" },
+    // 五域（与网页成册五章对齐）：标签 → 触发指标 → AI 评述 → 建议；性情章标签走 matchTags、建议名为「更容易合拍的人」
+    const domains: { tagKey?: keyof PersonaTags; pageKey: keyof DeepDigest["pages"]; zh: string; en: string; color: string; adviceZh: string; adviceEn: string }[] = [
+      { pageKey: "nature", zh: "性情", en: "Nature", color: "#7a5f28", adviceZh: "更容易合拍的人", adviceEn: "Who fits you" },
+      { tagKey: "love", pageKey: "love", zh: "感情", en: "Love", color: "#c96f7d", adviceZh: "建议", adviceEn: "Advice" },
+      { tagKey: "career", pageKey: "career", zh: "事业", en: "Career", color: "#bf9a4e", adviceZh: "建议", adviceEn: "Advice" },
+      { tagKey: "social", pageKey: "social", zh: "人际", en: "Social", color: "#4f9d6b", adviceZh: "建议", adviceEn: "Advice" },
+      { tagKey: "energy", pageKey: "season", zh: "时运", en: "Timing", color: "#4a7fb0", adviceZh: "建议", adviceEn: "Advice" },
     ];
     let first = true;
     for (const dom of domains) {
-      const hits = opts.tags?.[dom.tagKey] ?? [];
+      const hits: { tag: string }[] = dom.tagKey ? opts.tags?.[dom.tagKey] ?? [] : opts.natureTags ?? [];
       const page = opts.digest?.pages[dom.pageKey];
       ensure(80);
       if (!first) doc.moveDown(EN ? 0.6 : 0.35);
@@ -174,10 +185,22 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
         }
         doc.x = ML; doc.y += EN ? 30 : 24;
       }
-      // AI 评述 + 建议
+      // 性情章附四维数据条（与网页「DATA · 性情四维」对齐）
+      if (dom.pageKey === "nature") {
+        const quad: [string, number][] = [
+          [T(lang, "外向表达", "Extroversion"), profile.personality.extroversion],
+          [T(lang, "情绪稳定", "Stability"), profile.personality.stability],
+          [T(lang, "边界控制", "Boundary Control"), profile.personality.control],
+          [T(lang, "情感感知", "Emotional Radar"), profile.personality.emotion],
+        ];
+        mono(T(lang, "DATA · 性情四维", "DATA · TEMPERAMENT QUAD"));
+        for (const [label, value] of quad) colorBar(label, value, 100, dom.color, { labelW: 120 });
+        doc.moveDown(0.25);
+      }
+      // AI 评述 + 建议（性情章为「更容易合拍的人」）
       if (page) {
         para(page.essay, INK, 11);
-        labeled(T(lang, "建议", "Advice"), page.advice, dom.color);
+        labeled(T(lang, dom.adviceZh, dom.adviceEn), page.advice, dom.color);
       }
       doc.moveDown(0.5);
     }
@@ -296,6 +319,12 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
   doc.moveDown(0.3);
   labeled(T(lang, "行为底色", "Behaviour"), dp.behavior, CINNABAR);
   labeled(T(lang, "关系里", "In relationships"), dp.relationship, CINNABAR);
+  doc.moveDown(0.4);
+  // 定格（古法）——与网页人格建模区的「定格 · 古法」卡对齐
+  h2(T(lang, "定格 · 古法", "Classical Pattern"));
+  doc.font("kai").fontSize(17).fillColor(GOLD).text(patternT(lang, profile.pattern.name), ML, doc.y, { width: W });
+  doc.moveDown(0.2);
+  para(profile.pattern.basis, SUB, 10);
   doc.moveDown(0.4);
   h2(T(lang, "副轴与配轴", "Secondary Threads"));
   const sp = profile.secondaryPersona;

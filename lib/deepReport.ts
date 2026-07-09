@@ -1,12 +1,13 @@
 import { randomUUID } from "node:crypto";
 import { analyzeBirth, validateBirth } from "./fate";
-import { buildDigestPrompt, buildFallbackDigest, buildPersonaTags, buildPersonalFacts, validateDigestPayload, type PersonaTags } from "./digest";
+import { buildDigestPrompt, buildPersonaTags, buildPersonalFacts, matchTags, validateDigestPayload, type PersonaTags } from "./digest";
 import { translateBatch } from "./duoGenerate";
+import { deepseekConfig } from "./deepseek";
 import { buildDeepReportPdf, type DeepDigest } from "./deepReportPdf";
 import type { BirthInput, UserProfile } from "./types";
 
-// 单人深度报告管线：规则引擎全内容（十二维铺开）+ 后端 DeepSeek 压轴四章评述。
-// 中文：AI 生成即出（超时走确定性兜底，不拖垮报告）；英文：全文加一次翻译。语言由调用方选。
+// 单人深度报告管线：规则引擎全内容（十二维铺开）+ 后端 DeepSeek 压轴五章评述。
+// AI 失败即如实报错（2026-07-09 用户拍板：不拿兜底文冒充 AI），调用方可重试；英文：全文加一次翻译。
 
 export type DeepReportInput = { birth: BirthInput; lang: "zh" | "en" };
 
@@ -19,16 +20,12 @@ export function validateDeepInput(body: unknown): { input?: DeepReportInput; err
   return { input: { birth: raw.birth, lang } };
 }
 
-// 后端 DeepSeek 生成四章评述；校验不过重试一次；超时/失败走确定性兜底（报告永不因此失败）
+// 后端 DeepSeek 生成五章评述；校验不过或网络失败均重试一次；两轮全败如实抛错（不落兜底）
 async function generatePersonalDigest(facts: ReturnType<typeof buildPersonalFacts>): Promise<DeepDigest> {
-  const fallback = buildFallbackDigest(facts) as DeepDigest;
-  fallback.source = "fallback";
-  const apiKey = process.env.DEEPSEEK_API_KEY;
-  if (!apiKey) return fallback;
-  const baseUrl = (process.env.DEEPSEEK_BASE_URL ?? "https://api.deepseek.com").replace(/\/$/, "");
-  const model = process.env.DEEPSEEK_MODEL ?? "deepseek-v4-flash";
-  const isSiliconFlow = baseUrl.includes("siliconflow.cn");
+  const { apiKey, baseUrl, model, isSiliconFlow } = deepseekConfig();
+  if (!apiKey) throw new Error("服务端未配置 AI 服务，评述无法生成。");
   const { system, user } = buildDigestPrompt(facts);
+  let lastError = "上游无响应";
   for (let attempt = 0; attempt < 2; attempt++) {
     let content = "";
     try {
@@ -45,14 +42,18 @@ async function generatePersonalDigest(facts: ReturnType<typeof buildPersonalFact
       if (!response.ok) throw new Error(`DeepSeek ${response.status}`);
       const data = await response.json() as { choices?: { message?: { content?: string } }[] };
       content = data.choices?.[0]?.message?.content?.trim() ?? "";
-    } catch { break; }
+    } catch (error) {
+      lastError = error instanceof Error ? error.message : String(error);
+      continue; // 网络/超时同样重试，不再静默降级
+    }
     try {
       const parsed = JSON.parse(content.replace(/^```json\s*|```$/g, ""));
       const valid = validateDigestPayload(parsed, facts);
       if (valid) return { source: "ai", headline: valid.headline, pages: valid.pages };
-    } catch { /* 重试 */ }
+      lastError = "AI 输出未通过校验";
+    } catch { lastError = "AI 输出不是完整 JSON"; /* 重试 */ }
   }
-  return fallback;
+  throw new Error(`AI 评述生成失败（${lastError}），请稍后重试。`);
 }
 
 // 收集需翻译的中文散文（命理术语在渲染层已中英对照）
@@ -60,6 +61,7 @@ function collectProse(p: UserProfile, digest: DeepDigest): string[] {
   const set = new Set<string>();
   const add = (s?: string) => { const t = (s ?? "").trim(); if (t) set.add(t); };
   add(p.archetype); add(p.combinedPersona.name); add(p.combinedPersona.summary);
+  add(p.pattern.basis); // 定格依据（格名走渲染层静态对照，不进翻译批次）
   add(p.dominantPersona.name); add(p.dominantPersona.drive);
   p.energy.dayMaster.reasons.forEach(add);
   p.energy.trace.forEach((t) => add(t.note));
@@ -80,6 +82,7 @@ function collectProse(p: UserProfile, digest: DeepDigest): string[] {
 function translateProfile(p: UserProfile, tr: (s: string) => string): UserProfile {
   return {
     ...p, archetype: tr(p.archetype),
+    pattern: { name: p.pattern.name, basis: tr(p.pattern.basis) },
     combinedPersona: { name: tr(p.combinedPersona.name), summary: tr(p.combinedPersona.summary) },
     dominantPersona: { ...p.dominantPersona, name: tr(p.dominantPersona.name), drive: tr(p.dominantPersona.drive) },
     energy: { ...p.energy, dayMaster: { ...p.energy.dayMaster, reasons: p.energy.dayMaster.reasons.map(tr) }, trace: p.energy.trace.map((t) => ({ ...t, note: t.note ? tr(t.note) : t.note })) },
@@ -104,12 +107,14 @@ export async function buildDeepReport(input: DeepReportInput): Promise<{ reportI
 
   let digest = await generatePersonalDigest(facts);
   let tags = buildPersonaTags(profile);
+  let natureTags = matchTags(facts);
   let rendered = profile;
 
   if (input.lang === "en") {
-    // 翻译池含综合评定标签名与指标 label
+    // 翻译池含综合评定标签名与指标 label、性情章匹配标签
     const tagStrings = new Set<string>();
     (Object.values(tags) as PersonaTags[keyof PersonaTags][]).forEach((hits) => hits.forEach((h) => { tagStrings.add(h.tag); h.metrics.forEach((m) => tagStrings.add(m.label)); }));
+    natureTags.forEach((t) => { tagStrings.add(t.tag); tagStrings.add(t.why); });
     const prose = [...collectProse(profile, digest), ...tagStrings];
     const translations = await translateBatch(prose);
     const map = new Map<string, string>();
@@ -117,6 +122,7 @@ export async function buildDeepReport(input: DeepReportInput): Promise<{ reportI
     const tr = (s: string) => map.get((s ?? "").trim()) || s;
     rendered = translateProfile(profile, tr);
     tags = Object.fromEntries(Object.entries(tags).map(([k, hits]) => [k, hits.map((h) => ({ tag: tr(h.tag), metrics: h.metrics.map((m) => ({ ...m, label: tr(m.label) })) }))])) as PersonaTags;
+    natureTags = natureTags.map((t) => ({ tag: tr(t.tag), why: tr(t.why) }));
     digest = { source: digest.source, headline: tr(digest.headline), pages: {
       nature: { essay: tr(digest.pages.nature.essay), advice: tr(digest.pages.nature.advice) },
       love: { essay: tr(digest.pages.love.essay), advice: tr(digest.pages.love.advice) },
@@ -126,6 +132,6 @@ export async function buildDeepReport(input: DeepReportInput): Promise<{ reportI
     } };
   }
 
-  const pdf = await buildDeepReportPdf(rendered, { lang: input.lang, reportId, generatedAt, digest, tags });
+  const pdf = await buildDeepReportPdf(rendered, { lang: input.lang, reportId, generatedAt, digest, tags, natureTags });
   return { reportId, pdf };
 }

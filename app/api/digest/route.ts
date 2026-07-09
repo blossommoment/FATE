@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import { analyzeBirth, validateBirth } from "@/lib/fate";
-import { buildDigestPrompt, buildFallbackDigest, buildPersonalFacts, validateDigestPayload } from "@/lib/digest";
+import { buildDigestPrompt, buildPersonalFacts, validateDigestPayload } from "@/lib/digest";
+import { deepseekConfig } from "@/lib/deepseek";
 import type { BirthInput } from "@/lib/types";
 
 export const maxDuration = 150; // SiliconFlow DeepSeek-V3.2 实测单次 ~50-80s
 
 // 深度解读报告生成端点（REQ_AI_DIGEST）
-// 契约：AI 只组织语言，事实与标签全部来自规则引擎；校验不过重试一次，再不过走确定性兜底。
+// 契约：AI 只组织语言，事实与标签全部来自规则引擎；校验不过或网络失败均重试一次，
+// 两轮全败则如实报错（2026-07-09 用户拍板：不要兜底文冒充 AI 评述），前端显示失败态可重试。
 // 缓存策略在客户端按 profile.id 落 localStorage（付费功能：点击触发，一次生成反复看）。
 
 export async function POST(request: Request) {
@@ -21,16 +23,13 @@ export async function POST(request: Request) {
 
   const profile = analyzeBirth(birth);
   const facts = buildPersonalFacts(profile);
-  const fallback = buildFallbackDigest(facts);
 
-  const apiKey = process.env.DEEPSEEK_API_KEY;
-  if (!apiKey) return NextResponse.json({ source: "fallback", profileId: profile.id, digest: fallback, facts });
+  const { apiKey, baseUrl, model, isSiliconFlow } = deepseekConfig();
+  if (!apiKey) return NextResponse.json({ error: "服务端未配置 AI 服务，报告暂时无法生成。" }, { status: 503 });
 
-  const baseUrl = (process.env.DEEPSEEK_BASE_URL ?? "https://api.deepseek.com").replace(/\/$/, "");
-  const model = process.env.DEEPSEEK_MODEL ?? "deepseek-v4-flash";
-  const isSiliconFlow = baseUrl.includes("siliconflow.cn");
   const { system, user } = buildDigestPrompt(facts);
 
+  let lastError = "上游无响应";
   for (let attempt = 0; attempt < 2; attempt++) {
     let content = "";
     try {
@@ -56,14 +55,16 @@ export async function POST(request: Request) {
       if (!response.ok) throw new Error(`DeepSeek ${response.status}`);
       const data = await response.json() as { choices?: { message?: { content?: string } }[] };
       content = data.choices?.[0]?.message?.content?.trim() ?? "";
-    } catch {
-      break; // 网络/超时类失败：重试大概率同样失败，直接落兜底
+    } catch (error) {
+      lastError = error instanceof Error ? error.message : String(error);
+      continue; // 网络/超时类失败同样重试，不再静默降级
     }
     try {
       const parsed = JSON.parse(content.replace(/^```json\s*|```$/g, ""));
       const valid = validateDigestPayload(parsed, facts);
       if (valid) return NextResponse.json({ source: "ai", profileId: profile.id, digest: valid, facts });
-    } catch { /* 内容问题（截断/格式）：带纠正提示重试一次 */ }
+      lastError = "AI 输出未通过校验";
+    } catch { lastError = "AI 输出不是完整 JSON"; /* 内容问题（截断/格式）：带纠正提示重试一次 */ }
   }
-  return NextResponse.json({ source: "fallback", profileId: profile.id, digest: fallback, facts });
+  return NextResponse.json({ error: `AI 评述生成失败（${lastError}），请稍后重试。` }, { status: 502 });
 }
