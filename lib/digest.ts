@@ -3,6 +3,7 @@
 // 并打包成 buildPersonalFacts —— AI 叙述层的唯一输入。
 // 铁律：标签与候选池由规则表定，AI 只做挑选与措辞；正文零命理黑话，术语只进括号依据。
 
+import { analyzeAnnualFlow } from "./fate";
 import type { Elements, UserProfile } from "./types";
 
 // 标签命中时同时交出判定指标（t 为触发阈值，图表上画成刻度线）
@@ -47,6 +48,40 @@ export function matchTags(f: PersonalFacts): { tag: string; why: string }[] {
     : { tag: "把日子过稳的人", why: "你的节奏求稳,细水长流最合拍" });
   if (k.conflictExpression < 45) out.push({ tag: "愿意先开口的人", why: "你冲突时偏静音,对面先开口能救场" });
   return out.slice(0, 4);
+}
+
+// ── 结构与流年事实（2026-07-09 用户拍板「引擎深化 + AI 深断语」，喂给成册第陆章）──────
+// 旗标转人话：引擎原词（禄根/喜用等）留给 UI 徽章，进 AI 清单与兜底正文的一律先翻译，防术语回流。
+const FLAG_SCENE: Record<string, string> = {
+  冲及日主禄根: "动的是你自己站桩的根——这组冲牵动的是你本人的状态与底气",
+  冲及日主之根: "牵动你自己扎根的位置，不只是外部的事",
+  合向喜用: "这股合力对你是顺的，黏合得越紧越省力",
+  合向忌神: "这股合力偏耗你，黏合越紧越费电",
+  半局待引: "平时半睡，遇到补上缺角的人或年份才真正启动",
+};
+const flagScene = (flag: string) => flag.startsWith("倍冲")
+  ? "同一款冲在盘里不止一份，是反复出现的主题"
+  : flag.startsWith("喜用之根")
+    ? "给你补气的来源被扰动，状态起伏会比别人明显"
+    : FLAG_SCENE[flag] ?? "";
+
+export function buildStructureFacts(p: UserProfile) {
+  const flow = analyzeAnnualFlow(p, p.luckCycles.currentGanZhi);
+  return {
+    points: p.specialPoints.map((point) => ({
+      type: point.type,
+      title: point.title,
+      palaces: point.palaces,
+      keynotes: point.flags.map(flagScene).filter(Boolean),
+      scene: point.summary,
+    })),
+    thisYear: {
+      ganZhi: p.luckCycles.currentGanZhi,
+      verdict: flow.verdict.label,
+      hits: flow.interactions.map((item) => ({ title: item.title, scene: item.summary })),
+      specials: flow.specials.map((item) => item.name),
+    },
+  };
 }
 
 export function buildPersonaTags(p: UserProfile): PersonaTags {
@@ -336,7 +371,8 @@ export type ReportPageText = { essay: string; advice: string };
 export type DigestPayload = {
   headline: string; // 封面一句话人设，≤15字
   // 2026-07-08 用户拍板 A：性情章(nature)由前端模板改为 AI 长评，与贰-伍章同管线
-  pages: { nature: ReportPageText; love: ReportPageText; career: ReportPageText; social: ReportPageText; season: ReportPageText };
+  // 2026-07-09 用户拍板：加第陆章 structure（冲合与流年深断语），锁进付费墙
+  pages: { nature: ReportPageText; love: ReportPageText; career: ReportPageText; social: ReportPageText; season: ReportPageText; structure: ReportPageText };
 };
 
 const STYLE_EXAMPLE = "你是先观察再靠近的人。别人用三次约会决定的事，你需要更久——不是犹豫，是你的信任系统出厂就设定了人工审核，每一条暧昧信号都要过一遍你的警觉雷达。你不太把喜欢挂在嘴上，但你记得对方随口提过的忌口；你的爱是把日子排进计划表，是稳定出现，而不是热烈宣言。最消耗你的，是节奏被强行加速、以及边界被反复试探的关系。";
@@ -344,13 +380,13 @@ const STYLE_EXAMPLE = "你是先观察再靠近的人。别人用三次约会决
 export function buildDigestPrompt(facts: ReturnType<typeof buildPersonalFacts>): { system: string; user: string } {
   return {
     system: [
-      "你是 FATE 深度解读报告的撰稿人。输入是 FATE 模型 2.0 已算好的个人事实清单（JSON），你负责把它写成五章报告正文。",
+      "你是 FATE 深度解读报告的撰稿人。输入是 FATE 模型 2.0 已算好的个人事实清单（JSON），你负责把它写成六章报告正文。",
       "输出严格为 JSON（不要 markdown 代码块）：",
-      `{"headline":"封面一句话人设，15字以内","pages":{"nature":{"essay":"性情章评述，160~220字","advice":"更容易合拍的人一条，40~70字"},"love":{"essay":"感情章评述，180~240字","advice":"给这个人的相处建议一条，40~70字"},"career":{"essay":"事业章评述，180~240字","advice":"落地行动建议一条，40~70字"},"social":{"essay":"人际章评述，160~220字","advice":"人际建议一条，40~70字"},"season":{"essay":"时运章评述，160~220字，可提及年龄段","advice":"当下策略一条，40~70字"}}}`,
+      `{"headline":"封面一句话人设，15字以内","pages":{"nature":{"essay":"性情章评述，160~220字","advice":"更容易合拍的人一条，40~70字"},"love":{"essay":"感情章评述，180~240字","advice":"给这个人的相处建议一条，40~70字"},"career":{"essay":"事业章评述，180~240字","advice":"落地行动建议一条，40~70字"},"social":{"essay":"人际章评述，160~220字","advice":"人际建议一条，40~70字"},"season":{"essay":"时运章评述，160~220字，可提及年龄段","advice":"当下策略一条，40~70字"},"structure":{"essay":"结构与流年章评述，180~240字","advice":"当下应对一条，40~70字"}}}`,
       "铁律：",
-      "1. 事实只能来自清单，不得新增判断或预测；每章评述围绕清单里该域展开（nature→dominantAxis+secondaryAxis+attachment+personality 性格四维，写这个人的底色气质与依恋方式；love→tags.love，career→tags.career+recommendations，social→tags.social，season→currentPhase+environments）。",
-      "2. 正文与建议里【禁止出现任何数字和指标名】——数据已由图表呈现，你只写人话（season 章可写年龄段如「二十多岁这步」或阿拉伯年龄段）。",
-      "3. 禁止命理术语（十神、五行、格局、喜用等字眼一律不得出现）；禁止吉凶断言与「注定/命中」类词。",
+      "1. 事实只能来自清单，不得新增判断或预测；每章评述围绕清单里该域展开（nature→dominantAxis+secondaryAxis+attachment+personality 性格四维，写这个人的底色气质与依恋方式；love→tags.love，career→tags.career+recommendations，social→tags.social，season→currentPhase+environments；structure→structure：points 的宫位落点 palaces 与要点 keynotes + thisYear 今年流年触发，写清「哪块领域的日子会长什么样」，scene 字段只作背景理解、不得照抄其中术语）。",
+      "2. 正文与建议里【禁止出现任何数字和指标名】——数据已由图表呈现，你只写人话（season 章可写年龄段如「二十多岁这步」或阿拉伯年龄段；structure 章可写「哪一年」与「几组」）。",
+      "3. 禁止命理术语（十神、五行、格局、喜用等字眼一律不得出现）；禁止吉凶断言与「注定/命中」类词。唯一放行：structure 章可点名「冲/合/会」「某某宫」与地支字（如子午冲、婚姻宫）——但十神名、禄刃、喜用忌神仍然全禁，用 keynotes 里的人话转述。",
       "4. 第二人称，开篇即「你是……的人」式的判断句；写具体场景，不写星座号横行的空话。",
       `风格样例（感情章）：${STYLE_EXAMPLE}`,
     ].join("\n"),
@@ -367,12 +403,12 @@ export function validateDigestPayload(raw: unknown, _facts: ReturnType<typeof bu
   if (typeof d.headline !== "string" || d.headline.length === 0 || d.headline.length > 24) return null;
   const pages = d.pages;
   if (!pages) return null;
-  const keys = ["nature", "love", "career", "social", "season"] as const;
+  const keys = ["nature", "love", "career", "social", "season", "structure"] as const;
   for (const key of keys) {
     const page = pages[key];
     if (!page || typeof page.essay !== "string" || typeof page.advice !== "string") return null;
     if (page.essay.length < 90 || page.advice.length < 15) return null;
-    if (key !== "season" && DIGIT_RE.test(page.essay + page.advice)) return null; // 正文不引数字
+    if (key !== "season" && key !== "structure" && DIGIT_RE.test(page.essay + page.advice)) return null; // 正文不引数字（时运/结构章放行年份与组数）
   }
   const everything = [d.headline, ...keys.flatMap((k) => [pages[k]!.essay, pages[k]!.advice])].join("");
   if (JARGON_RE.test(everything)) return null; // 正文零命理黑话
@@ -432,6 +468,19 @@ export function buildFallbackDigest(facts: ReturnType<typeof buildPersonalFacts>
         essay: `${r.currentPhase}${ex(facts.seasonStamps.environment.tag)}——环境对你不是背景板，是补给线的一部分。把居住和工作的地方选对，等于给自己常年开着一台回血机。`,
         advice: seasonAdvice,
       },
+      structure: (() => {
+        // 结构章兜底（确定性）：首点宫位+要点 + 今年触发，零术语（keynotes 已人话化）
+        const st = facts.structure;
+        const point = st.points[0];
+        const hit = st.thisYear.hits[0];
+        return point ? {
+          essay: `你盘里最醒目的一组结构是${point.title}，落在${point.palaces.join("、")}。${point.keynotes[0] ?? "它不定吉凶，只标出你日子里反复出现的主题"}。今年${st.thisYear.ganZhi}年，${hit ? `流年把它又碰了一下：${hit.title}——同类的事这一年更容易叠着来` : "流年没有强触发，这一年的节奏更多由现实安排决定"}。结构是地形不是判决：知道坡在哪，路就好走。`,
+          advice: `把${point.palaces[0] ?? "被点名的领域"}里的大事错峰安排，别让两头一起烧——结构提醒的是排期，不是命运。`,
+        } : {
+          essay: `你的原局没有成形的冲合结构，底盘干净：日子里的起伏更多来自现实安排，而不是盘里自带的拉扯。今年${st.thisYear.ganZhi}年${hit ? `唯一要留意的是${hit.title}，同类的事更容易扎堆出现` : "流年也没有强触发，是一段按自己节奏走的平顺时光"}。地形平整，路怎么走全看你自己。`,
+          advice: "没有结构债要还，把力气花在想去的方向上就好；平顺不是空档，是攒本钱的窗口。",
+        };
+      })(),
     },
   };
 }
@@ -490,11 +539,12 @@ export function buildPersonalFacts(p: UserProfile) {
     tenGodStructure: p.tenGodAnalysis.map(({ label, score }) => ({ label, score })),
     dominantAxis: { god: p.dominantPersona.god, theme: GROUP_LABEL[godGroup(p.dominantPersona.god)] },
     secondaryAxis: { god: p.secondaryPersona.god, theme: GROUP_LABEL[godGroup(p.secondaryPersona.god)] },
+    structure: buildStructureFacts(p),
     tags: buildPersonaTags(p),
     recommendations: buildRecommendations(p),
     contract: {
       rule: "只许转述与组织清单中的事实，不得新增任何判断或预测；正文与建议禁用命理术语，且不得出现任何指标数字（数据由图表呈现，season 章可提年龄段）；标签与推荐必须从清单给定项中选取，不得自创。",
-      output: "成册五章：封面一句话人设 + nature/love/career/social/season 各一章（评述 + 建议一条），品牌口径为「报告内容基于 FATE 模型 2.0 得出」。",
+      output: "成册六章：封面一句话人设 + nature/love/career/social/season/structure 各一章（评述 + 建议一条），品牌口径为「报告内容基于 FATE 模型 2.0 得出」。",
     },
   };
 }

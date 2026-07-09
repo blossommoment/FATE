@@ -79,11 +79,11 @@ describe("叙述层（成册四章）：提示词契约、校验器、兜底", (
     const fb = buildFallbackDigest(facts);
     expect(fb).toEqual(buildFallbackDigest(buildPersonalFacts(analyzeBirth(owner))));
     expect(fb.headline.length).toBeGreaterThan(0);
-    (["nature", "love", "career", "social", "season"] as const).forEach((key) => {
+    (["nature", "love", "career", "social", "season", "structure"] as const).forEach((key) => {
       expect(fb.pages[key].essay.length).toBeGreaterThanOrEqual(90);
       expect(fb.pages[key].advice.length).toBeGreaterThanOrEqual(15);
       expect(JARGON.test(fb.pages[key].essay + fb.pages[key].advice), `${key} 章含黑话`).toBe(false);
-      if (key !== "season") expect(DIGIT.test(fb.pages[key].essay + fb.pages[key].advice), `${key} 章正文含数字`).toBe(false);
+      if (key !== "season" && key !== "structure") expect(DIGIT.test(fb.pages[key].essay + fb.pages[key].advice), `${key} 章正文含数字`).toBe(false);
     });
     expect(validateDigestPayload(fb, facts)).not.toBeNull(); // 兜底自身必须过校验
   });

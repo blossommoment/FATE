@@ -127,6 +127,21 @@ body:has(.zwxr),body:has(.zx-galaxy){background:#070613}
 .zwxr .deep-radar-overview{background:linear-gradient(135deg,#f8f3e6,#f2ead6 65%,#eee2c8);border:1px solid var(--zr-line)}
 .zwxr .duo-radar-panel{background:linear-gradient(145deg,#f8f3e6,#f0e7d2);border:1px solid var(--zr-line)}
 .zwxr .deep-radar-chart>span,.zwxr .duo-radar-chart>span{background:rgba(255,252,244,.88);border:1px solid var(--zr-line);color:#4a4457}
+/* 双人六维图纸面重调(2026-07-09 用户指出白网格白字压米纸隐形;单人雷达当时调了双人版漏了) */
+.zwxr .duo-radar-panel{color:#2f2a3c}
+.zwxr .duo-radar-panel>header span{color:#a6392b}
+.zwxr .duo-radar-panel h3{color:var(--ink)}
+.zwxr .duo-legend{color:#6f6754}
+.zwxr .duo-legend i{background:#3d7d54}
+.zwxr .duo-legend b{background:#a6392b}
+.zwxr .duo-radar-chart .radar-grid-line{fill:transparent;stroke:rgba(118,92,50,.32)}
+.zwxr .duo-radar-chart line{stroke:rgba(118,92,50,.22)}
+.zwxr .duo-radar-chart .duo-mine{fill:rgba(61,125,84,.16);stroke:#3d7d54}
+.zwxr .duo-radar-chart .duo-theirs{fill:rgba(166,57,43,.13);stroke:#a6392b}
+.zwxr .duo-radar-chart .duo-dot-mine{fill:#3d7d54;stroke:#f6f0e0}
+.zwxr .duo-radar-chart .duo-dot-theirs{fill:#a6392b;stroke:#f6f0e0}
+.zwxr .duo-radar-chart svg{filter:drop-shadow(0 10px 18px rgba(90,70,40,.2))}
+.zwxr .duo-radar-chart>span b{color:#a6392b}
 .zwxr .element-radar-card{background:linear-gradient(145deg,#f8f3e6,#f0e7d2)!important;border:1px solid var(--zr-line)}
 .zwxr .element-grid{fill:rgba(255,252,244,.6);stroke:rgba(118,92,50,.35)}
 .zwxr .element-radar svg{filter:drop-shadow(0 10px 18px rgba(90,70,40,.25))}
@@ -149,6 +164,11 @@ body:has(.zwxr),body:has(.zx-galaxy){background:#070613}
 .zwxr .annual-detail{color:var(--zr-soft);background:linear-gradient(125deg,color-mix(in srgb,var(--annual) 13%,#f8f2e2),#f3ecd9)}
 .zwxr .special-point-list>article.special-冲{background:linear-gradient(120deg,rgba(176,67,47,.10),rgba(250,246,235,.9))}
 .zwxr .compact-pillars>div{background:rgba(255,252,244,.6)}
+/* 合盘四柱日柱块:通底刷纸后白字隐形(2026-07-09 用户指出)——日柱钉回墨底,字回纸色 */
+.zwxr .compact-pillars>div.compact-day{background:linear-gradient(150deg,#2f4a42,#3b3548)}
+.zwxr .compact-pillars>div.compact-day>strong{color:#f6efdd}
+.zwxr .compact-day p,.zwxr .compact-day>span{color:#e8dfc8!important}
+.zwxr .compact-day p small,.zwxr .compact-day>span small{color:#bfb49a}
 .zwxr .partner-form{background:rgba(255,252,244,.55)}
 .zwxr .partner-form label{background:rgba(255,252,244,.6)}
 .zwxr .relationship-score{background:linear-gradient(145deg,#f8f2e2,#f1e6cc 70%,#ecdec0)}

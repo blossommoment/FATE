@@ -34,8 +34,8 @@ async function generatePersonalDigest(facts: ReturnType<typeof buildPersonalFact
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
         body: JSON.stringify({
           model, ...(isSiliconFlow ? { enable_thinking: false } : { thinking: { type: "disabled" } }),
-          temperature: 0.4, max_tokens: 2400, response_format: { type: "json_object" },
-          messages: [{ role: "system", content: system }, { role: "user", content: attempt === 0 ? user : `${user}\n\n（上一次未过校验：四章齐全、正文禁数字禁命理术语、字数达标。请严格重来。）` }],
+          temperature: 0.4, max_tokens: 3600, response_format: { type: "json_object" },
+          messages: [{ role: "system", content: system }, { role: "user", content: attempt === 0 ? user : `${user}\n\n（上一次未过校验：六章齐全、正文禁数字禁命理术语（时运/结构章可写年份）、字数达标。请严格重来。）` }],
         }),
         signal: AbortSignal.timeout(attempt === 0 ? 90000 : 60000),
       });
@@ -131,6 +131,7 @@ export async function buildDeepReport(input: DeepReportInput, precomputed?: { di
       career: { essay: tr(digest.pages.career.essay), advice: tr(digest.pages.career.advice) },
       social: { essay: tr(digest.pages.social.essay), advice: tr(digest.pages.social.advice) },
       season: { essay: tr(digest.pages.season.essay), advice: tr(digest.pages.season.advice) },
+      structure: { essay: tr(digest.pages.structure.essay), advice: tr(digest.pages.structure.advice) },
     } };
   }
 

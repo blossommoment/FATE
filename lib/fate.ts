@@ -741,6 +741,28 @@ export function analyzeBirth(birth: BirthInput): UserProfile {
     食神: "松弛的表达、生活里的甜", 伤官: "出格的话、破格的才", 日主: "你本人的状态",
   };
   const specialPoints: UserProfile["specialPoints"] = [];
+  // 结构深化（2026-07-09 用户拍板「引擎深化 + AI 深断语」）：每组冲合标注宫位落点与要害旗标。
+  // 纯标注层：总览一行结论、digest 事实清单与命书断语章都吃它，不改任何强度与权重。
+  const PALACE: Record<string, string> = { 年柱: "年柱·根基宫", 月柱: "月柱·门户宫", 日柱: "日支·婚姻宫", 时柱: "时柱·子女宫" };
+  const LU: Record<string, string> = { 甲: "寅", 乙: "卯", 丙: "巳", 戊: "巳", 丁: "午", 己: "午", 庚: "申", 辛: "酉", 壬: "亥", 癸: "子" };
+  const dayStemChar = bazi.dayPillar[0];
+  const dayElKey = stemElements[stems.indexOf(dayStemChar)];
+  const branchElOf = (zhi: string) => branchElements[branches.indexOf(zhi)];
+  const palacesOf = (targets: string[]) => [...new Set(branchEntries.filter((entry) => targets.includes(entry.branch)).map((entry) => PALACE[entry.pillar] ?? entry.pillar))];
+  const clashFlags = (left: string, right: string, force: number) => {
+    const flags: string[] = [];
+    if (force > 1) flags.push(`倍冲·${force}组`);
+    if ([left, right].includes(LU[dayStemChar])) flags.push("冲及日主禄根");
+    else if ([left, right].some((zhi) => branchElOf(zhi) === dayElKey)) flags.push("冲及日主之根");
+    const favHit = [left, right].filter((zhi) => energy.dayMaster.favorable.includes(branchElOf(zhi)));
+    if (favHit.length) flags.push(`喜用之根（${favHit.map((zhi) => ELEMENT_CN[branchElOf(zhi)]).join("")}）受扰`);
+    return flags;
+  };
+  const harmonyFlags = (elementCn: string) => {
+    const el = (Object.keys(ELEMENT_CN) as (keyof Elements)[]).find((key) => ELEMENT_CN[key] === elementCn);
+    if (!el) return [];
+    return energy.dayMaster.favorable.includes(el) ? ["合向喜用"] : energy.dayMaster.unfavorable.includes(el) ? ["合向忌神"] : [];
+  };
   const clashPairs = [["子", "午"], ["丑", "未"], ["寅", "申"], ["卯", "酉"], ["辰", "戌"], ["巳", "亥"]];
   clashPairs.forEach(([left, right]) => {
     if (!branchCounts[left] || !branchCounts[right]) return;
@@ -752,6 +774,7 @@ export function analyzeBirth(birth: BirthInput): UserProfile {
       : `${branchCounts[left] > 1 ? `${branchCounts[left]}个` : ""}${left}冲${branchCounts[right] > 1 ? `${branchCounts[right]}个` : ""}${right}`;
     specialPoints.push({
       type: "冲", title, branches: [left, right], tenGods: [leftGod, rightGod], strength: Math.min(100, 55 + force * 15),
+      palaces: palacesOf([left, right]), flags: clashFlags(left, right, force),
       summary: `${left}里藏的${leftGod}和${right}里藏的${rightGod}，在盘里是对着顶的：一边是${godScenes[leftGod]}，一边是${godScenes[rightGod]}。${force > 1 ? `这组冲盘里有 ${force} 份，属于反复出现的结构。` : ""}`,
       relationshipImpact: `这两类事很难同时顾上，常见的节奏是顾了这头，那头先放着。`,
     });
@@ -766,6 +789,7 @@ export function analyzeBirth(birth: BirthInput): UserProfile {
     const rightGod = branchEntries.find((item) => item.branch === right)?.god ?? "";
     specialPoints.push({
       type: "六合", title: `${left}${right}六合${element}`, branches: [left, right], tenGods: [leftGod, rightGod], strength: 68,
+      palaces: palacesOf([left, right]), flags: harmonyFlags(element),
       summary: `${left}里的${leftGod}和${right}里的${rightGod}在盘里是搭着的：${godScenes[leftGod]}，和${godScenes[rightGod]}，容易互相带动——一头动，另一头跟着来。`,
       relationshipImpact: `关系里这是个现成的搭扣：对方碰到其中一头，另一头多半也会被带起来。是否真化成${element}要看全盘，这里不下结论。`,
     });
@@ -793,6 +817,7 @@ export function analyzeBirth(birth: BirthInput): UserProfile {
     specialPoints.push({
       type, title: `${present.join("")}${type}${group.element}`,
       branches: present, tenGods: gods, strength: complete ? 90 : 58,
+      palaces: palacesOf(present), flags: [...harmonyFlags(group.element), ...(complete ? [] : ["半局待引"])],
       summary: complete
         ? `${present.join("、")}凑齐了${group.element}局，${gods.join("、")}这几股力拧到了"${group.theme}"一件事上——不是偶尔出现的状态，是盘里的常驻结构。`
         : `${present.join("和")}向${group.element}凑了半局，还差一角。平时不太显，遇到补上这一角的人或环境（包括流年），这个结构才真正启动。`,

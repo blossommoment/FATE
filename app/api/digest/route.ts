@@ -16,7 +16,7 @@ export const maxDuration = 150; // SiliconFlow DeepSeek-V3.2 实测单次 ~50-80
 // 付费墙（2026-07-09 用户拍板，同日收紧：成册免费只看目录）：五章全锁——未解锁响应里正文只给开头
 // 吊胃口、建议不下发（防 DOM 扒全文）；带有效 unlockToken 则全文。评述按 profileId 落服务端缓存，
 // 解锁后二次请求命中缓存秒出，不重复烧 AI。
-const LOCKED_KEYS = ["nature", "love", "career", "social", "season"] as const;
+const LOCKED_KEYS = ["nature", "love", "career", "social", "season", "structure"] as const;
 const lockPages = (digest: DigestPayload): DigestPayload => ({
   headline: digest.headline,
   pages: {
@@ -66,13 +66,13 @@ export async function POST(request: Request) {
           model,
           ...(isSiliconFlow ? { enable_thinking: false } : { thinking: { type: "disabled" } }),
           temperature: 0.4,
-          max_tokens: 3000, // 五章成册全文(2026-07-08 加性情章)，给足余量防 JSON 截断
+          max_tokens: 3600, // 六章成册全文(2026-07-09 加结构流年章)，给足余量防 JSON 截断
           response_format: { type: "json_object" },
           messages: [
             { role: "system", content: system },
             {
               role: "user",
-              content: attempt === 0 ? user : `${user}\n\n（上一次输出未通过校验：四章齐全、正文禁数字禁命理术语、字数达标。请严格重来。）`,
+              content: attempt === 0 ? user : `${user}\n\n（上一次输出未通过校验：六章齐全、正文禁数字禁命理术语（时运/结构章可写年份）、字数达标。请严格重来。）`,
             },
           ],
         }),

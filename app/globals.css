@@ -1213,6 +1213,9 @@ main:not(.result-page) .entry form input { font-size:23px; }
 .fb-toc-preview b { font:400 13px Georgia,"Songti SC",serif; margin-right:5px; }
 .fb-c-love { color:var(--fb-love,#a45c6e); } .fb-c-career { color:var(--fb-work,#2c5f53); }
 .fb-c-social { color:var(--fb-social,#575282); } .fb-c-season { color:var(--fb-season,#a3803a); }
+.fb-c-structure { color:var(--fb-structure,#7a4a32); }
+.special-locknote { display:block; margin-top:12px; font-size:11px; color:#8a9690; line-height:1.8; }
+.special-locknote a { color:inherit; text-decoration:underline; text-underline-offset:3px; }
 .fb-cta { border:0; cursor:pointer; padding:13px 28px; border-radius:999px; background:#1d211f; color:#fff; font:12px Manrope,Arial,sans-serif; letter-spacing:.06em; transition:.2s; }
 .fb-cta:hover { transform:translateY(-1px); }
 .fb-cta:disabled { opacity:.55; cursor:wait; transform:none; }

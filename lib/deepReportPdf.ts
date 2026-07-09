@@ -55,7 +55,7 @@ const stageT = (lang: "zh" | "en", stage: string) => lang === "en" ? (STAGE_EN[s
 const levelT = (lang: "zh" | "en", level: string) => lang === "en" ? (LEVEL_EN[level] ?? level) : level;
 
 type ChapterText = { essay: string; advice: string };
-export type DeepDigest = { source: "ai" | "fallback"; headline: string; pages: { nature: ChapterText; love: ChapterText; career: ChapterText; social: ChapterText; season: ChapterText } };
+export type DeepDigest = { source: "ai" | "fallback"; headline: string; pages: { nature: ChapterText; love: ChapterText; career: ChapterText; social: ChapterText; season: ChapterText; structure: ChapterText } };
 
 export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "en"; reportId: string; generatedAt: string; digest?: DeepDigest; tags?: PersonaTags; natureTags?: { tag: string; why: string }[] }): Promise<Buffer> {
   const lang = opts.lang;
@@ -162,10 +162,13 @@ export function buildDeepReportPdf(profile: UserProfile, opts: { lang: "zh" | "e
       { tagKey: "career", pageKey: "career", zh: "事业", en: "Career", color: "#bf9a4e", adviceZh: "建议", adviceEn: "Advice" },
       { tagKey: "social", pageKey: "social", zh: "人际", en: "Social", color: "#4f9d6b", adviceZh: "建议", adviceEn: "Advice" },
       { tagKey: "energy", pageKey: "season", zh: "时运", en: "Timing", color: "#4a7fb0", adviceZh: "建议", adviceEn: "Advice" },
+      { pageKey: "structure", zh: "结构流年", en: "Structure & Timing", color: "#8a6c2e", adviceZh: "当下应对", adviceEn: "What to do now" },
     ];
     let first = true;
     for (const dom of domains) {
-      const hits: { tag: string }[] = dom.tagKey ? opts.tags?.[dom.tagKey] ?? [] : opts.natureTags ?? [];
+      const hits: { tag: string }[] = dom.pageKey === "structure"
+        ? profile.specialPoints.map((point) => ({ tag: point.title }))
+        : dom.tagKey ? opts.tags?.[dom.tagKey] ?? [] : opts.natureTags ?? [];
       const page = opts.digest?.pages[dom.pageKey];
       ensure(80);
       if (!first) doc.moveDown(EN ? 0.6 : 0.35);

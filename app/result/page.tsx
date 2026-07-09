@@ -412,14 +412,15 @@ export async function ResultContent({
               })}
             </div>
             {annualFlow.specials.length > 0 && <div className="annual-specials">
-              {annualFlow.specials.map((item) => <article key={item.name}><b>{item.name}</b><p>{item.summary}</p></article>)}
+              {annualFlow.specials.map((item) => <article key={item.name}><b>{item.name}</b></article>)}
             </div>}
+            {/* 2026-07-09 用户拍板「首页只看最基本的」:触发点只留一行,逐年深断语收进命书第陆章(付费) */}
             {annualFlow.interactions.length > 0 ? <div className="annual-relations">
               {annualFlow.interactions.map((item, index) => <article className={`annual-rel-${item.type}`} key={`${item.title}-${index}`}>
                 <span>{item.type}</span>
-                <div><h4>{item.title}</h4><p>{item.summary}</p></div>
+                <div><h4>{item.title}</h4></div>
               </article>)}
-              <small>以上只标注流年与原局的结构触发点，不构成吉凶判断。</small>
+              <small>只标注结构触发点，不作吉凶判断——逐年深断语已收进命书第陆章「结构流年」，<Link href={`/report?${baseQuery}`}>解锁全册查看 →</Link></small>
             </div> : <p className="annual-relations-empty">{selectedAnnual}流年与你的四柱没有形成明显的冲、六合或半合，这一年的节奏更多由大运与现实安排决定。</p>}
           </section>
           <footer>年龄按传统排盘虚岁显示；起运时刻精确到分钟。</footer>
@@ -427,11 +428,13 @@ export async function ResultContent({
         <section className="special-points">
           <header><div><span>命盘特殊点</span><h2>合、会、冲落到十神之后</h2></div><small>只提示结构张力，不单独判断吉凶</small></header>
           {profile.specialPoints.length > 0 ? <div className="special-point-list">
+            {/* 2026-07-09 用户拍板降维:只留「XX被冲」级基础信息(标题/宫位/旗标/强度),深断语收进命书第陆章 */}
             {profile.specialPoints.map((point, index) => <article className={`special-${point.type}`} key={`${point.title}-${index}`}>
               <div className="special-symbol"><span>{point.type}</span><strong>{point.branches.join(" · ")}</strong></div>
-              <div className="special-content"><div><small>结构强度</small><i><b style={{ width: `${point.strength}%` }} /></i></div><h3>{point.title}</h3><p>{point.summary}</p><aside>{point.relationshipImpact}</aside></div>
-              <div className="special-gods">{point.tenGods.map((god, godIndex) => <span key={`${god}-${godIndex}`}>{god}</span>)}</div>
+              <div className="special-content"><div><small>结构强度</small><i><b style={{ width: `${point.strength}%` }} /></i></div><h3>{point.title} · {point.palaces.join("、")}</h3></div>
+              <div className="special-gods">{[...point.flags, ...point.tenGods].map((chip, chipIndex) => <span key={`${chip}-${chipIndex}`}>{chip}</span>)}</div>
             </article>)}
+            <small className="special-locknote">结构落到生活里长什么样、今年会不会被引动——深断语已收进命书第陆章「结构流年」，<Link href={`/report?${baseQuery}`}>解锁全册查看 →</Link></small>
           </div> : <div className="special-empty">这张命盘没有形成明显的三合、三会或六冲结构，关系倾向更多由单柱十神承担。</div>}
         </section>
       </header>

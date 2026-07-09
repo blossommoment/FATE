@@ -11,7 +11,9 @@ export type StoredDigest = DigestPayload & { source: "ai" };
 
 export function readDigestCache(profileId: string): StoredDigest | null {
   try {
-    return JSON.parse(readFileSync(path.join(DIR, `${profileId}.json`), "utf8")) as StoredDigest;
+    const cached = JSON.parse(readFileSync(path.join(DIR, `${profileId}.json`), "utf8")) as StoredDigest;
+    // 章节结构升级守卫（2026-07-09 加 structure 章）：旧缓存缺章视为未缓存，重新生成
+    return cached.pages?.structure ? cached : null;
   } catch { return null; }
 }
 

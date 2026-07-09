@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import type { BirthInput } from "@/lib/types";
 import { TAG_EXPLAIN, matchTags, type DigestPayload, type PersonalFacts, type TagHit, type TagMetric } from "@/lib/digest";
 
-// 深度解读报告 · 成册五章（设计稿经用户 2026-07-03 定稿；2026-07-08 补性情章）
+// 深度解读报告 · 成册六章（2026-07-03 定稿；07-08 补性情章；07-09 补结构流年章）
 // 付费墙（2026-07-09 用户拍板开启）：前两章（壹性情/贰感情）免费，叁肆伍锁——锁章正文服务端截断，
 // 解锁码兑换 token 后重取全文（服务端缓存命中，秒出）；解锁权益含 30 页命书 PDF 下载。
 const PAYWALL_ENABLED = true;
@@ -61,7 +61,7 @@ export default function FateReport({ birth, profileId }: { birth: BirthInput; pr
   const [codeInput, setCodeInput] = useState("");
   const [redeeming, setRedeeming] = useState(false);
   const [redeemError, setRedeemError] = useState("");
-  const cacheKey = `fate-report-v5-${profileId}`; // v5:锁范围改为五章全锁(2026-07-09)
+  const cacheKey = `fate-report-v6-${profileId}`; // v6:加第陆章结构流年(2026-07-09)
   const tokenKey = `fate-unlock-${profileId}`;
   const unlocked = !PAYWALL_ENABLED || !!result?.unlocked;
 
@@ -119,12 +119,13 @@ export default function FateReport({ birth, profileId }: { birth: BirthInput; pr
   if (!result) {
     return <section className="fate-book fate-book-intro">
       <span className="fb-mono">FATE° · 深度解读报告</span>
-      <h3>五章，读懂你自己。</h3>
+      <h3>六章，读懂你自己。</h3>
       <div className="fb-toc-preview">
         <span className="fb-c-nature"><b>壹</b>性情</span>
         {PAGES.map((page) => <span key={page.key} className={`fb-c-${page.key}`}><b>{page.no}</b>{page.cn}</span>)}
+        <span className="fb-c-structure"><b>陆</b>结构流年</span>
       </div>
-      <p>性情、感情、事业、人际、时运各一章——每章：你的标签、数据表征、与一段只属于你的评述与建议。免费预览目录，解锁读全册，另含 30 页命书 PDF。</p>
+      <p>性情、感情、事业、人际、时运、结构流年各一章——每章：你的标签、数据表征、与一段只属于你的评述与建议。免费预览目录，解锁读全册，另含 30 页命书 PDF。</p>
       <button className="fb-cta" onClick={() => generate()} disabled={loading}>
         {loading ? "正在撰写你的报告…（约一分钟，值得等）" : "生成我的深度解读"}
       </button>
@@ -197,6 +198,7 @@ export default function FateReport({ birth, profileId }: { birth: BirthInput; pr
     <nav className="fb-pagenav">
       <a className="fb-c-nature" href="#fr-nature"><b>壹</b>性情</a>
       {PAGES.map((page) => <a key={page.key} className={`fb-c-${page.key}`} href={`#fr-${page.key}`}><b>{page.no}</b>{page.cn}</a>)}
+      <a className="fb-c-structure" href="#fr-structure"><b>陆</b>结构</a>
     </nav>
     <section className="fb-cover">
       <span className="fb-mono">FATE° · 深度解读报告</span>
@@ -204,12 +206,12 @@ export default function FateReport({ birth, profileId }: { birth: BirthInput; pr
       <div className="fb-meta">
         <div><small>命主</small><strong>{facts.dayPillar}日主</strong></div>
         <div><small>格局</small><strong>{facts.strength.level}{facts.favorable.length ? ` · 喜${facts.favorable.join("")}` : ""}</strong></div>
-        <div><small>章节</small><strong>伍章成册</strong></div>
+        <div><small>章节</small><strong>陆章成册</strong></div>
       </div>
     </section>
     {/* 册内目录(2026-07-06 用户拍板:成册报告照样例配目录) */}
     <section className="zx-tocbook zx-corner fb-toc">
-      <div className="zx-tvol"><b>册内目录</b><span>CONTENTS · 伍章</span></div>
+      <div className="zx-tvol"><b>册内目录</b><span>CONTENTS · 陆章</span></div>
       <a className="zx-titem" href="#fr-nature">
         <div><span className="zx-tname">壹 · 性情</span><span className="zx-tdesc">主轴人格 · 依恋方式 · 更容易合拍的人</span></div>
         <i className="zx-tdots" /><span className="zx-tpg">CHAPTER 01 · NATURE</span>
@@ -218,6 +220,10 @@ export default function FateReport({ birth, profileId }: { birth: BirthInput; pr
         <div><span className="zx-tname">{page.no} · {page.cn}</span><span className="zx-tdesc">标签印鉴 · 判定指标与阈值 · 长评与建议</span></div>
         <i className="zx-tdots" /><span className="zx-tpg">{page.en}</span>
       </a>)}
+      <a className="zx-titem" href="#fr-structure">
+        <div><span className="zx-tname">陆 · 结构流年</span><span className="zx-tdesc">冲合宫位落点 · 今年流年触发 · 深断语</span></div>
+        <i className="zx-tdots" /><span className="zx-tpg">CHAPTER 06 · STRUCTURE</span>
+      </a>
     </section>
     {/* 付费墙（2026-07-09 用户拍板收紧）：成册免费只看封面与目录，壹-伍章全部上锁 */}
     <div className={unlocked ? "" : "fb-locked"}>
@@ -250,11 +256,31 @@ export default function FateReport({ birth, profileId }: { birth: BirthInput; pr
       </div>
     </section>
         {PAGES.map(renderPage)}
+    {/* 第陆章 · 结构流年(引擎深化事实 + AI 深断语,2026-07-09 用户拍板) */}
+    <section className="fb-page fb-p-structure" id="fr-structure">
+      <header><h2><small>CHAPTER 06 · STRUCTURE</small>结构流年</h2><span className="fb-no">陆</span></header>
+      <div className="fb-stamps">
+        {facts.structure.points.length
+          ? facts.structure.points.map((point) => <div className="fb-stamp" key={point.title}><b>{point.type} · {point.title}</b><span>{[...point.palaces, ...point.keynotes.slice(0, 1)].join(" · ") || "结构落点"}</span></div>)
+          : <div className="fb-stamp"><b>原局无强冲合</b><span>底盘干净,起伏更多来自现实安排</span></div>}
+      </div>
+      <div className="fb-essay-tag">评述 · 基于 FATE 模型 2.0</div>
+      <p className="fb-essay">{digest.pages.structure.essay}</p>
+      <div className="fb-essay-tag">今年 · {facts.structure.thisYear.ganZhi} 流年触发</div>
+      <div className="fb-stamps">
+        {facts.structure.thisYear.hits.length
+          ? facts.structure.thisYear.hits.map((hit) => <div className="fb-stamp" key={hit.title}><b>{hit.title}</b><span>{hit.scene.slice(0, 38)}…</span></div>)
+          : <div className="fb-stamp"><b>无强触发</b><span>这一年的节奏更多由现实安排决定</span></div>}
+      </div>
+      <div className="fb-aside">
+        <div><small>当下应对</small><p>{digest.pages.structure.advice}</p></div>
+      </div>
+    </section>
       </div>
       {!unlocked && <div className="fb-unlock">
         <div className="fb-unlock-card">
-          <b>解锁全册五章评述</b>
-          <span>性情 · 感情 · 事业 · 人际 · 时运完整长评与建议，另含 30 页命书 PDF 下载 · {PRICE_TEXT}</span>
+          <b>解锁全册六章评述</b>
+          <span>性情 · 感情 · 事业 · 人际 · 时运 · 结构流年完整长评与建议，另含 30 页命书 PDF 下载 · {PRICE_TEXT}</span>
           <div className="fb-unlock-row">
             <input
               value={codeInput}

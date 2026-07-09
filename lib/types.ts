@@ -162,6 +162,10 @@ export type UserProfile = {
     branches: string[];
     tenGods: string[];
     strength: number;
+    /** 宫位落点（年柱·根基宫 / 月柱·门户宫 / 日支·婚姻宫 / 时柱·子女宫），2026-07-09 结构深化 */
+    palaces: string[];
+    /** 要害旗标：倍冲 / 冲及日主禄根 / 喜用之根受扰 / 合向喜用·忌神 / 半局待引 */
+    flags: string[];
     summary: string;
     relationshipImpact: string;
   }[];
