@@ -99,13 +99,15 @@ function translateProfile(p: UserProfile, tr: (s: string) => string): UserProfil
   };
 }
 
-export async function buildDeepReport(input: DeepReportInput): Promise<{ reportId: string; pdf: Buffer }> {
+// precomputed.digest：调用方已有的评述（网页成册的服务端缓存）——传入则跳过 AI 生成，PDF 秒出且与网页一字不差
+export async function buildDeepReport(input: DeepReportInput, precomputed?: { digest?: DeepDigest }): Promise<{ reportId: string; pdf: Buffer; digest: DeepDigest }> {
   const profile = analyzeBirth(input.birth);
   const facts = buildPersonalFacts(profile);
   const reportId = `FATE-D-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, "0")}${String(new Date().getDate()).padStart(2, "0")}-${randomUUID().slice(0, 6).toUpperCase()}`;
   const generatedAt = new Date().toISOString().replace("T", " ").slice(0, 16) + " UTC";
 
-  let digest = await generatePersonalDigest(facts);
+  let digest = precomputed?.digest ?? await generatePersonalDigest(facts);
+  const digestZh = digest; // 中文原文（英文报告会就地翻译 digest，缓存/返回只用原文）
   let tags = buildPersonaTags(profile);
   let natureTags = matchTags(facts);
   let rendered = profile;
@@ -133,5 +135,5 @@ export async function buildDeepReport(input: DeepReportInput): Promise<{ reportI
   }
 
   const pdf = await buildDeepReportPdf(rendered, { lang: input.lang, reportId, generatedAt, digest, tags, natureTags });
-  return { reportId, pdf };
+  return { reportId, pdf, digest: digestZh };
 }

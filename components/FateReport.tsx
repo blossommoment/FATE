@@ -5,8 +5,11 @@ import type { BirthInput } from "@/lib/types";
 import { TAG_EXPLAIN, matchTags, type DigestPayload, type PersonalFacts, type TagHit, type TagMetric } from "@/lib/digest";
 
 // 深度解读报告 · 成册五章（设计稿经用户 2026-07-03 定稿；2026-07-08 补性情章）
-// 付费开关：置 true 后封面与感情章可看，贰叁肆章模糊待解锁（预览截断，接支付零返工）
-const PAYWALL_ENABLED = false;
+// 付费墙（2026-07-09 用户拍板开启）：前两章（壹性情/贰感情）免费，叁肆伍锁——锁章正文服务端截断，
+// 解锁码兑换 token 后重取全文（服务端缓存命中，秒出）；解锁权益含 30 页命书 PDF 下载。
+const PAYWALL_ENABLED = true;
+const PRICE_TEXT = "¥19.9";
+const SHOP_URL = process.env.NEXT_PUBLIC_UNLOCK_SHOP_URL ?? "";
 
 type PageKey = "love" | "career" | "social" | "season";
 const PAGES: { key: PageKey; no: string; cn: string; en: string }[] = [
@@ -16,7 +19,7 @@ const PAGES: { key: PageKey; no: string; cn: string; en: string }[] = [
   { key: "season", no: "伍", cn: "时运", en: "CHAPTER 05 · SEASON" },
 ];
 
-type CachedReport = { digest: DigestPayload; source: "ai" | "fallback"; facts: PersonalFacts };
+type CachedReport = { digest: DigestPayload; source: "ai" | "fallback"; facts: PersonalFacts; unlocked?: boolean };
 
 // 每章数据表征：该章标签的判定指标去重后取前四
 function pageMetrics(tags: TagHit[]): TagMetric[] {
@@ -55,8 +58,14 @@ export default function FateReport({ birth, profileId }: { birth: BirthInput; pr
   const [result, setResult] = useState<CachedReport | null>(null);
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
-  const [unlocked] = useState(!PAYWALL_ENABLED);
-  const cacheKey = `fate-report-v3-${profileId}`;
+  const [codeInput, setCodeInput] = useState("");
+  const [redeeming, setRedeeming] = useState(false);
+  const [redeemError, setRedeemError] = useState("");
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const [pdfError, setPdfError] = useState("");
+  const cacheKey = `fate-report-v4-${profileId}`;
+  const tokenKey = `fate-unlock-${profileId}`;
+  const unlocked = !PAYWALL_ENABLED || !!result?.unlocked;
 
   useEffect(() => {
     try {
@@ -66,24 +75,74 @@ export default function FateReport({ birth, profileId }: { birth: BirthInput; pr
     } catch { setResult(null); }
   }, [cacheKey]);
 
-  const generate = async () => {
+  const readToken = () => { try { return localStorage.getItem(tokenKey) ?? undefined; } catch { return undefined; } };
+
+  const generate = async (tokenOverride?: string) => {
     setLoading(true);
     setFailed(false);
     try {
       const res = await fetch("/api/digest", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(birth),
+        body: JSON.stringify({ ...birth, unlockToken: tokenOverride ?? readToken() }),
       });
       if (!res.ok) throw new Error(String(res.status));
       const data = await res.json() as CachedReport & { profileId: string };
-      const next = { digest: data.digest, source: data.source, facts: data.facts };
+      const next = { digest: data.digest, source: data.source, facts: data.facts, unlocked: data.unlocked };
       setResult(next);
       try { localStorage.setItem(cacheKey, JSON.stringify(next)); } catch { /* 缓存失败不影响本次展示 */ }
     } catch {
       setFailed(true);
     }
     setLoading(false);
+  };
+
+  // 兑换解锁码：成功后带 token 重取——服务端评述已缓存，秒出全文
+  const redeem = async () => {
+    if (!codeInput.trim()) { setRedeemError("请输入解锁码。"); return; }
+    setRedeeming(true);
+    setRedeemError("");
+    try {
+      const res = await fetch("/api/unlock/redeem", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: codeInput, birth }),
+      });
+      const data = await res.json() as { token?: string; error?: string };
+      if (!res.ok || !data.token) throw new Error(data.error || "解锁失败，请稍后重试。");
+      try { localStorage.setItem(tokenKey, data.token); } catch { /* 存不了 token 也先解锁本次 */ }
+      await generate(data.token);
+    } catch (error) {
+      setRedeemError(error instanceof Error ? error.message : "解锁失败，请稍后重试。");
+    }
+    setRedeeming(false);
+  };
+
+  // 命书 PDF（解锁权益）：评述命中服务端缓存时秒级出书，否则约一分钟
+  const downloadPdf = async () => {
+    setPdfBusy(true);
+    setPdfError("");
+    try {
+      const res = await fetch("/api/report/pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ birth, lang: "zh", unlockToken: readToken() }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null) as { error?: string } | null;
+        throw new Error(data?.error || "生成失败，请稍后重试。");
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${res.headers.get("X-Report-Id") ?? "FATE-命书"}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      setPdfError(error instanceof Error ? error.message : "生成失败，请稍后重试。");
+    }
+    setPdfBusy(false);
   };
 
   if (!result) {
@@ -94,9 +153,9 @@ export default function FateReport({ birth, profileId }: { birth: BirthInput; pr
         <span className="fb-c-nature"><b>壹</b>性情</span>
         {PAGES.map((page) => <span key={page.key} className={`fb-c-${page.key}`}><b>{page.no}</b>{page.cn}</span>)}
       </div>
-      <p>性情、感情、事业、人际、时运各一章——每章：你的标签、数据表征、与一段只属于你的评述与建议。生成一次，永久可看。</p>
-      <button className="fb-cta" onClick={generate} disabled={loading}>
-        {loading ? "正在撰写你的报告…（约一分钟，值得等）" : "生成我的深度解读 · 限免体验"}
+      <p>性情、感情、事业、人际、时运各一章——每章：你的标签、数据表征、与一段只属于你的评述与建议。前两章免费试读，解锁全册另含 30 页命书 PDF。</p>
+      <button className="fb-cta" onClick={() => generate()} disabled={loading}>
+        {loading ? "正在撰写你的报告…（约一分钟，值得等）" : "生成我的深度解读 · 前两章免费"}
       </button>
       <div className="fb-note">{failed ? "生成没有成功，多半是网络原因——稍等片刻再点一次。" : "报告内容基于 FATE 模型 2.0 得出。"}</div>
     </section>;
@@ -221,8 +280,32 @@ export default function FateReport({ birth, profileId }: { birth: BirthInput; pr
       <div className={unlocked ? "" : "fb-blur"}>
         {PAGES.slice(1).map(renderPage)}
       </div>
-      {!unlocked && <div className="fb-unlock"><button className="fb-cta">解锁贰 · 叁 · 肆章</button></div>}
+      {!unlocked && <div className="fb-unlock">
+        <div className="fb-unlock-card">
+          <b>解锁叁 · 肆 · 伍章 全册评述</b>
+          <span>事业 · 人际 · 时运完整长评与建议，另含 30 页命书 PDF 下载 · {PRICE_TEXT}</span>
+          <div className="fb-unlock-row">
+            <input
+              value={codeInput}
+              onChange={(e) => setCodeInput(e.target.value)}
+              placeholder="输入解锁码 FATE-XXXX…"
+              spellCheck={false}
+            />
+            <button className="fb-cta" onClick={redeem} disabled={redeeming}>{redeeming ? "验证中…" : "解锁"}</button>
+          </div>
+          {SHOP_URL
+            ? <a href={SHOP_URL} target="_blank" rel="noreferrer">获取解锁码 · {PRICE_TEXT}</a>
+            : <span className="fb-unlock-tip">解锁码获取入口即将开放</span>}
+          {redeemError && <span className="fb-unlock-err">{redeemError}</span>}
+        </div>
+      </div>}
     </div>
+    {unlocked && <div className="fb-pdfrow">
+      <button className="fb-cta" onClick={downloadPdf} disabled={pdfBusy}>
+        {pdfBusy ? "正在成书…（最多约一分钟，别关页面）" : "生成 30 页命书 PDF"}
+      </button>
+      {pdfError && <span className="fb-unlock-err">{pdfError}</span>}
+    </div>}
     <div className="fb-note">本报告内容基于 FATE 模型 2.0 得出 · 图表数据可在深度报告各章逐条对账 · 不作吉凶断言</div>
   </section>;
 }

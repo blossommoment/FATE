@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { analyzeBirth, validateBirth } from "@/lib/fate";
-import { buildDigestPrompt, buildPersonalFacts, validateDigestPayload } from "@/lib/digest";
+import { buildDigestPrompt, buildPersonalFacts, validateDigestPayload, type DigestPayload } from "@/lib/digest";
 import { deepseekConfig } from "@/lib/deepseek";
+import { readDigestCache, writeDigestCache } from "@/lib/digestStore";
+import { tokenValid } from "@/lib/unlock";
 import type { BirthInput } from "@/lib/types";
 
 export const maxDuration = 150; // SiliconFlow DeepSeek-V3.2 实测单次 ~50-80s
@@ -11,10 +13,26 @@ export const maxDuration = 150; // SiliconFlow DeepSeek-V3.2 实测单次 ~50-80
 // 两轮全败则如实报错（2026-07-09 用户拍板：不要兜底文冒充 AI 评述），前端显示失败态可重试。
 // 缓存策略在客户端按 profile.id 落 localStorage（付费功能：点击触发，一次生成反复看）。
 
+// 付费墙（2026-07-09 用户拍板）：前两章（性情/感情）免费，叁肆伍锁——未解锁响应里锁章正文只给开头
+// 吊胃口、建议不下发（防 DOM 扒全文）；带有效 unlockToken 则全文。评述按 profileId 落服务端缓存，
+// 解锁后二次请求命中缓存秒出，不重复烧 AI。
+const LOCKED_KEYS = ["career", "social", "season"] as const;
+const lockPages = (digest: DigestPayload): DigestPayload => ({
+  headline: digest.headline,
+  pages: {
+    ...digest.pages,
+    ...Object.fromEntries(LOCKED_KEYS.map((key) => [key, {
+      essay: `${digest.pages[key].essay.slice(0, 42)}……`,
+      advice: "解锁全册后可见。",
+    }])),
+  } as DigestPayload["pages"],
+});
+
 export async function POST(request: Request) {
-  let birth: BirthInput;
+  let birth: BirthInput, unlockToken: unknown;
   try {
-    birth = await request.json() as BirthInput;
+    const raw = await request.json() as BirthInput & { unlockToken?: string };
+    ({ unlockToken, ...birth } = raw);
   } catch {
     return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
   }
@@ -23,6 +41,14 @@ export async function POST(request: Request) {
 
   const profile = analyzeBirth(birth);
   const facts = buildPersonalFacts(profile);
+  const unlocked = tokenValid(profile.id, unlockToken);
+  const respond = (digest: DigestPayload) => NextResponse.json({
+    source: "ai", profileId: profile.id, unlocked,
+    digest: unlocked ? digest : lockPages(digest), facts,
+  });
+
+  const cached = readDigestCache(profile.id);
+  if (cached) return respond(cached);
 
   const { apiKey, baseUrl, model, isSiliconFlow } = deepseekConfig();
   if (!apiKey) return NextResponse.json({ error: "服务端未配置 AI 服务，报告暂时无法生成。" }, { status: 503 });
@@ -62,7 +88,7 @@ export async function POST(request: Request) {
     try {
       const parsed = JSON.parse(content.replace(/^```json\s*|```$/g, ""));
       const valid = validateDigestPayload(parsed, facts);
-      if (valid) return NextResponse.json({ source: "ai", profileId: profile.id, digest: valid, facts });
+      if (valid) { writeDigestCache(profile.id, valid); return respond(valid); }
       lastError = "AI 输出未通过校验";
     } catch { lastError = "AI 输出不是完整 JSON"; /* 内容问题（截断/格式）：带纠正提示重试一次 */ }
   }
