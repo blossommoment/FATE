@@ -21,6 +21,13 @@ if (!secret) {
   process.exit(1);
 }
 
+// --master：打印万能钥匙（任意命盘可解、无限次，⚠️ 只自己用，泄露即全站白嫖）
+if (process.argv.includes("--master")) {
+  const sig = createHmac("sha256", secret).update("master-key").digest("hex").slice(0, 10).toUpperCase();
+  console.log(`FATE-MASTER-${sig}`);
+  process.exit(0);
+}
+
 const count = Math.max(1, Math.min(500, Number(process.argv[2]) || 10));
 for (let i = 0; i < count; i++) {
   const serial = randomBytes(5).toString("hex").toUpperCase();

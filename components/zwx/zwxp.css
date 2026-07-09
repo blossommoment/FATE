@@ -91,6 +91,10 @@ body:has(.zwxr),body:has(.zx-galaxy){background:#070613}
 .zwxr .logic-link{color:#a6392b;border-color:rgba(166,57,43,.4);background:rgba(166,57,43,.06)}
 .zwxr .trait-basis b{color:#a6392b;background:rgba(166,57,43,.08)}
 .zwxr .nature-card>header b{color:#a6392b;background:rgba(166,57,43,.08)}
+/* 两人底色日主圆徽:旧白底设计的浅渐变在纸面上白字隐形(2026-07-09 用户指出),加深底色+描边 */
+.zwxr .nature-card>header i{box-shadow:inset 0 0 0 1px rgba(0,0,0,.14),0 2px 8px rgba(0,0,0,.10)}
+.zwxr .nature-card.mine>header i{background:linear-gradient(135deg,#26604e,#3f8a70)}
+.zwxr .nature-card.theirs>header i{background:linear-gradient(135deg,#8f3b4c,#b25d70)}
 .zwxr .deep-descriptor{color:#a6392b;border-color:rgba(166,57,43,.4);background:rgba(166,57,43,.05)}
 .zwxr .specialty-card>header b{color:#a6392b;border-color:rgba(166,57,43,.4)}
 .zwxr .deep-card .deep-score span{color:#a6392b}

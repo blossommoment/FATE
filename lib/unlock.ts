@@ -26,6 +26,12 @@ export function codeValid(code: string): boolean {
   return !!m && hmac(`code:${m[1]}`).slice(0, 10).toUpperCase() === m[2];
 }
 
+// 万能钥匙（2026-07-09 用户拍板：自用免付）：由 UNLOCK_SECRET 派生，任意命盘可解、
+// 不写兑换记录、无限次使用。⚠️ 泄露即全站白嫖——只自己用，别发给任何人。
+export function masterCode(): string {
+  return `FATE-MASTER-${hmac("master-key").slice(0, 10).toUpperCase()}`;
+}
+
 export function issueToken(profileId: string): string {
   return hmac(`unlock:${profileId}`);
 }
@@ -44,6 +50,7 @@ function readRedemptions(): Redemptions {
 
 export function redeemCode(code: string, profileId: string): { token?: string; error?: string } {
   const normalized = code.trim().toUpperCase();
+  if (normalized === masterCode()) return { token: issueToken(profileId) };
   if (!codeValid(normalized)) return { error: "解锁码无效，请核对后重试。" };
   const all = readRedemptions();
   const used = all[normalized];
