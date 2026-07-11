@@ -375,6 +375,7 @@
 .zwxr .module-topbar span{color:var(--muted)}
 .zwxr .module-pager .pager-home{color:#0d0b1e;background:linear-gradient(120deg,#e8ce9a,#bf9a4e)}
 .zwxr .module-grid>a{background:var(--zr-card);box-shadow:none}
+.zwxr .module-lock-card{background:rgba(255,255,255,.045);box-shadow:inset 0 0 0 1px rgba(191,154,78,.2)}
 .zwxr .module-grid>a:hover{box-shadow:0 14px 34px rgba(0,0,0,.5);border:0;background:rgba(191,154,78,.10)}
 .zwxr .module-grid>a>i{background:linear-gradient(135deg,#2a2350,#4a3766)}
 .zwxr .module-grid h4{color:var(--ink)}

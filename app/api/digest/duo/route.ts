@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { analyzeBirth, analyzeRelationship, validateBirth } from "@/lib/fate";
 import { buildDuoFacts } from "@/lib/duo";
 import { UpstreamTimeoutError, generateDuoDigest } from "@/lib/duoGenerate";
-import type { BirthInput } from "@/lib/types";
+import { hasEntitlement, subjectForSku } from "@/lib/entitlements";
+import { openReportState } from "@/lib/reportState";
+import { cookies } from "next/headers";
 
 export const maxDuration = 240; // SiliconFlow DeepSeek-V3.2 实测单次 ~50-110s，上游慢时给足重试余量
 
@@ -10,21 +12,32 @@ export const maxDuration = 240; // SiliconFlow DeepSeek-V3.2 实测单次 ~50-11
 // 生成逻辑在 lib/duoGenerate.ts（与 agent 报告管线共用）。
 
 export async function POST(request: Request) {
-  let body: { a: BirthInput; b: BirthInput; relationType?: string };
+  let body: { state?: string };
   try {
-    body = await request.json() as { a: BirthInput; b: BirthInput; relationType?: string };
+    body = await request.json() as { state?: string };
   } catch {
     return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
   }
-  if (!body?.a || !body?.b) return NextResponse.json({ error: "需要两个人的出生信息。" }, { status: 400 });
-  const errorA = validateBirth(body.a);
+  const reportState = typeof body.state === "string" ? openReportState(body.state) : null;
+  if (!reportState?.partnerBirth) return NextResponse.json({ error: "报告状态已过期，请重新起盘。" }, { status: 400 });
+  const errorA = validateBirth(reportState.birth);
   if (errorA) return NextResponse.json({ error: errorA }, { status: 400 });
-  const errorB = validateBirth(body.b);
+  const errorB = validateBirth(reportState.partnerBirth);
   if (errorB) return NextResponse.json({ error: errorB }, { status: 400 });
 
-  const profileA = analyzeBirth(body.a);
-  const profileB = analyzeBirth(body.b);
-  const relationType = body.relationType ?? "恋爱";
+  let subject: string;
+  try {
+    subject = subjectForSku("duo_full", reportState);
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : "无法校验报告权益。" }, { status: 503 });
+  }
+  if (!hasEntitlement(await cookies(), "duo_full", subject)) {
+    return NextResponse.json({ error: "双人 AI 成册为已购权益，请先完成支付或兑换。" }, { status: 402 });
+  }
+
+  const profileA = analyzeBirth(reportState.birth);
+  const profileB = analyzeBirth(reportState.partnerBirth);
+  const relationType = reportState.relationType;
   const analysis = analyzeRelationship(profileA, profileB, relationType);
   const facts = buildDuoFacts(profileA, profileB, analysis);
   const pairId = `${profileA.id}-${profileB.id}-${relationType}`;

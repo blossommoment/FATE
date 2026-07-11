@@ -1,7 +1,6 @@
-// 铸造解锁码：node scripts/mint-unlock-codes.mjs [数量]
-// 与 lib/unlock.ts 同一算法（HMAC-SHA256(UNLOCK_SECRET, "code:"+序列号) 前 10 位十六进制）。
-// 产出的码可直接挂到发卡平台/爱发电出售；换 UNLOCK_SECRET 会使已售未兑的码全部失效——慎换。
-import { createHmac, randomBytes } from "node:crypto";
+// 发放一次性兑换码：node scripts/mint-unlock-codes.mjs [数量] [personal_full|duo_full]
+// 码只以 hash 形式写入 Vercel KV / Upstash；明文仅在本次命令输出，不能再次找回。
+import { createHash, randomBytes } from "node:crypto";
 import { readFileSync } from "node:fs";
 
 function readEnv(name) {
@@ -15,22 +14,38 @@ function readEnv(name) {
   return "";
 }
 
-const secret = readEnv("UNLOCK_SECRET");
-if (!secret) {
-  console.error("未找到 UNLOCK_SECRET（.env.local / .env / 环境变量）。");
+const url = readEnv("KV_REST_API_URL") || readEnv("UPSTASH_REDIS_REST_URL");
+const token = readEnv("KV_REST_API_TOKEN") || readEnv("UPSTASH_REDIS_REST_TOKEN");
+if (!url || !token) {
+  console.error("未找到 KV_REST_API_URL / KV_REST_API_TOKEN（或对应的 UPSTASH 变量）。");
   process.exit(1);
 }
 
-// --master：打印万能钥匙（任意命盘可解、无限次，⚠️ 只自己用，泄露即全站白嫖）
-if (process.argv.includes("--master")) {
-  const sig = createHmac("sha256", secret).update("master-key").digest("hex").slice(0, 10).toUpperCase();
-  console.log(`FATE-MASTER-${sig}`);
-  process.exit(0);
+const count = Math.max(1, Math.min(500, Number(process.argv[2]) || 10));
+const sku = process.argv[3] || "duo_full";
+if (!["personal_full", "duo_full"].includes(sku)) {
+  console.error("商品只能是 personal_full 或 duo_full。");
+  process.exit(1);
 }
 
-const count = Math.max(1, Math.min(500, Number(process.argv[2]) || 10));
-for (let i = 0; i < count; i++) {
-  const serial = randomBytes(5).toString("hex").toUpperCase();
-  const sig = createHmac("sha256", secret).update(`code:${serial}`).digest("hex").slice(0, 10).toUpperCase();
-  console.log(`FATE-${serial}-${sig}`);
+const prefix = readEnv("ENTITLEMENT_KV_PREFIX") || "fate:entitlement:v1";
+const codes = Array.from({ length: count }, () => {
+  const bytes = randomBytes(15).toString("hex").toUpperCase();
+  const code = `FATE-${bytes.slice(0, 10)}-${bytes.slice(10, 20)}-${bytes.slice(20)}`;
+  const hash = createHash("sha256").update(`fate-redeem-v2:${code}`).digest("hex");
+  return { code, key: `${prefix}:code:${hash}` };
+});
+
+const commands = codes.map(({ key }) => ["SET", key, JSON.stringify({ sku, source: "manual", createdAt: new Date().toISOString() }), "NX"]);
+const response = await fetch(`${url.replace(/\/$/, "")}/pipeline`, {
+  method: "POST",
+  headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+  body: JSON.stringify(commands),
+});
+const result = await response.json().catch(() => null);
+if (!response.ok || !Array.isArray(result) || result.some((row) => row?.result !== "OK")) {
+  console.error("写入兑换码失败；请检查 KV 配置，或确认没有重复执行同一批命令。", result);
+  process.exit(1);
 }
+console.log(`已登记 ${count} 枚 ${sku} 兑换码（只显示这一次）：`);
+codes.forEach(({ code }) => console.log(code));

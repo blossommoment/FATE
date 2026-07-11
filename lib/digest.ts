@@ -3,7 +3,7 @@
 // 并打包成 buildPersonalFacts —— AI 叙述层的唯一输入。
 // 铁律：标签与候选池由规则表定，AI 只做挑选与措辞；正文零命理黑话，术语只进括号依据。
 
-import { analyzeAnnualFlow } from "./fate";
+import { analyzeAnnualFlow, annualGanZhiForDate } from "./fate";
 import type { Elements, UserProfile } from "./types";
 
 // 标签命中时同时交出判定指标（t 为触发阈值，图表上画成刻度线）
@@ -65,8 +65,9 @@ const flagScene = (flag: string) => flag.startsWith("倍冲")
     ? "给你补气的来源被扰动，状态起伏会比别人明显"
     : FLAG_SCENE[flag] ?? "";
 
-export function buildStructureFacts(p: UserProfile) {
-  const flow = analyzeAnnualFlow(p, p.luckCycles.currentGanZhi);
+export function buildStructureFacts(p: UserProfile, asOf = new Date()) {
+  const annualGanZhi = annualGanZhiForDate(asOf);
+  const flow = analyzeAnnualFlow(p, annualGanZhi);
   return {
     points: p.specialPoints.map((point) => ({
       type: point.type,
@@ -76,7 +77,7 @@ export function buildStructureFacts(p: UserProfile) {
       scene: point.summary,
     })),
     thisYear: {
-      ganZhi: p.luckCycles.currentGanZhi,
+      ganZhi: annualGanZhi,
       verdict: flow.verdict.label,
       hits: flow.interactions.map((item) => ({ title: item.title, scene: item.summary })),
       specials: flow.specials.map((item) => item.name),

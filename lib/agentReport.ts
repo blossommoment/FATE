@@ -1,6 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { mkdirSync, writeFileSync } from "node:fs";
-import path from "node:path";
 import { analyzeBirth, analyzeDuoRhythm, analyzeRelationship, validateBirth, type DuoYearOutlook } from "./fate";
 import { buildDuoFacts, type DuoFacts } from "./duo";
 import { UpstreamTimeoutError, generateDuoDigest, translateBatch } from "./duoGenerate";
@@ -44,7 +42,7 @@ export type AgentReportJob = {
   error?: string;
   createdAt: number;
   bilingual: boolean;
-  result?: { reportId: string; pdfPath: string; report: AgentReportJson };
+  result?: { reportId: string; pdf: Buffer; report: AgentReportJson };
 };
 
 export const REPORT_TOC: { no: string; zh: string; en: string }[] = [
@@ -73,25 +71,27 @@ const CHAPTER_EN: Record<string, string> = { 关系总览: "Relationship Overvie
 const BOOK_PAGE_EN: Record<string, string> = { origin: "Origin", daily: "Daily Life", friction: "Friction", longrun: "Long Run", season: "Seasons" };
 const BOOK_PAGE_ZH: Record<string, string> = { origin: "缘起", daily: "相处", friction: "摩擦", longrun: "长线", season: "时运" };
 
-const globalStore = globalThis as unknown as { __fateAgentJobs?: Map<string, AgentReportJob>; __fateAgentCache?: Map<string, string> };
+const globalStore = globalThis as unknown as { __fateAgentJobs?: Map<string, AgentReportJob> };
 const jobs = (globalStore.__fateAgentJobs ??= new Map<string, AgentReportJob>());
-const doneCache = (globalStore.__fateAgentCache ??= new Map<string, string>());
-const REPORT_DIR = path.join(process.cwd(), ".reports");
+const DEFAULT_JOB_TTL_MS = 10 * 60 * 1000;
+
+function jobTtlMs(): number {
+  const configured = Number(process.env.AGENT_REPORT_TTL_SECONDS);
+  return Number.isInteger(configured) && configured >= 60 && configured <= 15 * 60
+    ? configured * 1000
+    : DEFAULT_JOB_TTL_MS;
+}
+
+function expireJob(jobId: string) {
+  setTimeout(() => jobs.delete(jobId), jobTtlMs());
+}
 
 export function getJob(id: string): AgentReportJob | undefined { return jobs.get(id); }
 
 export function createReportJob(input: AgentReportInput): { job: AgentReportJob; cached: boolean } {
-  const profileA = analyzeBirth(input.a);
-  const profileB = analyzeBirth(input.b);
-  const pairKey = `${profileA.id}-${profileB.id}-${input.relationType}-${input.bilingual ? "bi" : "zh"}`;
-  const cachedId = doneCache.get(pairKey);
-  if (cachedId) {
-    const cachedJob = jobs.get(cachedId);
-    if (cachedJob?.status === "done") return { job: cachedJob, cached: true };
-  }
   const job: AgentReportJob = { id: randomUUID(), status: "processing", step: "排盘", createdAt: Date.now(), bilingual: input.bilingual };
   jobs.set(job.id, job);
-  void runPipeline(job, input, pairKey);
+  void runPipeline(job, input);
   return { job, cached: false };
 }
 
@@ -124,7 +124,7 @@ function composeSummaryZh(analysis: RelationshipAnalysis, rhythm: DuoYearOutlook
   ].join("\n");
 }
 
-async function runPipeline(job: AgentReportJob, input: AgentReportInput, pairKey: string) {
+async function runPipeline(job: AgentReportJob, input: AgentReportInput) {
   try {
     job.step = "排盘与规则引擎";
     const profileA = analyzeBirth(input.a);
@@ -297,18 +297,16 @@ async function runPipeline(job: AgentReportJob, input: AgentReportInput, pairKey
       meta: { reportId, generatedAt, relationType: input.relationType, names: [nameA, nameB], verdictTitle: analysis.guide.verdict.title, verdictQuip: analysis.guide.verdict.quip, disclaimerZh: DISCLAIMER_ZH, disclaimerEn: DISCLAIMER_EN },
       charts, toc: REPORT_TOC, blocks,
     });
-    mkdirSync(REPORT_DIR, { recursive: true });
-    const pdfPath = path.join(REPORT_DIR, `${reportId}.pdf`);
-    writeFileSync(pdfPath, pdfBuffer);
-
-    job.result = { reportId, pdfPath, report };
+    job.result = { reportId, pdf: pdfBuffer, report };
     job.status = "done";
     job.step = "完成";
-    doneCache.set(pairKey, job.id);
+    // Keep the asynchronous delivery in process memory only, then discard it.
+    expireJob(job.id);
   } catch (error) {
     job.status = "failed";
     job.error = error instanceof UpstreamTimeoutError ? "上游生成或翻译超时，请稍后重试。" : `生成失败：${error instanceof Error ? error.message : String(error)}`;
     job.step = "失败";
+    expireJob(job.id);
   }
 }
 

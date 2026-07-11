@@ -37,6 +37,31 @@ const calibrateScore = (raw: number, anchor?: [number, number]): number => {
 
 const pillar = (index: number) => stems[((index % 10) + 10) % 10] + branches[((index % 12) + 12) % 12];
 
+/**
+ * Returns the annual GanZhi using the exact LiChun boundary supplied by the
+ * calendar library. Calendar years alone are wrong for the days before LiChun.
+ */
+export function annualGanZhiForSolar(year: number, month: number, day: number, hour = 12, minute = 0): string {
+  const lunar = Solar.fromYmdHms(year, month, day, hour, minute, 0).getLunar();
+  return lunar.getYearInGanZhiExact?.()
+    ?? lunar.getYearInGanZhiByLiChun?.()
+    ?? lunar.getYearInGanZhi();
+}
+
+export function annualGanZhiForDate(date = new Date()): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Shanghai",
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    hour: "numeric",
+    minute: "numeric",
+    hourCycle: "h23",
+  }).formatToParts(date);
+  const value = (type: Intl.DateTimeFormatPartTypes) => Number(parts.find((part) => part.type === type)?.value ?? 0);
+  return annualGanZhiForSolar(value("year"), value("month"), value("day"), value("hour"), value("minute"));
+}
+
 function toSolarBirth(birth: BirthInput): BirthInput {
   if (birth.calendarType !== "lunar") return birth;
   const lunar = Lunar.fromYmdHms(
@@ -1269,7 +1294,6 @@ export function analyzeDuoRhythm(a: UserProfile, b: UserProfile, relationType: s
   const peachOf = (base: string) => ["寅", "午", "戌"].includes(base) ? "卯" : ["亥", "卯", "未"].includes(base) ? "子" : ["申", "子", "辰"].includes(base) ? "酉" : "午";
   const horseOf = (base: string) => ["申", "子", "辰"].includes(base) ? "寅" : ["寅", "午", "戌"].includes(base) ? "申" : ["巳", "酉", "丑"].includes(base) ? "亥" : "巳";
   const fiveCombine: Record<string, string> = { 甲: "己", 己: "甲", 乙: "庚", 庚: "乙", 丙: "辛", 辛: "丙", 丁: "壬", 壬: "丁", 戊: "癸", 癸: "戊" };
-  const ganZhiOf = (year: number) => { const index = ((year - 1984) % 60 + 60) % 60; return `${"甲乙丙丁戊己庚辛壬癸"[index % 10]}${"子丑寅卯辰巳午未申酉戌亥"[index % 12]}`; };
   const clampIndex = (value: number) => Math.max(6, Math.min(94, Math.round(value)));
 
   type PersonYear = { clash: boolean; bond: boolean; peach: boolean; horse: boolean; supply: -1 | 0 | 1; stemBond: boolean; signals: DuoYearCause[] };
@@ -1298,7 +1322,9 @@ export function analyzeDuoRhythm(a: UserProfile, b: UserProfile, relationType: s
 
   return Array.from({ length: span }, (_, offset) => {
     const year = startYear + offset;
-    const gz = ganZhiOf(year);
+    // Midyear is deliberately after LiChun, so the label matches the annual
+    // pillar displayed to users even when the report is generated in January.
+    const gz = annualGanZhiForSolar(year, 7, 1);
     const pa = personYear(a, nameA, gz);
     const pb = personYear(b, nameB, gz);
     const clashCount = Number(pa.clash) + Number(pb.clash);

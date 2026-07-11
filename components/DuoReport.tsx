@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { BirthInput } from "@/lib/types";
 import { DUO_TAG_EXPLAIN, type DuoDigestPayload, type DuoDomain, type DuoFacts } from "@/lib/duo";
+import CheckoutButton from "@/components/CheckoutButton";
+import DuoPdfButton from "@/components/DuoPdfButton";
 
-// 双人深度解读报告 · 成册五章（REQ_DUO_REPORT B3）
-// 付费开关：置 true 后封面与壹章可看，贰至伍章模糊待解锁
-const PAYWALL_ENABLED = false;
+// 双人 AI 成册是完整付费内容；免费内容留在关系剧本的前两章。
+const PRICE_TEXT = "¥39.9";
 
 const PAGES: { key: DuoDomain; no: string; cn: string; en: string }[] = [
   { key: "origin", no: "壹", cn: "缘起", en: "CHAPTER 01 · ORIGIN" },
@@ -23,21 +23,13 @@ const ADVICE_LABEL: Record<DuoDomain, string> = {
 
 type CachedDuo = { digest: DuoDigestPayload; source: "ai" | "fallback"; facts: DuoFacts };
 
-export default function DuoReport({ a, b, relationType, pairId }: { a: BirthInput; b: BirthInput; relationType: string; pairId: string }) {
+export default function DuoReport({ state, autoGenerate = false }: { state: string; autoGenerate?: boolean }) {
   const [result, setResult] = useState<CachedDuo | null>(null);
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
-  const [unlocked] = useState(!PAYWALL_ENABLED);
-  const cacheKey = `fate-duo-report-v6-${pairId}`;
-
-  useEffect(() => {
-    try {
-      const cached = localStorage.getItem(cacheKey);
-      if (cached) setResult(JSON.parse(cached) as CachedDuo);
-      else setResult(null);
-    } catch { setResult(null); }
-  }, [cacheKey]);
-
+  const [codeInput, setCodeInput] = useState("");
+  const [redeeming, setRedeeming] = useState(false);
+  const [redeemError, setRedeemError] = useState("");
   const generate = async () => {
     setLoading(true);
     setFailed(false);
@@ -45,18 +37,42 @@ export default function DuoReport({ a, b, relationType, pairId }: { a: BirthInpu
       const res = await fetch("/api/digest/duo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ a, b, relationType }),
+        body: JSON.stringify({ state }),
       });
-      if (!res.ok) throw new Error(String(res.status));
-      const data = await res.json() as CachedDuo & { pairId: string };
+      const data = await res.json() as CachedDuo & { pairId: string; error?: string };
+      if (!res.ok) throw new Error(data.error || String(res.status));
       const next = { digest: data.digest, source: data.source, facts: data.facts };
       setResult(next);
-      try { localStorage.setItem(cacheKey, JSON.stringify(next)); } catch { /* 缓存失败不影响本次展示 */ }
     } catch {
       setFailed(true);
     }
     setLoading(false);
   };
+
+  const redeem = async () => {
+    if (!codeInput.trim()) { setRedeemError("请输入兑换码。"); return; }
+    setRedeeming(true);
+    setRedeemError("");
+    try {
+      const res = await fetch("/api/unlock/redeem", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: codeInput, sku: "duo_full", state }),
+      });
+      const data = await res.json() as { error?: string };
+      if (!res.ok) throw new Error(data.error || "兑换失败，请稍后重试。");
+      await generate();
+    } catch (error) {
+      setRedeemError(error instanceof Error ? error.message : "兑换失败，请稍后重试。");
+    }
+    setRedeeming(false);
+  };
+
+  useEffect(() => {
+    if (autoGenerate && !result && !loading) void generate();
+    // 支付成功回跳只自动生成一次；其余状态由用户主动触发。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoGenerate]);
 
   if (!result) {
     return <section className="fate-book fate-book-intro">
@@ -65,10 +81,15 @@ export default function DuoReport({ a, b, relationType, pairId }: { a: BirthInpu
       <div className="fb-toc-preview">
         {PAGES.map((page) => <span key={page.key} className={`fb-c-${page.key}`}><b>{page.no}</b>{page.cn}</span>)}
       </div>
-      <p>缘起、相处、摩擦、长线、时运各一章——你们的双人标签、对比图表、与只属于你们的评述与建议。生成一次，永久可看。</p>
-      <button className="fb-cta" onClick={generate} disabled={loading}>
-        {loading ? "正在撰写你们的报告…（约一分钟，值得等）" : "生成你们的深度解读 · 限免体验"}
-      </button>
+      <p>缘起、相处、摩擦、长线、时运各一章——你们的双人标签、对比图表、专属长评与 PDF。付款后自动解锁，不需要去外部平台买码。</p>
+      <CheckoutButton sku="duo_full" state={state} returnTo={`/report/duo?state=${encodeURIComponent(state)}&paid=1`}>
+        解锁双人 AI 成册 + PDF · {PRICE_TEXT}
+      </CheckoutButton>
+      <div className="fb-unlock-row">
+        <input value={codeInput} onChange={(event) => setCodeInput(event.target.value)} placeholder="已有兑换码？在这里输入" spellCheck={false} />
+        <button className="fb-cta" type="button" onClick={redeem} disabled={redeeming}>{redeeming ? "验证中…" : "领取"}</button>
+      </div>
+      {redeemError && <div className="fb-unlock-err">{redeemError}</div>}
       <div className="fb-note">{failed ? "生成没有成功，多半是网络原因——稍等片刻再点一次。" : "报告内容基于 FATE 模型 2.0 得出。"}</div>
     </section>;
   }
@@ -121,13 +142,9 @@ export default function DuoReport({ a, b, relationType, pairId }: { a: BirthInpu
         <div><small>章节</small><strong>伍章成册</strong></div>
       </div>
     </section>
+    <DuoPdfButton state={state} digest={digest} />
     {renderPage(PAGES[0])}
-    <div className={unlocked ? "" : "fb-locked"}>
-      <div className={unlocked ? "" : "fb-blur"}>
-        {PAGES.slice(1).map(renderPage)}
-      </div>
-      {!unlocked && <div className="fb-unlock"><button className="fb-cta">解锁贰至伍章</button></div>}
-    </div>
+    {PAGES.slice(1).map(renderPage)}
     <div className="fb-note">本报告内容基于 FATE 模型 2.0 得出 · 图表数据可在关系剧本各章逐条对账 · 不作吉凶断言</div>
   </section>;
 }
