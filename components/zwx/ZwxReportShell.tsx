@@ -4,6 +4,7 @@
 // 只包壳,不碰 ResultContent 的任何数据与结构(换皮不动骨)。
 // 阅读页不上 WebGL 流体——静态星空更利于长文阅读,也省电。
 import { useEffect, useRef } from "react";
+import PrivacyCleanup from "@/components/PrivacyCleanup";
 import "./zwx.css";
 import "./zwxr.css";
 import "./zwxp.css";
@@ -43,6 +44,7 @@ export default function ZwxReportShell({ children }: { children: React.ReactNode
 
   return (
     <div className="zwxr">
+      <PrivacyCleanup />
       <div className="zwxr-bg" aria-hidden="true" />
       <div className="zx-galaxy" aria-hidden="true" />
       <div className="zwxr-stars" ref={starsRef} aria-hidden="true" />

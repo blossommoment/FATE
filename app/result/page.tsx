@@ -3,13 +3,15 @@ import type { CSSProperties } from "react";
 import { analyzeAnnualFlow, analyzeBirth, analyzeDuoRhythm, analyzeRelationship, matchProfiles, monthGanZhi, validateBirth } from "@/lib/fate";
 import type { BirthInput, PairMetric } from "@/lib/types";
 import ChatAssistant from "@/components/ChatAssistant";
-import InviteShare from "@/components/InviteShare";
 import ShareCard from "@/components/ShareCard";
-import HistoryRecorder from "@/components/HistoryRecorder";
 import PillarLinks from "@/components/PillarLinks";
 import PlotPanel, { PlotTrigger } from "@/components/PlotPanel";
-import DeepLock from "@/components/DeepLock";
 import PdfButton from "@/components/PdfButton";
+import PartnerForm from "@/components/PartnerForm";
+import { cookies } from "next/headers";
+import { duoSubject, hasEntitlement, personalSubject } from "@/lib/entitlements";
+import { sealReportState } from "@/lib/reportState";
+import { redirect } from "next/navigation";
 
 import { askDeepSeek } from "@/lib/deepseek";
 
@@ -56,9 +58,10 @@ const candidates = [
 ];
 
 export async function ResultContent({
-  birth, embedded = false, view = "overview", partnerBirth, relationType = "恋爱", detail, assistantQuestion, flowYear = new Date().getFullYear(), moduleKey = "",
+  birth, state, embedded = false, view = "overview", partnerBirth, relationType = "恋爱", detail, assistantQuestion, flowYear = new Date().getFullYear(), moduleKey = "",
 }: {
   birth: BirthInput;
+  state: string;
   embedded?: boolean;
   view?: "overview" | "deep" | "match" | "square";
   partnerBirth?: BirthInput;
@@ -86,10 +89,27 @@ export async function ResultContent({
     .sort((a, b) => b.result.score - a.result.score) : [];
   const partnerProfile = partnerBirth && !validateBirth(partnerBirth) ? analyzeBirth(partnerBirth) : null;
   const relationship = partnerProfile ? analyzeRelationship(profile, partnerProfile, relationType) : null;
-  const baseQuery = `year=${birth.year}&month=${birth.month}&day=${birth.day}&hour=${birth.hour}&minute=${birth.minute ?? 0}&gender=${birth.gender ?? "female"}&name=${encodeURIComponent(birth.name ?? "我")}&calendarType=${birth.calendarType ?? "solar"}&isLeapMonth=${birth.isLeapMonth ? "true" : "false"}`;
-  const partnerQuery = partnerBirth ? `&partnerYear=${partnerBirth.year}&partnerMonth=${partnerBirth.month}&partnerDay=${partnerBirth.day}&partnerHour=${partnerBirth.hour}&partnerMinute=${partnerBirth.minute ?? 0}&partnerGender=${partnerBirth.gender ?? "male"}&partnerName=${encodeURIComponent(partnerBirth.name ?? "TA")}&partnerCalendarType=${partnerBirth.calendarType ?? "solar"}&partnerIsLeapMonth=${partnerBirth.isLeapMonth ? "true" : "false"}&relationType=${encodeURIComponent(relationType)}` : "";
+  let personalUnlocked = false;
+  let duoUnlocked = false;
+  try {
+    const cookieStore = await cookies();
+    personalUnlocked = hasEntitlement(cookieStore, "personal_full", personalSubject(birth));
+    if (partnerBirth) duoUnlocked = hasEntitlement(cookieStore, "duo_full", duoSubject(birth, partnerBirth, relationType));
+  } catch {
+    // Missing server secret keeps paid material closed instead of failing the free report.
+    personalUnlocked = false;
+    duoUnlocked = false;
+  }
+  const baseQuery = `state=${encodeURIComponent(state)}`;
+  const partnerQuery = "";
   const selectedDeep = view === "deep" ? profile.deepAnalysis.find((item) => item.key === detail) : null;
   const selectedInteraction = view === "match" ? relationship?.cards.find((item) => item.key === detail) : null;
+  const lockedDuoModule = view === "match"
+    && ["structure", "manner", "reef", "rhythm", "summary"].includes(moduleKey)
+    && !duoUnlocked;
+  const lockedPersonalModule = view === "deep"
+    && ["boundary", "growth", "special", "social"].includes(moduleKey)
+    && !personalUnlocked;
   const assistantContext = selectedDeep ? {
     title: selectedDeep.label, summary: selectedDeep.summary, evidence: [...selectedDeep.evidence, `命盘量化分数 ${selectedDeep.score}`],
     suggestions: ["为什么这个分数高？", "反向信号是什么？", "能举个生活例子吗？"],
@@ -116,23 +136,14 @@ export async function ResultContent({
     evidence: [`日主 ${profile.bazi.dayPillar[0]}`, `主导身份 ${profile.archetype}`, `十神主导 ${profile.tenGodAnalysis.slice().sort((a, b) => b.count - a.count)[0].members}`],
     suggestions: ["七杀是什么？", "为什么我的进取心高？", "为什么我容易没有新鲜感？"],
   };
-  const assistantAnswer = assistantQuestion ? await askDeepSeek(assistantQuestion, assistantContext.title, assistantContext.summary, assistantContext.evidence, view === "match" && !!relationship && !selectedInteraction) : undefined;
+  const assistantAnswer = assistantQuestion && !lockedDuoModule && !lockedPersonalModule
+    ? await askDeepSeek(assistantQuestion, assistantContext.title, assistantContext.summary, assistantContext.evidence, view === "match" && !!relationship && !selectedInteraction)
+    : undefined;
   const moduleQuery = moduleKey ? `&module=${moduleKey}` : "";
   const assistantHref = `/?${baseQuery}&view=${view}${partnerQuery}${moduleQuery}${detail ? `&detail=${detail}` : ""}`;
   const returnAnchor = selectedDeep ? `deep-card-${selectedDeep.key}` : selectedInteraction ? `match-card-${selectedInteraction.key}` : `view-${view}`;
   const assistantFields: Record<string, string> = {
-    year: String(birth.year), month: String(birth.month), day: String(birth.day), hour: String(birth.hour),
-    minute: String(birth.minute ?? 0), name: birth.name ?? "我",
-    gender: birth.gender ?? "female", calendarType: birth.calendarType ?? "solar",
-    isLeapMonth: birth.isLeapMonth ? "true" : "false", view, ...(detail ? { detail } : {}), ...(moduleKey ? { module: moduleKey } : {}),
-    ...(partnerBirth ? {
-      partnerYear: String(partnerBirth.year), partnerMonth: String(partnerBirth.month),
-      partnerDay: String(partnerBirth.day), partnerHour: String(partnerBirth.hour),
-      partnerMinute: String(partnerBirth.minute ?? 0), partnerName: partnerBirth.name ?? "TA",
-      partnerGender: partnerBirth.gender ?? "male", partnerCalendarType: partnerBirth.calendarType ?? "solar",
-      partnerIsLeapMonth: partnerBirth.isLeapMonth ? "true" : "false", relationType,
-    } : {}),
-    ...(assistantQuestion ? { ask: assistantQuestion } : {}),
+    state, view, ...(detail ? { detail } : {}), ...(moduleKey ? { module: moduleKey } : {}), ...(assistantQuestion ? { ask: assistantQuestion } : {}),
   };
   const polygonPoint = (index: number, count: number, radius: number, center = 160) => {
     const angle = -Math.PI / 2 + index * Math.PI * 2 / count;
@@ -325,12 +336,6 @@ export async function ResultContent({
   const annualFlow = analyzeAnnualFlow(profile, selectedAnnual);
   return (
     <main id={`view-${view}`} className={`result-page view-${view} day-theme-${dayTheme}`}>
-      <HistoryRecorder entry={{
-        name: birth.name ?? "我",
-        birthLabel: `${birth.calendarType === "lunar" ? "农历" : "公历"} ${birth.year}.${birth.month}.${birth.day} ${String(birth.hour).padStart(2, "0")}:${String(birth.minute ?? 0).padStart(2, "0")}`,
-        ...(partnerBirth ? { partnerName: partnerBirth.name ?? "TA" } : {}),
-        url: `/?${baseQuery}&view=${view}${partnerQuery}`,
-      }} />
       {!embedded && <nav>
         <Link className="brand" href="/"><i>缘</i>FATE<span>°</span></Link>
         <div className="nav-links"><span>关系档案 · 已生成</span><PlotTrigger variant="link" /></div>
@@ -493,7 +498,7 @@ export async function ResultContent({
           <p>性情、感情、事业、人际、时运各一章——你的标签、数据表征、与一段只属于你的评述与建议。生成一次，永久可看，可分享。</p>
           <div className="fb-cta-row">
             <Link className="fb-cta" href={`/report?${baseQuery}`}>打开我的深度解读 ↗</Link>
-            <PdfButton birth={birth} profileId={profile.id} />
+            {state && <PdfButton state={state} />}
           </div>
           <div className="fb-note">报告内容基于 FATE 模型 2.0 得出 · 命书 PDF 为解锁权益。</div>
         </section>
@@ -533,9 +538,9 @@ export async function ResultContent({
             // 付费墙（2026-07-09 用户拍板）：目录壹贰免费，叁肆伍陆整组上锁
             return <>
               {deepModules.slice(0, 2).map(renderDirPanel)}
-              <DeepLock birth={birth} profileId={profile.id} reportHref={`/report?${baseQuery}`}>
-                {deepModules.slice(2).map(renderDirPanel)}
-              </DeepLock>
+              {personalUnlocked
+                ? deepModules.slice(2).map(renderDirPanel)
+                : <section className="duo-paid-gate"><span>FATE° · PAID CONTENT</span><h3>后四章为解锁内容</h3><p>解锁后可阅读完整深度目录、个人 AI 成册与命书 PDF。</p><Link className="fb-cta" href={`/report?${baseQuery}`}>解锁个人全册</Link></section>}
             </>;
           })()}
         </div>
@@ -549,8 +554,9 @@ export async function ResultContent({
             <i>{deepActive.no}</i>
             <div><span>第 {deepActiveIndex + 1} 章 / 共 {deepModules.length} 章</span><h2>{deepActive.title}</h2><p>{deepActive.subtitle}</p></div>
           </header>
-        {/* 付费墙：第叁章起全章内容上锁（直链绕不过），壹贰 open 直渲染 */}
-        <DeepLock birth={birth} profileId={profile.id} reportHref={`/report?${baseQuery}`} open={deepActiveIndex < 2}>
+        {deepActiveIndex >= 2 && !personalUnlocked ? <section className="duo-paid-gate">
+          <span>FATE° · PAID CHAPTER</span><h3>{deepActive.title}为付费内容</h3><p>壹、贰章可以免费阅读。解锁后可查看本章及后续章节，并生成个人 AI 成册与 PDF。</p><Link className="fb-cta" href={`/report?${baseQuery}`}>解锁个人全册</Link>
+        </section> : <>
         {deepActive.key !== "special" && <div className="deep-profile">
           <div className="deep-category-stack">
             {deepCategories.filter((group) => group.category === deepActive.category).map((group) => { const categoryIndex = deepCategories.findIndex((candidate) => candidate.category === group.category); return <section className="deep-category zx-panel zx-corner" key={group.category}>
@@ -628,7 +634,7 @@ export async function ResultContent({
           </div>
           <blockquote className="social-chapter-quote">“{profile.summary}”</blockquote>
         </section>}
-        </DeepLock>
+        </>}
         <nav className="module-pager">
           {deepActiveIndex > 0
             ? <Link href={`/?${baseQuery}&view=deep&module=${deepModules[deepActiveIndex - 1].key}#deep-report`}>← {deepModules[deepActiveIndex - 1].no} · {deepModules[deepActiveIndex - 1].title}</Link>
@@ -700,30 +706,7 @@ export async function ResultContent({
           <div><span>RELATIONSHIP SCRIPT</span><h2>关系剧本<br />看你们会怎么发展。</h2></div>
           <p>输入对方出生时间，并选择真实关系场景。系统会同时读取双方十神、五行、情绪稳定与依恋节奏。</p>
         </div>
-        <InviteShare query={`inviteYear=${birth.year}&inviteMonth=${birth.month}&inviteDay=${birth.day}&inviteHour=${birth.hour}&inviteMinute=${birth.minute ?? 0}&inviteName=${encodeURIComponent(birth.name ?? "我")}&inviteGender=${birth.gender ?? "female"}&inviteCalendarType=${birth.calendarType ?? "solar"}&inviteIsLeapMonth=${birth.isLeapMonth ? "true" : "false"}&relationType=${encodeURIComponent(relationType)}`} />
-        <form className="partner-form" action="/" method="get">
-          <input type="hidden" name="year" value={birth.year} />
-          <input type="hidden" name="month" value={birth.month} />
-          <input type="hidden" name="day" value={birth.day} />
-          <input type="hidden" name="hour" value={birth.hour} />
-          <input type="hidden" name="minute" value={birth.minute ?? 0} />
-          <input type="hidden" name="name" value={birth.name ?? "我"} />
-          <input type="hidden" name="gender" value={birth.gender ?? "female"} />
-          <input type="hidden" name="calendarType" value={birth.calendarType ?? "solar"} />
-          <input type="hidden" name="isLeapMonth" value={birth.isLeapMonth ? "true" : "false"} />
-          <input type="hidden" name="view" value="match" />
-          <label><span>对方昵称</span><input name="partnerName" type="text" defaultValue={partnerBirth?.name ?? "TA"} required /></label>
-          <label><span>对方出生年份</span><input name="partnerYear" type="number" min="1900" max="2100" defaultValue={partnerBirth?.year ?? 2001} required /></label>
-          <label><span>月份</span><input name="partnerMonth" type="number" min="1" max="12" defaultValue={partnerBirth?.month ?? 6} required /></label>
-          <label><span>日期</span><input name="partnerDay" type="number" min="1" max="31" defaultValue={partnerBirth?.day ?? 18} required /></label>
-          <label><span>时辰</span><input name="partnerHour" type="number" min="0" max="23" defaultValue={partnerBirth?.hour ?? 10} required /></label>
-          <label><span>分钟</span><input name="partnerMinute" type="number" min="0" max="59" defaultValue={partnerBirth?.minute ?? 0} required /></label>
-          <label className="relation-select"><span>日期类型</span><select name="partnerCalendarType" defaultValue={partnerBirth?.calendarType ?? "solar"}><option value="solar">公历</option><option value="lunar">农历</option></select></label>
-          <label className="relation-select"><span>对方性别</span><select name="partnerGender" defaultValue={partnerBirth?.gender ?? "male"}><option value="female">女</option><option value="male">男</option></select></label>
-          <label className="leap-check"><span>农历闰月</span><span><input type="checkbox" name="partnerIsLeapMonth" value="true" defaultChecked={partnerBirth?.isLeapMonth ?? false} />仅农历闰月时勾选</span></label>
-          <label className="relation-select"><span>你们的关系</span><select name="relationType" defaultValue={relationType}><option>恋爱</option><option>朋友</option><option>同事</option><option>家人</option></select></label>
-          <button type="submit">生成双人互动分析 <span>→</span></button>
-        </form>
+        <PartnerForm birth={birth} partnerBirth={partnerBirth} relationType={relationType} />
 
         {relationship && partnerProfile && (() => {
           const userNameSafe = birth.name ?? "我";
@@ -840,11 +823,20 @@ export async function ResultContent({
           <div className="module-directory">
             <header><div><span>REPORT CHAPTERS</span><h3>报告目录 · {["零","一","二","三","四","五","六","七","八","九"][moduleMeta.length]}章</h3></div><small>逐章展开，每一章都可单独转发</small></header>
             <div className="module-grid">
-              {moduleMeta.map((item, index) => <Link key={item.key} href={`${moduleBase}&module=${item.key}#match-report`}>
-                <i>{item.no}</i>
-                <div><span>0{index + 1} · {item.subtitle}</span><h4>{item.title}</h4><p>{item.teaser}</p></div>
-                <b>→</b>
-              </Link>)}
+              {moduleMeta.map((item, index) => {
+                const locked = index >= 2 && !duoUnlocked;
+                return locked
+                  ? <div className="module-lock-card" key={item.key}>
+                    <i>{item.no}</i>
+                    <div><span>0{index + 1} · 付费章节</span><h4>{item.title}</h4><p>解锁关系全册后阅读本章</p></div>
+                    <b>锁</b>
+                  </div>
+                  : <Link key={item.key} href={`${moduleBase}&module=${item.key}#match-report`}>
+                    <i>{item.no}</i>
+                    <div><span>0{index + 1} · {item.subtitle}</span><h4>{item.title}</h4><p>{item.teaser}</p></div>
+                    <b>→</b>
+                  </Link>;
+              })}
             </div>
           </div>
           <section className="match-inspire">
@@ -878,6 +870,12 @@ export async function ResultContent({
               <i>{active.no}</i>
               <div><span>第 {activeIndex + 1} 章 / 共 {moduleMeta.length} 章</span><h2>{active.title}</h2><p>{active.subtitle}</p></div>
             </header>
+            {activeIndex >= 2 && !duoUnlocked ? <section className="duo-paid-gate">
+              <span>FATE° · PAID CHAPTER</span>
+              <h3>{active.title}为付费内容</h3>
+              <p>关系总览与两人底色可免费查看。解锁后可阅读叁至柒章、生成双人 AI 成册，并下载 PDF。</p>
+              <Link className="fb-cta" href={`/report/duo?${baseQuery}`}>解锁关系全册 + AI PDF</Link>
+            </section> : <>
             {active.key === "dimensions" && <>
             <section className="duo-radar-panel">
               <header><div><span>双人六维关系图</span><h3>你们在哪些地方相似，哪里互补</h3></div><div className="duo-legend"><i />你 <b />对方</div></header>
@@ -1110,6 +1108,7 @@ export async function ResultContent({
                 让 AI 结合本章信号，写一段你们的专属总结 <span>→</span>
               </Link> : null;
             })()}
+            </>}
             <nav className="module-pager">
               {activeIndex > 0
                 ? <Link href={`${moduleBase}&module=${moduleMeta[activeIndex - 1].key}#match-report`}>← {moduleMeta[activeIndex - 1].no} · {moduleMeta[activeIndex - 1].title}</Link>
@@ -1206,5 +1205,15 @@ export default async function ResultPage({ searchParams }: {
     isLeapMonth: query.partnerIsLeapMonth === "true",
   } : undefined;
   const view = query.view === "deep" || query.view === "match" || query.view === "square" ? query.view : "overview";
-  return <ResultContent birth={birth} view={view} partnerBirth={partnerBirth} relationType={String(query.relationType ?? "恋爱")} detail={String(query.detail ?? "")} assistantQuestion={String(query.ask ?? "")} flowYear={Number(query.flowYear ?? new Date().getFullYear())} moduleKey={typeof query.module === "string" ? query.module : ""} />;
+  const relationType = String(query.relationType ?? "恋爱");
+  try {
+    const state = sealReportState({ birth, partnerBirth, relationType });
+    const next = new URLSearchParams({ state, view });
+    for (const key of ["detail", "ask", "flowYear", "module"] as const) {
+      if (typeof query[key] === "string") next.set(key, query[key]);
+    }
+    redirect(`/?${next.toString()}`);
+  } catch {
+    redirect("/");
+  }
 }

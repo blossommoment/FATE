@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import HistoryPanel from "@/components/HistoryPanel";
 import type { BirthInput, MatchResult, UserProfile } from "@/lib/types";
 
 const candidates: { name: string; role: string; birth: BirthInput }[] = [
@@ -191,7 +190,6 @@ export default function Landing({ embeddedResult = false }: { embeddedResult?: b
         </section>
       )}
 
-      <HistoryPanel />
 
       {!embeddedResult && <footer>
         <div className="brand">FATE<span>°</span></div>

@@ -1,11 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import type { BirthInput } from "@/lib/types";
 
-// 命书 PDF 下载按钮（解锁权益；2026-07-09 用户拍板挂在「打开我的深度解读」旁）。
-// 评述命中服务端缓存时秒级出书，否则约一分钟；未解锁时服务端 402，前端给指引。
-export default function PdfButton({ birth, profileId }: { birth: BirthInput; profileId: string }) {
+// 命书 PDF 下载按钮：仅传递加密报告状态，出生信息不会进入请求体或下载 URL。
+export default function PdfButton({ state }: { state: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -13,12 +11,10 @@ export default function PdfButton({ birth, profileId }: { birth: BirthInput; pro
     setBusy(true);
     setError("");
     try {
-      let token: string | null = null;
-      try { token = localStorage.getItem(`fate-unlock-${profileId}`); } catch { /* 无 token 交给服务端 402 */ }
       const res = await fetch("/api/report/pdf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ birth, lang: "zh", unlockToken: token ?? undefined }),
+        body: JSON.stringify({ state, lang: "zh" }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => null) as { error?: string } | null;

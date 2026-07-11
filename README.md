@@ -20,7 +20,7 @@ Copy-Item .env.example .env.local
 
 The assistant uses the server-side Chat Completions API. The current example targets SiliconFlow with `deepseek-ai/DeepSeek-V3.2`; without a key, the UI falls back to local rule explanations.
 
-For a China-friendly free deployment path, see [docs/DEPLOY_CN.md](docs/DEPLOY_CN.md).
+For your own Linux server, see [docs/SERVER_DEPLOY_CN.md](docs/SERVER_DEPLOY_CN.md).
 
 ## Production check
 

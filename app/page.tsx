@@ -1,21 +1,17 @@
 import type { Metadata } from "next";
 import ZwxLanding from "@/components/zwx/ZwxLanding";
 import ZwxReportShell from "@/components/zwx/ZwxReportShell";
-import InviteLanding from "@/components/InviteLanding";
 import { ResultContent } from "@/app/result/page";
 import type { BirthInput } from "@/lib/types";
+import { openReportState, sealReportState } from "@/lib/reportState";
+import { validateBirth } from "@/lib/fate";
+import { redirect } from "next/navigation";
 
 export async function generateMetadata({ searchParams }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }): Promise<Metadata> {
   const query = await searchParams;
   const ogImage = { url: "/images/five-elements-hero.png", width: 1200, height: 630 };
-  if (query.inviteYear && query.year === undefined) {
-    const inviter = String(query.inviteName ?? "TA");
-    const title = `「${inviter}」想和你合一盘 | FATE°`;
-    const description = "填上你的出生时间，两个人的关系剧本同时展开：怎么沟通、如何升温、冲突从哪里开始。不需要注册，一条链接就是档案。";
-    return { title, description, openGraph: { title, description, images: [ogImage] } };
-  }
   if (query.year !== undefined) {
     const name = String(query.name ?? "我");
     const isMatch = query.partnerYear !== undefined;
@@ -36,18 +32,21 @@ export default async function Home({ searchParams }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const query = await searchParams;
-  const hasBirth = ["year", "month", "day", "hour"].every((key) => query[key] !== undefined);
-  if (!hasBirth && query.inviteYear) {
-    const inviter: BirthInput = {
-      year: Number(query.inviteYear), month: Number(query.inviteMonth),
-      day: Number(query.inviteDay), hour: Number(query.inviteHour),
-      minute: Number(query.inviteMinute ?? 0), name: String(query.inviteName ?? "TA"),
-      gender: query.inviteGender === "male" ? "male" : "female",
-      calendarType: query.inviteCalendarType === "lunar" ? "lunar" : "solar",
-      isLeapMonth: query.inviteIsLeapMonth === "true",
-    };
-    return <ZwxReportShell><InviteLanding inviter={inviter} relationType={String(query.relationType ?? "恋爱")} /></ZwxReportShell>;
+  const stateToken = typeof query.state === "string" ? query.state : "";
+  if (stateToken) {
+    const state = openReportState(stateToken);
+    if (!state) {
+      return <ZwxReportShell><main className="report-page"><p className="report-error">这个私密报告链接已过期或无效，请重新起盘。</p><a href="/">← 返回首页</a></main></ZwxReportShell>;
+    }
+    const error = [state.birth, state.partnerBirth].filter(Boolean).map((birth) => validateBirth(birth!)).find(Boolean);
+    if (error) {
+      return <ZwxReportShell><main className="report-page"><p className="report-error">{error}</p><a href="/">← 返回首页</a></main></ZwxReportShell>;
+    }
+    const view = query.view === "deep" || query.view === "match" || query.view === "square" ? query.view : "overview";
+    return <ZwxReportShell><ResultContent state={stateToken} birth={state.birth} view={view} partnerBirth={state.partnerBirth} relationType={state.relationType} detail={String(query.detail ?? "")} assistantQuestion={String(query.ask ?? "")} flowYear={Number(query.flowYear ?? new Date().getFullYear())} moduleKey={typeof query.module === "string" ? query.module : ""} /></ZwxReportShell>;
   }
+  const hasBirth = ["year", "month", "day", "hour"].every((key) => query[key] !== undefined);
+  if (!hasBirth && query.inviteYear) redirect("/");
   const birth: BirthInput = {
     year: Number(query.year), month: Number(query.month),
     day: Number(query.day), hour: Number(query.hour),
@@ -65,11 +64,22 @@ export default async function Home({ searchParams }: {
     isLeapMonth: query.partnerIsLeapMonth === "true",
   } : undefined;
   const view = query.view === "deep" || query.view === "match" || query.view === "square" ? query.view : "overview";
-  // 排盘后结果页顶部直接是日主信息卡；落地页只在没有生辰参数时出现
+  if (hasBirth) {
+    try {
+      const state = sealReportState({ birth, partnerBirth, relationType: String(query.relationType ?? "恋爱") });
+      const next = new URLSearchParams({ state, view });
+      for (const key of ["detail", "ask", "flowYear", "module"] as const) {
+        if (typeof query[key] === "string") next.set(key, query[key]);
+      }
+      redirect(`/?${next.toString()}`);
+    } catch (error) {
+      return <ZwxReportShell><main className="report-page"><p className="report-error">{error instanceof Error ? error.message : "无法保护这次报告链接。"}</p><a href="/">← 返回首页</a></main></ZwxReportShell>;
+    }
+  }
+  // 落地页只在没有出生信息时出现。
   return (
     <>
       {!hasBirth && <ZwxLanding />}
-      {hasBirth && <ZwxReportShell><ResultContent birth={birth} view={view} partnerBirth={partnerBirth} relationType={String(query.relationType ?? "恋爱")} detail={String(query.detail ?? "")} assistantQuestion={String(query.ask ?? "")} flowYear={Number(query.flowYear ?? new Date().getFullYear())} moduleKey={typeof query.module === "string" ? query.module : ""} /></ZwxReportShell>}
     </>
   );
 }

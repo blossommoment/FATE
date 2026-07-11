@@ -1,10 +1,10 @@
 "use client";
 
 // 紫微星海 · 落地页(2026-07 重设计拍板稿)
-// 对接契约:表单 GET / 提交 name/year/month/day/hour/minute/gender/calendarType/isLeapMonth,
-// 与 app/page.tsx 的 ResultContent 分支完全一致 —— 引擎与结果页零改动。
-import { useEffect, useRef, useState } from "react";
-import HistoryPanel from "@/components/HistoryPanel";
+// The form sends birth details once to the same-origin state endpoint, then
+// continues with an encrypted report URL instead of a public query string.
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import PrivacyCleanup from "@/components/PrivacyCleanup";
 import "./zwx.css";
 
 /* ============ 静态数据(全部可确定性渲染,避免水合不一致) ============ */
@@ -77,8 +77,35 @@ export default function ZwxLanding() {
   const [mm, setMm] = useState("11");
   const [dd, setDd] = useState("23");
   const [navSolid, setNavSolid] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   const hourValue = selIdx === 0 ? (ziMode === "late" ? 23 : 0) : selIdx * 2;
+
+  const submitBirth = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSubmitting(true);
+    setSubmitError("");
+    try {
+      const response = await fetch("/api/report-state", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          birth: {
+            name: uname.trim() || "我",
+            year: Number(yy), month: Number(mm), day: Number(dd), hour: hourValue, minute: 0,
+            gender, calendarType: calType, isLeapMonth: calType === "lunar" && isLeap,
+          },
+        }),
+      });
+      const data = await response.json() as { state?: string; error?: string };
+      if (!response.ok || !data.state) throw new Error(data.error || "无法创建报告，请稍后重试。");
+      window.location.assign(`/?state=${encodeURIComponent(data.state)}`);
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "无法创建报告，请稍后重试。");
+      setSubmitting(false);
+    }
+  };
 
   const chooseShichen = (i: number) => {
     setSelIdx(i);
@@ -208,6 +235,7 @@ gl_FragColor=vec4(col,1.);}`;
 
   return (
     <>
+    <PrivacyCleanup />
     <div className="zwx" ref={rootRef}>
       <canvas className="zx-fluid" ref={canvasRef} />
       <div className="zx-galaxy" aria-hidden="true" />
@@ -330,14 +358,7 @@ gl_FragColor=vec4(col,1.);}`;
               <span className="zx-ghost">壹</span>
             </header>
 
-            <form className="zx-form zx-corner zx-rv" action="/" method="get">
-              {/* 提交契约:与 ResultContent 完全一致 */}
-              <input type="hidden" name="name" value={uname.trim() || "我"} readOnly />
-              <input type="hidden" name="hour" value={hourValue} readOnly />
-              <input type="hidden" name="minute" value={0} readOnly />
-              <input type="hidden" name="gender" value={gender} readOnly />
-              <input type="hidden" name="calendarType" value={calType} readOnly />
-              {calType === "lunar" && isLeap && <input type="hidden" name="isLeapMonth" value="true" readOnly />}
+            <form className="zx-form zx-corner zx-rv" onSubmit={submitBirth}>
 
               <div>
                 <div className="zx-field">
@@ -361,13 +382,13 @@ gl_FragColor=vec4(col,1.);}`;
                 <div className="zx-field">
                   <label>生 辰</label>
                   <div className="zx-row3">
-                    <select name="year" aria-label="生年" value={yy} onChange={(e) => setYy(e.target.value)}>
+                    <select aria-label="生年" value={yy} onChange={(e) => setYy(e.target.value)}>
                       {years.map((y) => <option key={y} value={y}>{y} 年</option>)}
                     </select>
-                    <select name="month" aria-label="生月" value={mm} onChange={(e) => setMm(e.target.value)}>
+                    <select aria-label="生月" value={mm} onChange={(e) => setMm(e.target.value)}>
                       {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => <option key={m} value={m}>{m} 月</option>)}
                     </select>
-                    <select name="day" aria-label="生日" value={dd} onChange={(e) => setDd(e.target.value)}>
+                    <select aria-label="生日" value={dd} onChange={(e) => setDd(e.target.value)}>
                       {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => <option key={d} value={d}>{d} 日</option>)}
                     </select>
                   </div>
@@ -380,8 +401,9 @@ gl_FragColor=vec4(col,1.);}`;
                   </div>
                 </div>
                 <div className="zx-submitrow">
-                  <button className="zx-btn" type="submit">生成我的报告</button>
+                  <button className="zx-btn" type="submit" disabled={submitting}>{submitting ? "正在起盘…" : "生成我的报告"}</button>
                   <p className="zx-note">公测期间限免 · 生辰信息仅用于本次演算 · 秒出画像</p>
+                  {submitError && <p className="zx-note" role="alert">{submitError}</p>}
                 </div>
               </div>
 
@@ -786,7 +808,6 @@ gl_FragColor=vec4(col,1.);}`;
         </div>
       </div>
     </div>
-    <HistoryPanel />
     </>
   );
 }
