@@ -448,8 +448,7 @@ export async function ResultContent({
 
         <section className="dominant-persona">
           <div className="persona-god"><span>主轴 · {profile.dominantPersona.weight}分 · {profile.dominantBasis}</span><strong>{profile.dominantPersona.god}</strong><small>{profile.dominantPersona.name}</small></div>
-          {/* 2026-07-08 用户拍板:副轴卡改「定格」,按古法命名(杀印相生/食神制杀…),不再拼十神名 */}
-          <div className={`persona-god secondary${profile.pattern.name.length > 2 ? " dual" : ""}`}><span>定格 · 古法</span><strong>{profile.pattern.name}</strong><small>{profile.pattern.basis}</small></div>
+          <div className={`persona-god secondary${profile.pattern.name.length > 2 ? " dual" : ""}`}><span>人格结构</span><strong>{profile.pattern.name}</strong></div>
           <div className="persona-combined"><span>组合人格</span><h3>{profile.combinedPersona.name}</h3><p>{profile.combinedPersona.summary}</p></div>
           <div><span>行为特征</span><p>{profile.dominantPersona.behavior}；同时带有{profile.secondaryPersona.behavior}的副轴倾向。</p></div>
           <div><span>关系表现</span><p>{profile.dominantPersona.relationship}；副轴表现为{profile.secondaryPersona.relationship}。</p></div>

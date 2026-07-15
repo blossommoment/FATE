@@ -1302,3 +1302,18 @@
 .zwxr .specialty-card>header{align-items:flex-start}
 .zwxr .zx-mscale span{color:#a9a2c0;font-size:10.5px}
 .zwxr .zx-mscale em{color:var(--zx-gold)}
+
+/* Readability pass: report cards are information-dense; use a crisp sans-serif
+   face for all body copy and raise the contrast of supporting evidence. */
+.zwxr .deep-card,.zwxr .logic-sheet,.zwxr .logic-sheet p,.zwxr .logic-factor-panel,.zwxr .deep-factor-tags,.zwxr .deep-scene-preview,.zwxr .deep-note{font-family:"PingFang SC","Microsoft YaHei","Noto Sans CJK SC",Arial,sans-serif}
+.zwxr .deep-card>header h4,.zwxr .logic-sheet>header h2{font-family:"PingFang SC","Microsoft YaHei","Noto Sans CJK SC",Arial,sans-serif;font-weight:650;letter-spacing:.03em}
+.zwxr .deep-summary{font-family:"PingFang SC","Microsoft YaHei","Noto Sans CJK SC",Arial,sans-serif;font-size:16px;font-weight:450;line-height:1.9;letter-spacing:0;color:#f1ecdf}
+.zwxr .deep-factor-tags>span{min-width:118px;padding:10px 12px}
+.zwxr .deep-factor-tags b,.zwxr .deep-factor-tags small{font-family:"PingFang SC","Microsoft YaHei",Arial,sans-serif;font-size:13px}
+.zwxr .deep-factor-tags b{color:#f0eadb;font-weight:600}.zwxr .deep-factor-tags small{color:#e8ce9a;font-weight:500}
+.zwxr .deep-scene-preview b{font-family:"PingFang SC","Microsoft YaHei",Arial,sans-serif;font-size:13px;font-weight:650}
+.zwxr .deep-scene-preview span{font-family:"PingFang SC","Microsoft YaHei",Arial,sans-serif;font-size:14px;line-height:1.75;color:#eee8dc}
+.zwxr .deep-note{font-family:"PingFang SC","Microsoft YaHei",Arial,sans-serif;font-size:13px;line-height:1.8;letter-spacing:.02em;color:#c8c1d4}
+.zwxr .logic-sheet{font-size:15px;line-height:1.8}.zwxr .logic-sheet>header span{font-family:"PingFang SC","Microsoft YaHei",Arial,sans-serif;font-size:12px;font-weight:600;letter-spacing:.08em}
+.zwxr .logic-result p,.zwxr .logic-factor-panel p,.zwxr .scene-analysis p{font-family:"PingFang SC","Microsoft YaHei",Arial,sans-serif;font-size:15px;line-height:1.85;color:#e9e2d6}
+@media(max-width:700px){.zwxr .logic-sheet{width:100%;padding:25px 18px 38px}.zwxr .logic-sheet>header h2{font-size:28px}.zwxr .logic-result{grid-template-columns:72px 1fr;gap:14px;padding:19px}.zwxr .logic-result>strong{font-size:52px}.zwxr .deep-summary{font-size:15.5px;line-height:1.85}.zwxr .deep-factor-tags>span{min-width:0;flex:1 1 calc(50% - 6px)}}

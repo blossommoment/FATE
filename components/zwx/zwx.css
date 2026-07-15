@@ -368,6 +368,20 @@
   .zx-gifts{grid-template-columns:repeat(2,1fr)}
 }
 @media(max-width:700px){
+  .zwx .zx-nav{height:64px;padding:12px 5.5vw;gap:12px}
+  .zx-brand b{font-size:20px}
+  .zx-navcta{flex:none;padding:9px 14px;font-size:12px;letter-spacing:.12em;white-space:nowrap}
+  .zwx .zx-hero{min-height:760px;align-items:flex-start;padding:142px 5.5vw 82px}
+  .zx-hero-inner{width:100%;max-width:500px;position:relative;z-index:2}
+  .zwx .zx-eyebrow{font-size:9px;letter-spacing:.28em;gap:9px;margin-bottom:22px}
+  .zwx .zx-eyebrow::before{width:28px}
+  .zwx .zx-hero h1{font-size:clamp(44px,12vw,66px);line-height:1.18;letter-spacing:.035em}
+  .zx-lead{max-width:24em;margin:24px 0 30px;font-size:15px;line-height:1.9}
+  .zx-ctarow{align-items:flex-start;gap:16px}
+  .zwx .zx-btn{padding:14px 20px;font-size:14px;letter-spacing:.18em;text-indent:.18em;white-space:nowrap}
+  .zx-badge{right:-4px;top:-12px;font-size:8px;letter-spacing:.1em;padding:3px 7px}
+  .zx-more{font-size:13px;line-height:1.6}
+  .zx-hmeta{left:5.5vw;bottom:38px;font-size:8px;letter-spacing:.14em;max-width:72vw;line-height:1.7}
   .zx-hring{width:135vw;right:-46vw;top:42%;opacity:.2}
   .zx-moon{width:52vw;left:-14vw;top:-8vh;opacity:.7}
   .zx-brand span{display:none}
